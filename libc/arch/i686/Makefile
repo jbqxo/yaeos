@@ -1,0 +1,3 @@
+CFLAGS +=
+CPPFLAGS +=
+LDFLAGS +=
