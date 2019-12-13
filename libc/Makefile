@@ -18,7 +18,7 @@ include $(DIR_ARCH)/Makefile
 
 .PHONY: clean dirs_libc dirs_libk all install-headers
 
-all: $(PREFIX_LIBC)/lib.a $(PREFIX_LIBK)/lib.a install-headers
+all: $(PREFIX_LIBC)/libc.a $(PREFIX_LIBK)/libk.a install-headers
 
 dirs_libc:
 	$(info [libc] Creating dir tree)
@@ -42,11 +42,11 @@ install-headers:
 	@$(MKDIRP) $(PREFIX_LIBC)/include/arch
 	@$(CPRP) $(CWD)/arch/$(TARGET)/include/. $(PREFIX_LIBC)/include/.
 
-$(PREFIX_LIBC)/lib.a: $(FILES_LIBC_OBJ) | dirs_libc
+$(PREFIX_LIBC)/libc.a: $(FILES_LIBC_OBJ) | dirs_libc
 	$(info [libc] Archiving $(notdir $(FILES_LIBC_OBJ)))
 	@$(AR) rcs $@ $^
 
-$(PREFIX_LIBK)/lib.a: $(FILES_LIBK_OBJ) | dirs_libk
+$(PREFIX_LIBK)/libk.a: $(FILES_LIBK_OBJ) | dirs_libk
 	$(info [libk] Archiving $(notdir $(FILES_LIBK_OBJ)))
 	@$(AR) rcs $@ $^
 

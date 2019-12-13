@@ -39,9 +39,9 @@ clean:
 prefix_dirs:
 	@$(MKDIRP) $(dir $(FILES_OBJ))
 
-$(PREFIX_KERNEL)/kernel.bin: $(FILES_OBJ) $(DIR_ARCH)/linker.ld
+$(PREFIX_KERNEL)/kernel.bin: $(FILES_OBJ) $(DIR_ARCH)/linker.ld $(PREFIX_LIBK)/libk.a
 	$(info [kernel] LD $@)
-	@$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-T,$(DIR_ARCH)/linker.ld $(FILES_OBJ) -o $@
+	@$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-T,$(DIR_ARCH)/linker.ld $(FILES_OBJ) $(PREFIX_LIBK)/libk.a -o $@
 
 $(PREFIX_KERNEL_ARCH)/crtbegin.o $(PREFIX_KERNEL_ARCH)/crtend.o: | prefix_dirs
 	$(info [kernel] Copy $(notdir $@) to the build directory)
