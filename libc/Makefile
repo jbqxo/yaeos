@@ -3,7 +3,8 @@ CWD := $(shell pwd)
 CFLAGS += \
 	  -ffreestanding
 CPPFLAGS += \
-	  -I$(CWD)/include
+	  -I$(CWD)/include \
+	  -I$(CWD)/arch/$(TARGET)/include
 
 FILES_REL_OBJ :=\
     $(addsuffix .o, \
@@ -34,9 +35,12 @@ clean:
 	@$(RMRF) $(PREFIX_LIBK)
 
 install-headers:
-	$(info [libc] Copying headers to the build directory)
 	@$(MKDIRP) $(PREFIX_LIBC)/include
+	$(info [libc] Copying headers to the build directory)
 	@$(CPRP) $(CWD)/include/. $(PREFIX_LIBC)/include/.
+	$(info [libc] Copying platform-dependent headers ($(TARGET)) to the build directory)
+	@$(MKDIRP) $(PREFIX_LIBC)/include/arch
+	@$(CPRP) $(CWD)/arch/$(TARGET)/include/. $(PREFIX_LIBC)/include/.
 
 $(PREFIX_LIBC)/lib.a: $(FILES_LIBC_OBJ) | dirs_libc
 	$(info [libc] Archiving $(notdir $(FILES_LIBC_OBJ)))
