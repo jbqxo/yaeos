@@ -1,3 +1,5 @@
+export ROOT := $(shell pwd)
+
 # Names of the base directories
 export DIR_ISODIR ?= isodir
 export DIR_KERNEL ?= kernel

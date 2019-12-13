@@ -5,7 +5,11 @@ CFLAGS += \
 	  -fno-builtin \
 	  -nostdinc
 
-CPPFLAGS += -D__kernel__ -I$(CWD)/include
+CPPFLAGS += \
+	    -D__kernel__ \
+	    -I$(CWD)/include \
+	    -I$(ROOT)/$(DIR_LIBC)/include \
+	    -I$(ROOT)/$(DIR_LIBC)/arch/$(TARGET)/include
 LDFLAGS += -nostdlib -lgcc
 
 FILES_OBJ :=\
