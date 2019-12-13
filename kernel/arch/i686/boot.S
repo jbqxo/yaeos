@@ -30,7 +30,7 @@ _start:
     call _init
     call i686_init
 
-    # If platform code return by some reason
+    # If platform code return control by some reason
     cli
 1:  hlt
     jmp 1b
