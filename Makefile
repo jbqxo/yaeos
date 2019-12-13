@@ -47,8 +47,8 @@ export RMRF   := rm -rf
 export CPRP   := cp -R -p
 export FIND   := find
 
-.PHONY: all kernel libc
-all: kernel libc clean grub-iso run-qemu
+.PHONY: all kernel libc run-qemu grub-iso
+all: kernel libc grub-iso
 
 build_dir:
 	@$(MKDIRP) $(PREFIX_BUILD)
@@ -58,6 +58,10 @@ clean:
 	@$(MAKE) -C $(DIR_LIBC) clean
 	@$(MAKE) -C $(DIR_BOOT) clean
 	@$(RMRF) $(PREFIX_BUILD)
+	@$(RMRF) compile_commands.json
+
+compile_commands.json: clean
+	@compiledb --full-path -o $@ make all
 
 grub-iso: kernel libc | build_dir
 	$(info [general] make grub iso)
