@@ -2,7 +2,6 @@
 
 /* This file contains Exact-width integers for i686 */
 
-
 #ifdef __i686__
 
 /* Exact-width integer types */

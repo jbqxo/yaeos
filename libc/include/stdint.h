@@ -77,33 +77,49 @@ typedef uint_least64_t uintmax_t;
 
 /* Limits of other integer types */
 
-#define PTRDIFF_MIN
-#define PTRDIFF_MAX
+#define PTRDIFF_MIN INT32_MIN 
+#define PTRDIFF_MAX INT32_MAX
 
-#define SIG_ATOMIC_MIN
-#define SIG_ATOMIC_MAX
+#define SIG_ATOMIC_MIN                                                         \
+	0;                                                                     \
+	do {                                                                   \
+		_Static_assert(0, "SIG_ATOMIC_MIN is not defined");            \
+	} while (0);
+#define SIG_ATOMIC_MAX                                                         \
+	0;                                                                     \
+	do {                                                                   \
+		_Static_assert(0, "SIG_ATOMIC_MAX is not defined");            \
+	} while (0);
 
-#define SIZE_MAX
+#define SIZE_MAX UINT32_MAX
 
-#define WCHAR_MIN
-#define WCHAR_MAX
+#define WCHAR_MIN (0x0)
+#define WCHAR_MAX UINT8_MAX
 
-#define WINT_MIN
-#define WINT_MAX
+#define WINT_MIN                                                               \
+	0;                                                                     \
+	do {                                                                   \
+		_Static_assert(0, "WINT_MIN is not defined");            \
+	} while (0);
+#define WINT_MAX                                                               \
+	0;                                                                     \
+	do {                                                                   \
+		_Static_assert(0, "WINT_MAX is not defined");            \
+	} while (0);
 
 /* Macros for minimum-width integer constants */
 #define INT8_C(c)  c
 #define INT16_C(c) c
 #define INT32_C(c) c
-#define INT64_C(c) c ## ll
+#define INT64_C(c) c##ll
 
-#define UINT8_C(c)  c ## u
-#define UINT16_C(c) c ## u
-#define UINT32_C(c) c ## u
-#define UINT64_C(c) c ## ull
+#define UINT8_C(c)  c##u
+#define UINT16_C(c) c##u
+#define UINT32_C(c) c##u
+#define UINT64_C(c) c##ull
 
 /* Macros for greatest-width integer constants */
-#define INTMAX_C(c)  c ## ll
-#define UINTMAX_C(c) c ## ull
+#define INTMAX_C(c)  c##ll
+#define UINTMAX_C(c) c##ull
 
 #endif // __i686__
