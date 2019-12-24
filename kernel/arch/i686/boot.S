@@ -13,11 +13,12 @@
 .long CHECKSUM
 
 # Reserve space for the kernel stack
-.section .bss
-.align 16
+.section .bootstrap_stack, "aw", @nobits
 stack_bottom: 
 .skip 16384 # 16 KiB
 stack_top:
+
+.section .bss
 
 # The kernel's entry point
 .section .text
