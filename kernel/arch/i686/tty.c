@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <ctype.h>
 
-#include "vga.h"
+#include <arch/vga.h>
 
 static struct {
 	uint16_t *buffer;

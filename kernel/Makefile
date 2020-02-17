@@ -8,6 +8,7 @@ CFLAGS += \
 CPPFLAGS += \
 	    -D__kernel__ \
 	    -I$(CWD)/include \
+	    -I$(CWD)/arch/$(TARGET)/include \
 	    -I$(ROOT)/$(DIR_LIBC)/include \
 	    -I$(ROOT)/$(DIR_LIBC)/arch/$(TARGET)/include
 LDFLAGS += -nostdlib -lgcc
@@ -30,6 +31,9 @@ install-headers:
 	$(info [kernel] Copying headers to the build directory)
 	@$(MKDIRP) $(PREFIX_KERNEL)/include
 	@$(CPRP) $(CWD)/include/. $(PREFIX_KERNEL)/include/.
+	$(info [kernel] Copying platform-dependent headers ($(TARGET)) to the build directory)
+	@$(MKDIRP) $(PREFIX_KERNEL)/include/arch
+	@$(CPRP) $(CWD)/arch/$(TARGET)/include/. $(PREFIX_KERNEL)/include/.
 
 clean:
 	$(info [kernel] Removing kernel prefix directory)
