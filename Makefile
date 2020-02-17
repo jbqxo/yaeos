@@ -78,4 +78,4 @@ libc: | build_dir
 	@$(MAKE) -C $(DIR_LIBC)
 
 run-qemu: grub-iso
-	@qemu-system-x86_64 -s -curses -cdrom $(PREFIX_BUILD)/grub.iso
+	@qemu-system-i386 -s -curses -cdrom $(PREFIX_BUILD)/grub.iso
