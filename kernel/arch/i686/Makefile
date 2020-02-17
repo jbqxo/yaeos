@@ -17,8 +17,8 @@ FILES_OBJ_CRT_END :=
 FILES_OBJ_ARCH := \
     $(filter-out $(FILES_OBJ_CRT_BEGIN) $(FILES_OBJ_CRT_END),\
     $(subst $(CWD)/, $(PREFIX_KERNEL)/,\
-    $(addsuffix .o, $(basename \
-    $(shell $(FIND) $(DIR_ARCH) -name '*.c' -or -name '*.S')))))
+    $(addsuffix .o, \
+    $(shell $(FIND) $(DIR_ARCH) -name '*.c' -or -name '*.S'))))
 
 # Properly reorder TU files
 FILES_OBJ := \

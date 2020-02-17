@@ -15,8 +15,7 @@ LDFLAGS += -nostdlib -lgcc
 FILES_OBJ :=\
     $(addprefix $(PREFIX_KERNEL)/, \
     $(addsuffix .o, \
-    $(basename \
-    $(shell $(FIND) kernel -name '*.c'))))
+    $(shell $(FIND) kernel -name '*.c')))
 
 DIR_ARCH := $(CWD)/arch/$(TARGET)
 PREFIX_KERNEL_ARCH := $(subst $(CWD), $(PREFIX_KERNEL), $(DIR_ARCH))
@@ -47,15 +46,15 @@ $(PREFIX_KERNEL_ARCH)/crtbegin.o $(PREFIX_KERNEL_ARCH)/crtend.o: | prefix_dirs
 	$(info [kernel] Copy $(notdir $@) to the build directory)
 	@CRT_O=`$(CC) $(CFLAGS) $(LDFLAGS) -print-file-name=$(@F)` && cp "$$CRT_O" $@
 
-$(PREFIX_KERNEL)/%.o: $(CWD)/%.c | prefix_dirs
+$(PREFIX_KERNEL)/%.c.o: $(CWD)/%.c | prefix_dirs
 	$(info [kernel] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(PREFIX_KERNEL)/%.o: $(CWD)/%.S | prefix_dirs
+$(PREFIX_KERNEL)/%.S.o: $(CWD)/%.S | prefix_dirs
 	$(info [kernel] AS $@)
 	@$(AS) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(PREFIX_KERNEL)/%.d: $(CWD)/%.c | prefix_dirs
+$(PREFIX_KERNEL)/%.c.d: $(CWD)/%.c | prefix_dirs
 	$(info [kernel] MD $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -MM -MG -MF $@ $<
 
