@@ -55,7 +55,7 @@ $(PREFIX_LIBC)/%.c.o: $(CWD)/%.c | dirs_libc
 
 $(PREFIX_LIBC)/%.S.o: $(CWD)/%.S | dirs_libc
 	$(info [libc] AS $@)
-	@$(AS) $(CFLAGS) $(CPPFLAGS) -D__libc__ -c $< -o $@
+	@$(AS) -D__libc__ $< -o $@
 
 $(PREFIX_LIBK)/%.c.o: $(CWD)/%.c | dirs_libk
 	$(info [libk] CC $@)
@@ -63,7 +63,7 @@ $(PREFIX_LIBK)/%.c.o: $(CWD)/%.c | dirs_libk
 
 $(PREFIX_LIBK)/%.S.o: $(CWD)/%.S | dirs_libk
 	$(info [libk] AS $@)
-	@$(AS) $(CFLAGS) $(CPPFLAGS) -D__libk__ -c $< -o $@
+	@$(AS) -D__libk__ $< -o $@
 
 $(PREFIX_LIBC)/%.c.d: $(CWD)/%.c | dirs_libc
 	$(info [libc] MD $@)

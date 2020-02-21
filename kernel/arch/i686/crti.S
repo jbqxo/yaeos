@@ -1,17 +1,15 @@
-.section .init
-.global _init
-.type _init, @function
+section .init
+global _init:function
 _init:
-    pushl %ebp
-    movl %esp, %ebp
+    push ebp
+    mov esp, ebp
 
-    # ... here goes content of crtbegin.o's .init section
+    ; ... here goes content of crtbegin.o's .init section
 
-.section .fini
-.global _fini
-.type _fini, @function
+section .fini
+global _fini:function
 _fini:
-    pushl %ebp
-    movl %esp, %ebp
+    push ebp
+    mov esp, ebp
 
-    # ... here goes content of crtbegin.o's .fini section
+    ; ... here goes content of crtbegin.o's .fini section

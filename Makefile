@@ -39,8 +39,8 @@ else
 endif
 ifeq ($(TARGET), i686)
     export CC := clang --target=i686-pc-none-elf -march=i686
+	export AS := nasm -felf32
 endif
-export AS := $(CC)
 export AR := $(CONFIG_TARGET)-ar
 
 # Basic commands

@@ -56,7 +56,7 @@ $(PREFIX_KERNEL)/%.c.o: $(CWD)/%.c | prefix_dirs
 
 $(PREFIX_KERNEL)/%.S.o: $(CWD)/%.S | prefix_dirs
 	$(info [kernel] AS $@)
-	@$(AS) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+	@$(AS) $< -o $@
 
 $(PREFIX_KERNEL)/%.c.d: $(CWD)/%.c | prefix_dirs
 	$(info [kernel] MD $@)
