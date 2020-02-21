@@ -3,6 +3,7 @@
 #include <ctype.h>
 
 #include <arch/vga.h>
+#include <arch/platform.h>
 
 static struct {
 	uint16_t *buffer;
@@ -34,7 +35,7 @@ void tty_init(void)
 	state.row = 0;
 	state.col = 0;
 	state.color = vga_mix_color(vga_fg_color, vga_bg_color);
-	state.buffer = (uint16_t *)VGA_BUFF_ADDR;
+	state.buffer = (uint16_t *)PLATFORM_VGA_BUFFER;
 
 	for (uint_fast16_t y = 0; y < VGA_HEIGHT; y++) {
 		for (uint_fast16_t x = 0; x < VGA_WIDTH; x++) {
