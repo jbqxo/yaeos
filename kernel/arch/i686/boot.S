@@ -1,195 +1,173 @@
-#include <arch/platform.h>
+; TODO: Move these constants in a separate header
+; Constants
+%define KERNEL_VIRT_OFFSET 0xC0000000
+%define STACK_SIZE         16384 ; 16 KiB
+%define VGA_BUFFER         0xB8000
 
-# Constants for the multiboot header
-.set ALIGN,    1<<0             # align loaded modules on page boundaries
-.set MEMINFO,  1<<1             # provide memory map
-.set FLAGS,    ALIGN | MEMINFO  # multiboot flags
-.set MAGIC,    0x1BADB002       # set "magic number"
-.set CHECKSUM, -(MAGIC + FLAGS) # set multiboot checksum
+%define PE_FLAGS_PRESENT (0x1 << 0)
+%define PE_FLAGS_RW      (0x1 << 1)
+%define PE_DEFAULT_FLAGS (PE_FLAGS_PRESENT | PE_FLAGS_RW)
 
-# Set the multiboot header
-.section .multiboot
-    .align 4
-    .long MAGIC
-    .long FLAGS
-    .long CHECKSUM
+; Constants for the multiboot header
+%define FLAG_ALIGN   (0x1 << 0)                  ; align loaded modules on page boundaries
+%define FLAG_MEMINFO (0x1 << 1)                  ; provide memory map
+%define FLAGS        (FLAG_ALIGN | FLAG_MEMINFO) ; multiboot flags
+%define MAGIC        0x1BADB002                  ; set "magic number"
+%define CHECKSUM     -(MAGIC + FLAGS)            ; set multiboot checksum
 
-# Reserve space for the kernel stack
-.section .bootstrap_stack, "aw", @nobits
+; Multiboot header
+section .multiboot align=4
+    dd MAGIC
+    dd FLAGS
+    dd CHECKSUM
+
+; Preallocate space used for boot-time stack.
+section .bootstrap_stack write nobits align=16
 stack_bottom: 
-    .skip CONF_STACK_SIZE
+    resb STACK_SIZE
 stack_top:
-#define STACKTOP_PHYS (stack_top - CONF_KERNEL_RESIDE_ADDR)
 
-.section .bss, "aw", @nobits
-    .align PLATFORM_PAGE_SIZE
-paging_pd:
-    .skip PLATFORM_PAGE_SIZE
-paging_pt:
-    .skip PLATFORM_PAGE_SIZE
+; Preallocate space used for boot-time paging.
+section .bss write nobits align=4096
+boot_paging_pd:
+    resd 1024
+boot_paging_pt:
+    resd 1024
 
-#define PT_PHYS (paging_pt - CONF_KERNEL_RESIDE_ADDR)
-#define PD_PHYS (paging_pd - CONF_KERNEL_RESIDE_ADDR)
+; "Interesting places"
+extern _kernel_start
+extern _kernel_end
+%define PADDR_KERNEL_START (_kernel_start - KERNEL_VIRT_OFFSET)
+%define PADDR_KERNEL_END (_kernel_end - KERNEL_VIRT_OFFSET)
+%define PADDR_STACKTOP     (stack_top - KERNEL_VIRT_OFFSET)
+%define PADDR_PDIR         (boot_paging_pd - KERNEL_VIRT_OFFSET)
+%define PADDR_PTABLE       (boot_paging_pt - KERNEL_VIRT_OFFSET)
 
-.section .text
+;(PADDR_KERNEL_START & 0x3FF000) >> 12
+; 0x3FF000 is all 1's from bit 12 up to bit 21.
+; See section 4.3 in Intel's Software Dev Manual V3.
+%macro ptable_index 2
+    mov %1, %2
+    and %1, 0x3FF000
+    shr %1, 12
+%endmacro
 
-# The function maps kernel addresses.
-# @param pt_pos current position in a page table.
-# @param len remaining length of the table.
-# @return number of placed entries.
-# unsigned map_kernel(void *pt_pos, unsigned len)
+%macro pdir_index 2
+    mov %1, %2
+    and %1, 0xFFC00000
+    shr %1, 22
+%endmacro
+
+section .text
+
+; Maps kernel addresses.
 map_kernel:
-    pushl %ebp
-    movl %esp, %ebp
-    pushl %edi
-    pushl %esi
+    push ebp
+    mov ebp, esp
+    push edi
+    push esi
 
-    # PA of the entry in PT.
-    movl 8(%ebp), %edi
-    # Loop counter. Do not write more PTE than available.
-    movl 12(%ebp), %ecx
-    # PA of the current address to be mapped.
-    movl $(_kernel_start - CONF_KERNEL_RESIDE_ADDR), %esi
+    ; Start index in the page table.
+    ptable_index eax, PADDR_KERNEL_START
 
-1:
-    # Loop condition: Only map the kernel's addresses.
-    cmpl $(_kernel_end - CONF_KERNEL_RESIDE_ADDR), %esi
-    jge 2f
+    ; Physical Address of the entry in the page table.
+    lea edi, [PADDR_PTABLE + eax * 4]
+    ; Loop counter. Do not write more PTE than available.
+    mov ecx, eax
+    ; Physical Address to be mapped.
+    mov esi, PADDR_KERNEL_START
 
-    # Write a PTE
-    movl %esi, %edx
-    orl $(PLATFORM_PTE_WRITE | PLATFORM_PTE_PRESENT), %edx
-    movl %edx, (%edi)
+.map:
+    ; Loop condition: Only map the kernel's addresses.
+    cmp esi, PADDR_KERNEL_END
+    jge .done
 
-    addl $(PLATFORM_PAGE_SIZE), %esi
-    # 4 is the size of one PT entry.
-    addl $4, %edi
+    ; Write new page table entry
+    mov edx, esi
+    or edx, PE_DEFAULT_FLAGS
+    mov [edi], edx
 
-    # Loop condition: Don't map more pages that we need.
-    loop 1b
-    # TODO: Add runtime warning about the kernel's size. There is a chance that it doesn't fit into one page table.
+    add esi, 4096
+    add edi, 4                  ; 4 is the size of a single entry
 
-# At this point we have mapped the whole kernel, so exit.
-2:
-    # Calculate the number of placed entries.
-    movl 8(%ebp), %eax
-    subl %ecx, %eax
+    ; Loop condition: Don't map more pages then required
+    loop .map
+    ; TODO: Add runtime warning about the kernel's size. There is a chance that it doesn't fit into one page table.
 
-    popl %esi
-    popl %edi
-    popl %ebp
+    ; At this point we have mapped the whole kernel, so exit.
+.done:
+    pop esi
+    pop edi
+    pop ebp
     ret
 
-# The function maps platform specific areas (VGA buffer, for example).
-# @param pt_pos current position in a page table
-# @param len remaining length of the table
-# @return number of placed entries. 0 if an error occurred.
-# unsigned map_platform(void *pt_pos, unsigned len)
+; Maps platform specific areas (VGA buffer, for example)
 map_platform:
-    pushl %ebp
-    movl %esp, %ebp
-    pushl %edi
-    pushl %esi
+    push ebp
+    mov ebp, esp
+    push edi
 
-    movl 8(%esp), %edi
-    movl 12(%esp), %ecx
+    ; Map VGA buffer
+    ptable_index eax, VGA_BUFFER
+    lea edi, [PADDR_PTABLE + eax * 4]
+    mov dword [edi], VGA_BUFFER | PE_DEFAULT_FLAGS
 
-    # Map VGA buffer
-    testl %ecx, %ecx
-    jz 1f
-    movl $(PLATFORM_VGA_BUFFER + PLATFORM_PTE_PRESENT + PLATFORM_PTE_WRITE), (%edi)
-    decl %ecx
-
-    # Calculate the number of placed entries.
-    movl 8(%esp), %eax
-    subl %ecx, %eax
-
-    popl %esi
-    popl %edi
-    popl %ebp
+    pop edi
+    pop ebp
     ret
 
-1:
-    # An error occurred.
-    movl $0, %eax
-
-    popl %esi
-    popl %edi
-    popl %ebp
-    ret
-
-# The function enables paging.
-# void enable_paging(void)
+; Enables paging.
 enable_paging:
-    #define PTE_FLAGS (PLATFORM_PTE_WRITE + PLATFORM_PTE_PRESENT)
+    ; Identity Map page table.
+    mov edi, PADDR_PTABLE
+    or edi, PE_DEFAULT_FLAGS
+    mov [PADDR_PDIR], edi
 
-    # Map the page table itself. 
-    movl $(PT_PHYS + PTE_FLAGS), PD_PHYS
-    movl $(PT_PHYS + PTE_FLAGS), PD_PHYS + (CONF_KERNEL_RESIDE_ADDR >> 22)
+    pdir_index eax, KERNEL_VIRT_OFFSET
+    mov [PADDR_PDIR + eax * 4], edi
 
-    # Enable paging
-    movl $PD_PHYS, %eax
-    movl %eax, %cr3
-    movl %cr0, %eax
-    # From Intel manuals:
-    # "Setting the PG flag when the PE flag is clear causes a general-protection exception."
-    orl $(1 << 31 | 1), %eax
-    movl %eax, %cr0
+    ; Enable paging
+    mov eax, PADDR_PDIR
+    mov cr3, eax
+    ; TODO: Check that protected mode was enabled.
+    ; Enable paging
+    mov eax, cr0
+    or eax, 0x1 << 31
+    mov cr0, eax
 
-    lea 2f, %eax
-    jmp *%eax
+    ; Update stack pointers
+    add esp, KERNEL_VIRT_OFFSET
+    add ebp, KERNEL_VIRT_OFFSET
 
-2:
-    # Remove PT identity mapping
-    movl $0, PD_PHYS
-    invlpg PT_PHYS
+    ; Fix return address on the stack
+    add dword [esp], KERNEL_VIRT_OFFSET
+
+    ; Continue execution of the function in the higher-half
+    lea eax, [.virtual_eip]
+    jmp eax
+
+.virtual_eip:
+    ; Remove PT identity mapping
+    mov dword [PADDR_PDIR], 0
+    invlpg [PADDR_PTABLE]
     ret
 
 
-# The kernel's entry point
-.global _start
-.type _start, @function
+; The kernel's entry point
+global _start:function (_start.end - _start)
 _start:
-    movl $STACKTOP_PHYS, %esp
-    movl $STACKTOP_PHYS, %ebp
+    mov esp, PADDR_STACKTOP
+    mov ebp, PADDR_STACKTOP
 
-    # Registers esi, edi contains number of free page table entries and the current page table position, respectevely.
-    movl $1023, %esi
-    movl $PT_PHYS, %edi
-
-    pushl %esi
-    pushl %edi
     call map_kernel
-    subl $8, %esp
-
-    test %eax, %eax
-    jz 1f
-
-    # Update esi, edi registers according to result.
-    subl %eax, %esi
-    movl $4, %edx
-    mull %edx
-    addl %eax, %edi
-
-    pushl %esi
-    pushl %edi
     call map_platform
-    subl $8, %esp
-
-    test %eax, %eax
-    jz 1f
-
     call enable_paging
 
-    # Update stack pointers
-    addl $CONF_KERNEL_RESIDE_ADDR, %esp
-    addl $CONF_KERNEL_RESIDE_ADDR, %ebp
-
-    call _init
+    extern i686_init
     call i686_init
 
-    # If platform code return control by some reason
     cli
-1:  hlt
-    jmp 1b
-.size _start, . - _start
+.hang:
+    hlt
+    jmp .hang
+.end:
