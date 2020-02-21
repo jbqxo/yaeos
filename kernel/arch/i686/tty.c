@@ -21,7 +21,7 @@ static void write_char(uint8_t c, vga_char_color color, uint_fast16_t x,
 
 void tty_scroll_down(void)
 {
-	for (uint_fast16_t y = 0; y < VGA_HEIGHT; y++) {
+	for (uint_fast16_t y = 0; y < VGA_HEIGHT - 1; y++) {
 		for (uint_fast16_t x = 0; x < VGA_WIDTH; x++) {
 			uint_fast16_t dst_i = y * VGA_WIDTH + x;
 			uint_fast16_t src_i = dst_i + VGA_WIDTH;
