@@ -72,8 +72,8 @@ void tty_write(const char *data, size_t size)
 
 void tty_writestring(const char *str)
 {
-    while(*str) {
-	tty_putchar(*str);
-	str++;
-    }
+	while (*str) {
+		tty_putchar(*str);
+		str++;
+	}
 }
