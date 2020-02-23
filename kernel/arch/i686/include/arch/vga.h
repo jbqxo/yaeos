@@ -4,7 +4,7 @@
 
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
-#define VGA_BUFFER_ADDR 0x00B80000
+#define VGA_BUFFER_ADDR 0x000B8000u
 
 typedef uint8_t vga_char_color;
 
