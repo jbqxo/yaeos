@@ -1,10 +1,10 @@
 #pragma once
 
+#include <stdint.h>
+
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
-#define VGA_BUFF_ADDR 0xB8000
-
-#include <stdint.h>
+#define VGA_BUFFER_ADDR 0x00B80000
 
 typedef uint8_t vga_char_color;
 
@@ -27,8 +27,8 @@ enum vga_color {
 	VGA_WHITE
 };
 
-const enum vga_color vga_fg_color = VGA_WHITE;
-const enum vga_color vga_bg_color = VGA_BLACK;
+#define VGA_DEFAULT_FG VGA_WHITE
+#define VGA_DEFAULT_BG VGA_BLACK
 
 static inline vga_char_color vga_mix_color(enum vga_color fg, enum vga_color bg)
 {
