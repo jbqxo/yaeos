@@ -8,7 +8,7 @@ CPPFLAGS += \
 
 FILES_REL_OBJ :=\
     $(addsuffix .o, \
-    $(shell $(FIND) lib -name '*.c' -or -name '*.S'))
+    $(shell $(FIND) lib -name '*.c' -or -name '*.nasm'))
 FILES_LIBC_OBJ := $(addprefix $(PREFIX_LIBC)/, $(FILES_REL_OBJ))
 FILES_LIBK_OBJ := $(addprefix $(PREFIX_LIBK)/, $(FILES_REL_OBJ))
 
@@ -53,16 +53,16 @@ $(PREFIX_LIBC)/%.c.o: $(CWD)/%.c | dirs_libc
 	$(info [libc] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libc__ -c $< -o $@
 
-$(PREFIX_LIBC)/%.S.o: $(CWD)/%.S | dirs_libc
-	$(info [libc] AS $@)
+$(PREFIX_LIBC)/%.nasm.o: $(CWD)/%.nasm | dirs_libc
+	$(info [libc] NASM $@)
 	@$(AS) -D__libc__ $< -o $@
 
 $(PREFIX_LIBK)/%.c.o: $(CWD)/%.c | dirs_libk
 	$(info [libk] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libk__ -c $< -o $@
 
-$(PREFIX_LIBK)/%.S.o: $(CWD)/%.S | dirs_libk
-	$(info [libk] AS $@)
+$(PREFIX_LIBK)/%.nasm.o: $(CWD)/%.nasm | dirs_libk
+	$(info [libk] NASM $@)
 	@$(AS) -D__libk__ $< -o $@
 
 $(PREFIX_LIBC)/%.c.d: $(CWD)/%.c | dirs_libc

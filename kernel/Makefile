@@ -23,7 +23,7 @@ PREFIX_KERNEL_ARCH := $(subst $(CWD), $(PREFIX_KERNEL), $(DIR_ARCH))
 include $(DIR_ARCH)/Makefile
 
 .PHONY: all clean prefix_dirs install-headers
-.SUFFIXES: .c .S .o .d
+.SUFFIXES: .c .nasm .o .d
 
 all: $(PREFIX_KERNEL)/kernel.bin install-headers
 
@@ -54,8 +54,8 @@ $(PREFIX_KERNEL)/%.c.o: $(CWD)/%.c | prefix_dirs
 	$(info [kernel] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(PREFIX_KERNEL)/%.S.o: $(CWD)/%.S | prefix_dirs
-	$(info [kernel] AS $@)
+$(PREFIX_KERNEL)/%.nasm.o: $(CWD)/%.nasm | prefix_dirs
+	$(info [kernel] NASM $@)
 	@$(AS) $< -o $@
 
 $(PREFIX_KERNEL)/%.c.d: $(CWD)/%.c | prefix_dirs
