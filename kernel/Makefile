@@ -62,4 +62,8 @@ $(PREFIX_KERNEL)/%.c.d: $(CWD)/%.c | prefix_dirs
 	$(info [kernel] MD $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -MM -MG -MT $(@:.d=.o) -MF $@ $<
 
+$(PREFIX_KERNEL)/%.nasm.d: $(CWD)/%.nasm | prefix_dirs
+	$(info [kernel] MD $@)
+	@$(AS) -MG -MT $(@:.d=.o) -MD $@ $<
+
 -include $(FILES_OBJ:.o=.d)

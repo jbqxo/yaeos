@@ -73,5 +73,13 @@ $(PREFIX_LIBK)/%.c.d: $(CWD)/%.c | dirs_libk
 	$(info [libk] MD $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libk__ -MM -MG -MT $(@:.d=.o) -MF $@ $<
 
+$(PREFIX_LIBC)/%.nasm.d: $(CWD)/%.nasm | dirs_libc
+	$(info [libc] MD $@)
+	@$(AS) -D__libc__ -MG -MT $(@:.d=.o) -MD $@ $<
+
+$(PREFIX_LIBK)/%.nasm.d: $(CWD)/%.nasm | dirs_libk
+	$(info [libk] MD $@)
+	@$(AS) -D__libk__ -MG -MT $(@:.d=.o) -MD $@ $<
+
 
 -include $(FILES_LIBC_OBJ:.o=.d) $(FILES_LIBK_OBJ:.o=.d)
