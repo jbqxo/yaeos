@@ -60,7 +60,6 @@ clean:
 	@$(MAKE) -C $(DIR_LIBC) clean
 	@$(MAKE) -C $(DIR_BOOT) clean
 	@$(RMRF) $(PREFIX_BUILD)
-	@$(RMRF) compile_commands.json
 
 compile_commands.json: clean
 	@compiledb --command-style --full-path -o $@ make all
