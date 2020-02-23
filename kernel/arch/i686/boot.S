@@ -1,8 +1,3 @@
-; TODO: Move these constants in a separate header
-; Constants
-%define KERNEL_VIRT_OFFSET 0xC0000000
-%define STACK_SIZE         16384 ; 16 KiB
-
 ; Constants for the multiboot header
 %define FLAG_ALIGN   (0x1 << 0)                  ; align loaded modules on page boundaries
 %define FLAG_MEMINFO (0x1 << 1)                  ; provide memory map
@@ -16,13 +11,16 @@ section .multiboot align=4
     dd FLAGS
     dd CHECKSUM
 
+; TODO: Move these constants in a separate header
+; Constants
+%define STACK_SIZE         16384 ; 16 KiB
+
 ; Preallocate space used for boot-time stack.
 section .bootstack write nobits align=16
 global bootstack_bottom:data, bootstack_top:data
 bootstack_bottom:
     resb STACK_SIZE
 bootstack_top:
-%define PADDR_STACKTOP     (bootstack_top - KERNEL_VIRT_OFFSET)
 
 ; Preallocate space used for boot-time paging.
 section .bss write nobits align=4096
@@ -34,11 +32,13 @@ boot_paging_pt:
 
 section .text
 
+extern _kernel_vma
 ; The kernel's entry point
 global _start:function (_start.end - _start)
 _start:
-    mov esp, PADDR_STACKTOP
-    mov ebp, PADDR_STACKTOP
+    mov esp, bootstack_top
+    sub esp, _kernel_vma
+    mov ebp, esp
 
     extern i686_init
     call i686_init

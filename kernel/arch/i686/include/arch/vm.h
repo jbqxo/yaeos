@@ -10,6 +10,7 @@ extern uint32_t boot_paging_pd[] asm("boot_paging_pd");
 extern char bootstack_top[] asm("bootstack_top");
 extern char bootstack_bottom[] asm("bootstack_bottom");
 
+extern const char kernel_vma[] asm("_kernel_vma");
 extern const char kernel_start[] asm("_kernel_start");
 extern const char kernel_end[] asm("_kernel_end");
 
@@ -24,6 +25,8 @@ extern char kernel_data_end[] asm("_kernel_data_end");
 
 extern char kernel_bss_start[] asm("_kernel_bss_start");
 extern char kernel_bss_end[] asm("_kernel_bss_end");
+
+#define CONF_KERNEL_RESIDE_ADDR ((uintptr_t)&kernel_vma[0])
 
 #define HIGH(addr) ((uintptr_t)(CONF_KERNEL_RESIDE_ADDR + (uintptr_t)(addr)))
 #define LOW(addr) ((uintptr_t)((uintptr_t)(addr) - CONF_KERNEL_RESIDE_ADDR))
