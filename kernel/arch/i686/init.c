@@ -25,7 +25,7 @@ static void map_addr_range(void *page_dir, const void *start, const void *end,
 {
 	uintptr_t paddr = (uintptr_t)start;
 	while (paddr < (uintptr_t)end) {
-		uintptr_t vaddr = CONF_KERNEL_RESIDE_ADDR + paddr;
+		uintptr_t vaddr = KERNEL_VMA + paddr;
 		vm_map(page_dir, (void *)vaddr, (void *)paddr, flags);
 		paddr += PLATFORM_PAGE_SIZE;
 	}
@@ -65,20 +65,20 @@ static void setup_boot_paging(void)
 			 VM_DIR_FLAG_PRESENT | VM_DIR_FLAG_RW);
 
 	// Map the kernel to higher half of address space
-	void *hh = vm_dir_entry_addr(boot_pd, (void *)CONF_KERNEL_RESIDE_ADDR);
+	void *hh = vm_dir_entry_addr(boot_pd, (void *)KERNEL_VMA);
 	vm_set_dir_entry(hh, boot_pt, VM_DIR_FLAG_PRESENT | VM_DIR_FLAG_RW);
 
 	map_kernel(boot_pd);
 	map_platform(boot_pd);
 
 	vm_paging_set(boot_pd);
-	vm_paging_enable(CONF_KERNEL_RESIDE_ADDR);
+	vm_paging_enable(KERNEL_VMA);
 
 	// It is important to do it in reverse order!
 	// Patch i686_init(...)
-	PATCH_FRAME(1, CONF_KERNEL_RESIDE_ADDR);
+	PATCH_FRAME(1, KERNEL_VMA);
 	// Patch setup_boot_paging(...)
-	PATCH_FRAME(0, CONF_KERNEL_RESIDE_ADDR);
+	PATCH_FRAME(0, KERNEL_VMA);
 
 	// Undo identity mapping
 	vm_set_dir_entry(boot_pd, 0x0, 0x0);

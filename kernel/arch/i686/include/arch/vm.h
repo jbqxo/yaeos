@@ -26,10 +26,10 @@ extern char kernel_data_end[] asm("_kernel_data_end");
 extern char kernel_bss_start[] asm("_kernel_bss_start");
 extern char kernel_bss_end[] asm("_kernel_bss_end");
 
-#define CONF_KERNEL_RESIDE_ADDR ((uintptr_t)&kernel_vma[0])
+#define KERNEL_VMA ((uintptr_t)&kernel_vma[0])
 
-#define HIGH(addr) ((uintptr_t)(CONF_KERNEL_RESIDE_ADDR + (uintptr_t)(addr)))
-#define LOW(addr) ((uintptr_t)((uintptr_t)(addr) - CONF_KERNEL_RESIDE_ADDR))
+#define HIGH(addr) ((uintptr_t)(KERNEL_VMA + (uintptr_t)(addr)))
+#define LOW(addr) ((uintptr_t)((uintptr_t)(addr) - KERNEL_VMA))
 
 enum VM_TABLE_FLAGS {
 	VM_TABLE_FLAG_PRESENT = 0x1 << 0,
