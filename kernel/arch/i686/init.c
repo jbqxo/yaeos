@@ -3,9 +3,11 @@
 #include <arch/vga.h>
 #include <arch/vm.h>
 #include <arch/platform.h>
+#include <arch/gdt.h>
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <string.h>
 
 // TODO: Maybe add some "smart" recursive macrosses to patch the stack automatically?
 // TODOO: Make sure my home address is hidden on GitHub after that. Just in case...
@@ -85,9 +87,62 @@ static void setup_boot_paging(void)
 	vm_tlb_flush();
 }
 
+static struct gdt_entry gdt_table[3];
+
+/**
+ * setup_gdt() - setup system's gdt with flat memory model.
+ */
+void setup_gdt(void)
+{
+	static const size_t LIMIT = 0xFFFFFFFF;
+
+	struct gdt_entry *null_descriptor = &gdt_table[0];
+	struct gdt_entry *code_descriptor = &gdt_table[1];
+	struct gdt_entry *data_descriptor = &gdt_table[2];
+
+	memset(null_descriptor, 0, sizeof(*null_descriptor));
+
+	code_descriptor->limit_low = LIMIT & 0xFFFF;
+	code_descriptor->limit_high = (LIMIT >> 0x10) & 0x0F;
+	code_descriptor->base_low = 0;
+	code_descriptor->base_high = 0;
+	code_descriptor->accessed = false;
+	code_descriptor->writable = false;
+	code_descriptor->direction_conforming = false;
+	code_descriptor->code = true;
+	code_descriptor->code_or_data = true;
+	code_descriptor->privelege = 0;
+	code_descriptor->present = true;
+	code_descriptor->must_be_false = false;
+	code_descriptor->size = true;
+	code_descriptor->granularity = true;
+
+	data_descriptor->limit_low = LIMIT & 0xFFFF;
+	data_descriptor->limit_high = (LIMIT >> 0x10) & 0x0F;
+	data_descriptor->base_low = 0;
+	data_descriptor->base_high = 0;
+	data_descriptor->accessed = false;
+	data_descriptor->writable = true;
+	data_descriptor->direction_conforming = false;
+	data_descriptor->code = false;
+	data_descriptor->code_or_data = true;
+	data_descriptor->privelege = 0;
+	data_descriptor->present = true;
+	data_descriptor->must_be_false = false;
+	data_descriptor->size = true;
+	data_descriptor->granularity = true;
+
+	struct gdt_ptr p = { .limit = sizeof(gdt_table) - 1,
+			     .base = (uint32_t)&gdt_table[0] };
+	ptrdiff_t code_offset = (uintptr_t)code_descriptor - (uintptr_t)&gdt_table[0];
+	ptrdiff_t data_offset = (uintptr_t)data_descriptor - (uintptr_t)&gdt_table[0];
+	set_gdt(&p, data_offset, code_offset);
+}
+
 void i686_init(void)
 {
 	setup_boot_paging();
+	setup_gdt();
 
 	tty_init();
 	size_t i = 0;
