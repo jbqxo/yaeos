@@ -55,4 +55,71 @@ struct gdt_ptr {
  * @data_offset - offset in the gdt table for data selector.
  * @code_offset - offset in the gdt table for code selector.
  */
-void set_gdt(struct gdt_ptr *table, uint16_t data_offset, uint16_t code_offset);
+void gdt_set_table(struct gdt_ptr *table, uint16_t data_offset, uint16_t code_offset);
+void boot_setup_gdt(void);
+
+enum gate_type {
+	GATE_TYPE_INTERRUPT_16 = 0x6,
+	GATE_TYPE_TRAP_16 = 0x7,
+	GATE_TYPE_INTERRUPT_32 = 0xE,
+	GATE_TYPE_TRAP_32 = 0xF
+};
+
+enum idt_flag {
+	IDT_FLAG_PRESENT = 0x1 << 3,
+	IDT_FLAG_RING_0 = 0x0 << 1,
+	IDT_FLAG_RING_1 = 0x1 << 1,
+	IDT_FLAG_RING_2 = 0x2 << 1,
+	IDT_FLAG_RING_3 = 0x3 << 1,
+	IDT_FLAG_STORAGE = 0x1 << 0
+};
+
+struct idt_entry {
+	uint16_t offset_low;
+	uint16_t seg_selector;
+	uint8_t must_be_0;
+	enum gate_type type : 4;
+	enum idt_flag flags : 4;
+	uint16_t offset_high;
+} __attribute__((packed));
+
+struct idt_ptr {
+	uint16_t limit;
+	uint32_t base;
+} __attribute__((packed));
+
+void idt_set_table(struct idt_ptr *table);
+void boot_setup_idt(void);
+
+// TODO: Is there better way to declare these?
+extern void irq0(void);
+extern void irq1(void);
+extern void irq2(void);
+extern void irq3(void);
+extern void irq4(void);
+extern void irq5(void);
+extern void irq6(void);
+extern void irq7(void);
+extern void irq8(void);
+extern void irq9(void);
+extern void irq10(void);
+extern void irq11(void);
+extern void irq12(void);
+extern void irq13(void);
+extern void irq14(void);
+extern void irq15(void);
+extern void irq16(void);
+extern void irq17(void);
+extern void irq18(void);
+extern void irq19(void);
+extern void irq20(void);
+extern void irq21(void);
+extern void irq22(void);
+extern void irq23(void);
+extern void irq24(void);
+extern void irq25(void);
+extern void irq26(void);
+extern void irq27(void);
+extern void irq28(void);
+extern void irq29(void);
+extern void irq30(void);

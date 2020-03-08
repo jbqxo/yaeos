@@ -1,7 +1,7 @@
 section .text
 
-global set_gdt:function (set_gdt.end - set_gdt)
-set_gdt:
+global gdt_set_table:function (gdt_set_table.end - gdt_set_table)
+gdt_set_table:
     ; Load GDT
     mov eax, dword [esp + 0x4]
     lgdt [eax]
@@ -21,5 +21,13 @@ set_gdt:
     retf
     .continue:
 
+    ret
+.end:
+
+
+global idt_set_table:function (idt_set_table.end - idt_set_table)
+idt_set_table:
+    mov eax, [esp + 4]
+    lidt [eax]
     ret
 .end:
