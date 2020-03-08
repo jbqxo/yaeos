@@ -1,4 +1,4 @@
-#include <kernel/tty.h>
+#include <kernel/kernel.h>
 
 #include <arch/vga.h>
 #include <arch/vm.h>
@@ -93,6 +93,5 @@ void i686_init(void)
 	boot_setup_gdt();
 	boot_setup_idt();
 
-	tty_init();
-	tty_writestring("The platform dependent init has finished\n");
+	kernel_init();
 }
