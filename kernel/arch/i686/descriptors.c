@@ -5,16 +5,16 @@
 #include <stddef.h>
 #include <string.h>
 
-static struct {
+static struct gdt_structure {
 	struct gdt_entry null_descriptor;
 	struct gdt_entry code_descriptor;
 	struct gdt_entry data_descriptor;
-} __attribute__((packed, aligned(8))) gdt_table;
+} __attribute__((packed, aligned(8))) GDT;
 
-static struct {
+static struct idt_structure {
 	struct idt_entry cpu_gates[32];
 	struct idt_entry system_gates[256 - 32];
-} __attribute__((packed, aligned(8))) idt_table;
+} __attribute__((packed, aligned(8))) IDT;
 
 /**
  * boot_setup_gdt() - setup system's gdt with flat memory model.
@@ -23,9 +23,9 @@ void boot_setup_gdt(void)
 {
 	static const size_t LIMIT = 0xFFFFFFFF;
 
-	struct gdt_entry *null_d = &gdt_table.null_descriptor;
-	struct gdt_entry *code_d = &gdt_table.code_descriptor;
-	struct gdt_entry *data_d = &gdt_table.data_descriptor;
+	struct gdt_entry *null_d = &GDT.null_descriptor;
+	struct gdt_entry *code_d = &GDT.code_descriptor;
+	struct gdt_entry *data_d = &GDT.data_descriptor;
 
 	memset(null_d, 0, sizeof(*null_d));
 
@@ -59,10 +59,9 @@ void boot_setup_gdt(void)
 	data_d->size = true;
 	data_d->granularity = true;
 
-	struct gdt_ptr p = { .limit = sizeof(gdt_table) - 1,
-			     .base = (uint32_t)&gdt_table };
-	ptrdiff_t code_offset = (uintptr_t)code_d - (uintptr_t)&gdt_table;
-	ptrdiff_t data_offset = (uintptr_t)data_d - (uintptr_t)&gdt_table;
+	struct gdt_ptr p = { .limit = sizeof(GDT) - 1, .base = (uint32_t)&GDT };
+	uint16_t code_offset = offsetof(struct gdt_structure, code_descriptor);
+	uint16_t data_offset = offsetof(struct gdt_structure, data_descriptor);
 	gdt_set_table(&p, data_offset, code_offset);
 }
 
@@ -80,44 +79,42 @@ static void idt_set_gate(struct idt_entry *e, void *offset, uint16_t selector,
 
 void boot_setup_idt(void)
 {
-	memset(&idt_table, 0, sizeof(idt_table));
+	memset(&IDT, 0, sizeof(IDT));
 	enum idt_flag flags = IDT_FLAG_PRESENT | IDT_FLAG_RING_0;
-	uint16_t selector =
-		(uint32_t)&gdt_table.code_descriptor - (uint32_t)&gdt_table;
+	uint16_t selector = offsetof(struct gdt_structure, code_descriptor);
 
-	idt_set_gate(&idt_table.cpu_gates[0], (void *)irq0, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[1], (void *)irq1, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[2], (void *)irq2, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[3], (void *)irq3, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[4], (void *)irq4, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[5], (void *)irq5, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[6], (void *)irq6, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[7], (void *)irq7, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[8], (void *)irq8, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[9], (void *)irq9, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[10], (void *)irq10, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[11], (void *)irq11, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[12], (void *)irq12, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[13], (void *)irq13, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[14], (void *)irq14, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[15], (void *)irq15, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[16], (void *)irq16, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[17], (void *)irq17, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[18], (void *)irq18, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[19], (void *)irq19, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[20], (void *)irq20, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[21], (void *)irq21, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[22], (void *)irq22, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[23], (void *)irq23, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[24], (void *)irq24, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[25], (void *)irq25, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[26], (void *)irq26, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[27], (void *)irq27, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[28], (void *)irq28, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[29], (void *)irq29, selector, flags);
-	idt_set_gate(&idt_table.cpu_gates[30], (void *)irq30, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[0], (void *)irq0, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[1], (void *)irq1, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[2], (void *)irq2, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[3], (void *)irq3, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[4], (void *)irq4, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[5], (void *)irq5, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[6], (void *)irq6, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[7], (void *)irq7, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[8], (void *)irq8, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[9], (void *)irq9, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[10], (void *)irq10, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[11], (void *)irq11, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[12], (void *)irq12, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[13], (void *)irq13, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[14], (void *)irq14, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[15], (void *)irq15, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[16], (void *)irq16, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[17], (void *)irq17, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[18], (void *)irq18, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[19], (void *)irq19, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[20], (void *)irq20, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[21], (void *)irq21, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[22], (void *)irq22, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[23], (void *)irq23, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[24], (void *)irq24, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[25], (void *)irq25, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[26], (void *)irq26, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[27], (void *)irq27, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[28], (void *)irq28, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[29], (void *)irq29, selector, flags);
+	idt_set_gate(&IDT.cpu_gates[30], (void *)irq30, selector, flags);
 
-	struct idt_ptr p = { .limit = sizeof(idt_table) - 1,
-			     .base = (uint32_t)&idt_table };
+	struct idt_ptr p = { .limit = sizeof(IDT) - 1, .base = (uint32_t)&IDT };
 	idt_set_table(&p);
 }
