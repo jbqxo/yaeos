@@ -6,6 +6,12 @@ CPPFLAGS += \
 	  -I$(CWD)/include \
 	  -I$(CWD)/arch/$(TARGET)/include
 
+CPPFLAGS_LIBC :=\
+	-D__libc__
+
+CPPFLAGS_LIBK :=\
+	-D__libk__
+
 FILES_REL_OBJ :=\
     $(addsuffix .o, \
     $(shell $(FIND) lib -name '*.c' -or -name '*.nasm'))
@@ -51,7 +57,7 @@ $(PREFIX_LIBK)/libk.a: $(FILES_LIBK_OBJ) | dirs_libk
 
 $(PREFIX_LIBC)/%.c.o: $(CWD)/%.c | dirs_libc
 	$(info [libc] CC $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libc__ -c $< -o $@
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBC) -c $< -o $@
 
 $(PREFIX_LIBC)/%.nasm.o: $(CWD)/%.nasm | dirs_libc
 	$(info [libc] NASM $@)
@@ -59,7 +65,7 @@ $(PREFIX_LIBC)/%.nasm.o: $(CWD)/%.nasm | dirs_libc
 
 $(PREFIX_LIBK)/%.c.o: $(CWD)/%.c | dirs_libk
 	$(info [libk] CC $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libk__ -c $< -o $@
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBK) -c $< -o $@
 
 $(PREFIX_LIBK)/%.nasm.o: $(CWD)/%.nasm | dirs_libk
 	$(info [libk] NASM $@)
@@ -67,11 +73,11 @@ $(PREFIX_LIBK)/%.nasm.o: $(CWD)/%.nasm | dirs_libk
 
 $(PREFIX_LIBC)/%.c.d: $(CWD)/%.c | dirs_libc
 	$(info [libc] MD $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libc__ -MM -MG -MT $(@:.d=.o) -MF $@ $<
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBC) -MM -MG -MT $(@:.d=.o) -MF $@ $<
 
 $(PREFIX_LIBK)/%.c.d: $(CWD)/%.c | dirs_libk
 	$(info [libk] MD $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libk__ -MM -MG -MT $(@:.d=.o) -MF $@ $<
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBK) -MM -MG -MT $(@:.d=.o) -MF $@ $<
 
 $(PREFIX_LIBC)/%.nasm.d: $(CWD)/%.nasm | dirs_libc
 	$(info [libc] MD $@)
