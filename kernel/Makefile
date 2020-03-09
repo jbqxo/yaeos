@@ -6,7 +6,7 @@ CFLAGS += \
 	  -nostdinc
 
 CPPFLAGS += \
-	    -D__kernel__ \
+	    -D__libk__ \
 	    -I$(CWD)/include \
 	    -I$(CWD)/arch/$(TARGET)/include \
 	    -I$(ROOT)/$(DIR_LIBC)/include \
