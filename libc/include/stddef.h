@@ -10,6 +10,6 @@ typedef long double  max_align_t;
 typedef uint8_t      wchar_t;
 
 #define NULL ((void*)0)
-#define offsetof(type, member_designator) ((size_t)(&(((type*)0)->member_designator)))
+#define offsetof(type, member) __builtin_offsetof(type, member)
 
 #endif // __i686__

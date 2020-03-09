@@ -78,7 +78,7 @@ clean:
 	@$(RMRF) $(PREFIX_BUILD)
 
 compile_commands.json: clean
-	@compiledb --command-style --full-path -o $@ make all
+	@compiledb --command-style -o $@ make all
 
 grub-iso: kernel libc | build_dir
 	$(info [general] make grub iso)
