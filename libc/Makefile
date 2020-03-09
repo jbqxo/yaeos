@@ -10,7 +10,9 @@ CPPFLAGS_LIBC :=\
 	-D__libc__
 
 CPPFLAGS_LIBK :=\
-	-D__libk__
+	-D__libk__ \
+	-I$(ROOT)/$(DIR_KERNEL)/include \
+	-I$(ROOT)/$(DIR_KERNEL)/arch/$(TARGET)/include
 
 FILES_REL_OBJ :=\
     $(addsuffix .o, \
