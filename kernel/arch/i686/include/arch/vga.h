@@ -27,6 +27,13 @@ enum vga_color {
 	VGA_WHITE
 };
 
+struct vga_state {
+	uint16_t *buffer;
+	uint_fast16_t row;
+	uint_fast16_t col;
+	uint8_t color;
+};
+
 #define VGA_DEFAULT_FG VGA_WHITE
 #define VGA_DEFAULT_BG VGA_BLACK
 
