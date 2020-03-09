@@ -66,7 +66,7 @@ static inline void *vm_table_entry_addr(void *table, void *vaddr)
 	// The table index consists of 21:12 bits of an address.
 	const uintptr_t MASK = 0x003FF000u;
 	uint32_t index = ((uintptr_t)vaddr & MASK) >> 12;
-	return table + index * 4;
+	return (void*)((uintptr_t)table + index * 4);
 }
 
 /**
@@ -81,7 +81,7 @@ static inline void *vm_dir_entry_addr(void *dir, void *vaddr)
 	// The directory index consists of 31:22 bits of an address.
 	const uintptr_t MASK = 0xFFC00000u;
 	uint32_t index = ((uintptr_t)vaddr & MASK) >> 22;
-	return dir + index * 4;
+	return (void*)((uintptr_t)dir + index * 4);
 }
 
 static inline void vm_tlb_flush(void)

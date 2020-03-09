@@ -39,10 +39,10 @@ struct vga_state {
 
 static inline vga_char_color vga_mix_color(enum vga_color fg, enum vga_color bg)
 {
-	return fg | bg << 4;
+	return (vga_char_color)(fg | bg << 4);
 }
 
 static inline uint16_t vga_char(unsigned char uc, vga_char_color color)
 {
-	return (uint16_t)uc | (uint16_t)color << 8;
+	return (uint16_t)uc | (uint16_t)(color << 8);
 }

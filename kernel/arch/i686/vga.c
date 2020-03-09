@@ -67,7 +67,7 @@ void tty_write(tty_descriptor_t desc, const char *data, size_t size)
 {
 	struct vga_state *s = desc;
 	for (size_t i = 0; i < size; i++) {
-		char c = data[i];
+		unsigned char c = (unsigned char)data[i];
 
 		if (c == '\n' || s->col == VGA_WIDTH) {
 			break_line(s);
