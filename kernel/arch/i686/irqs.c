@@ -25,5 +25,5 @@ struct registers {
 };
 
 void irq_handler(struct registers regs) {
-    tty_writestring("Received interrupt\n");
+    return;
 }
