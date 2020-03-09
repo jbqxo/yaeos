@@ -43,6 +43,22 @@ ifeq ($(TARGET), i686)
 endif
 export AR := $(CONFIG_TARGET)-ar
 
+# Compiler diagnostics
+# All of these diagnostics there for a reason right?
+export CFLAGS += -Weverything
+# These were reserved for us!
+export CFLAGS += -Wno-reserved-id-macro
+# What
+export CFLAGS += -Wno-language-extension-token
+# C++ is forbidden here
+export CFLAGS += -Wno-c++-compat
+# Clang doesn't like kerneldocs
+export CFLAGS += -Wno-documentation-unknown-command
+# I feel myself safer with this
+export CFLAGS += -Wno-packed
+# I know what I'm doing (I hope)
+export CFLAGS += -Wno-assign-enum
+
 # Basic commands
 export MKDIRP := mkdir -p
 export RMRF   := rm -rf
