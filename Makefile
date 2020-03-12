@@ -6,6 +6,7 @@ export DIR_KERNEL ?= kernel
 export DIR_LIBC   ?= libc
 export DIR_LIBK   ?= libk
 export DIR_BOOT   ?= boot
+export DIR_DEPS   ?= deps
 
 # Name of the build prefixes
 export PREFIX_BUILD  ?= $(shell pwd)/build
@@ -14,6 +15,8 @@ export PREFIX_KERNEL ?= $(PREFIX_BUILD)/$(DIR_KERNEL)
 export PREFIX_LIBC   ?= $(PREFIX_BUILD)/$(DIR_LIBC)
 export PREFIX_LIBK   ?= $(PREFIX_BUILD)/$(DIR_LIBK)
 export PREFIX_BOOT   ?= $(PREFIX_BUILD)/$(DIR_BOOT)
+export PREFIX_TESTS  ?= $(PREFIX_BUILD)/tests
+export PREFIX_DEPS   ?= $(PREFIX_BUILD)/$(DIR_DEPS)
 
 # General build flags
 export TARGET           ?= i686
@@ -37,11 +40,26 @@ ifeq ($(shell uname -s), Darwin)
 else
     export MAKE := make --no-print-directory
 endif
+
 ifeq ($(TARGET), i686)
-	export CC := i686-elf-gcc
-	export AS := nasm -felf32
-	export AR := i686-elf-ar
+# Default tools
+	export CC := gcc
+	export AS := nasm
+	exprot AR := ar
 	export CPPFLAGS := -D__i686__
+
+	ifneq ($(MAKECMDGOALS),test)
+		export CC := i686-elf-gcc
+		export AS := nasm -felf32
+		export AR := i686-elf-ar
+	endif
+endif
+
+# Thanks to Apple for deprecating i386.
+# If we are running tests right now, do not compile for i386.
+ifeq ($(MAKECMDGOALS),test)
+	export CFLAGS := $(filter-out -m32,$(CFLAGS))
+	export LDFLAGS := $(filter-out -m32,$(LDFLAGS))
 endif
 
 # Compiler diagnostics
@@ -54,7 +72,7 @@ export RMRF   := rm -rf
 export CPRP   := cp -R -p
 export FIND   := find
 
-.PHONY: all kernel libc run-qemu grub-iso
+.PHONY: all kernel libc run-qemu grub-iso deps test
 all: kernel libc grub-iso
 
 build_dir:
@@ -64,6 +82,7 @@ clean:
 	@$(MAKE) -C $(DIR_KERNEL) clean
 	@$(MAKE) -C $(DIR_LIBC) clean
 	@$(MAKE) -C $(DIR_BOOT) clean
+	@$(MAKE) -C $(DIR_DEPS) clean
 	@$(RMRF) $(PREFIX_BUILD)
 
 compile_commands.json: clean
@@ -80,6 +99,16 @@ kernel: libc | build_dir
 libc: | build_dir
 	$(info [general] make libc)
 	@$(MAKE) -C $(DIR_LIBC)
+
+deps: | build_dir
+	$(info [general] make deps)
+	@$(MAKE) -C $(DIR_DEPS)
+
+test: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
+test: deps | build_dir
+	$(info [general] make test)
+	@$(MAKE) -C $(DIR_LIBC) test
+	@$(MAKE) -C $(DIR_KERNEL) test
 
 run-qemu-debug: grub-iso
 	@qemu-system-i386 -s -S -curses -cdrom $(PREFIX_BUILD)/grub.iso

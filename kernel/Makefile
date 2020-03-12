@@ -13,10 +13,16 @@ CPPFLAGS += \
 	    -I$(ROOT)/$(DIR_LIBC)/arch/$(TARGET)/include
 LDFLAGS += -nostdlib -lgcc
 
+FILES_TESTS_OBJ :=\
+	$(addsuffix .o, \
+	$(shell $(FIND) kernel -name '*_tests.c'))
+
 FILES_OBJ :=\
-    $(addprefix $(PREFIX_KERNEL)/, \
-    $(addsuffix .o, \
-    $(shell $(FIND) kernel -name '*.c')))
+	$(addprefix $(PREFIX_KERNEL)/, \
+	$(filter-out $(FILES_TESTS_OBJ), \
+	$(addsuffix .o, \
+	$(shell $(FIND) kernel -name '*.c'))))
+
 
 DIR_ARCH := $(CWD)/arch/$(TARGET)
 PREFIX_KERNEL_ARCH := $(subst $(CWD), $(PREFIX_KERNEL), $(DIR_ARCH))
@@ -38,6 +44,8 @@ install-headers:
 clean:
 	$(info [kernel] Removing kernel prefix directory)
 	@$(RMRF) $(PREFIX_KERNEL)
+	$(info [kernel] Removing tests prefix directory)
+	@$(RMRF) $(PREFIX_TESTS)
 
 prefix_dirs:
 	@$(MKDIRP) $(dir $(FILES_OBJ))
@@ -65,5 +73,17 @@ $(PREFIX_KERNEL)/%.c.d: $(CWD)/%.c | prefix_dirs
 $(PREFIX_KERNEL)/%.nasm.d: $(CWD)/%.nasm | prefix_dirs
 	$(info [kernel] MD $@)
 	@$(AS) -MG -MT $(@:.d=.o) -MD $@ $<
+
+.SECONDEXPANSION:
+dirs_tests test: TESTS := $(addprefix $(PREFIX_TESTS)/kernel/, $(FILES_TESTS_OBJ))
+dirs_tests:
+	@$(MKDIRP) $(dir $(TESTS))
+
+test: $$(patsubst %.c.o,%, $$(TESTS)) | dirs_tests
+	@$(foreach t, $^, echo "[kernel.tests] Running $t"; $t;)
+
+$(PREFIX_TESTS)/kernel/%_tests: $(CWD)/%_tests.c $(CWD)/%.c $(PREFIX_DEPS)/unity/unity.o | dirs_tests
+	$(info [kernel.tests] CC $@)
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@
 
 -include $(FILES_OBJ:.o=.d)
