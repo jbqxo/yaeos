@@ -38,26 +38,15 @@ else
     export MAKE := make --no-print-directory
 endif
 ifeq ($(TARGET), i686)
-    export CC := clang --target=i686-pc-none-elf -march=i686
+	export CC := i686-elf-gcc
 	export AS := nasm -felf32
+	export AR := i686-elf-ar
+	export CPPFLAGS := -D__i686__
 endif
-export AR := $(CONFIG_TARGET)-ar
 
 # Compiler diagnostics
 # All of these diagnostics there for a reason right?
-export CFLAGS += -Weverything
-# These were reserved for us!
-export CFLAGS += -Wno-reserved-id-macro
-# What
-export CFLAGS += -Wno-language-extension-token
-# C++ is forbidden here
-export CFLAGS += -Wno-c++-compat
-# Clang doesn't like kerneldocs
-export CFLAGS += -Wno-documentation-unknown-command
-# I feel myself safer with this
-export CFLAGS += -Wno-packed
-# I know what I'm doing (I hope)
-export CFLAGS += -Wno-assign-enum
+export CFLAGS += -Wall
 
 # Basic commands
 export MKDIRP := mkdir -p
