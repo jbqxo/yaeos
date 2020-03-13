@@ -63,20 +63,24 @@ tty_descriptor_t tty_platform_get_descriptor(void)
 	return s;
 }
 
+void tty_putchar(tty_descriptor_t desc, char c)
+{
+	struct vga_state *s = desc;
+	if (c == '\n' || s->col == VGA_WIDTH) {
+		break_line(s);
+	}
+
+	if (isprint(c)) {
+		write_char(s, (unsigned char)c, s->color, s->col, s->row);
+		s->col++;
+	}
+}
+
 void tty_write(tty_descriptor_t desc, const char *data, size_t size)
 {
 	struct vga_state *s = desc;
 	for (size_t i = 0; i < size; i++) {
-		unsigned char c = (unsigned char)data[i];
-
-		if (c == '\n' || s->col == VGA_WIDTH) {
-			break_line(s);
-		}
-
-		if (isprint(c)) {
-			write_char(s, c, s->color, s->col, s->row);
-			s->col++;
-		}
+		tty_putchar(desc, data[i]);
 	}
 }
 
