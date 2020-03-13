@@ -1,9 +1,7 @@
 CWD := $(shell pwd)
 
 CFLAGS += \
-	  -ffreestanding \
-	  -fno-builtin \
-	  -nostdinc
+	  -ffreestanding
 
 CPPFLAGS += \
 	    -D__libk__ \
