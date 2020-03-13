@@ -80,8 +80,12 @@ dirs_tests:
 test: $$(patsubst %.c.o,%, $$(TESTS)) | dirs_tests
 	@$(foreach t, $^, echo "[kernel.tests] Running $t"; $t;)
 
-$(PREFIX_TESTS)/kernel/%_tests: $(CWD)/%_tests.c $(CWD)/%.c $(PREFIX_DEPS)/unity/unity.o | dirs_tests
+$(PREFIX_TESTS)/kernel/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
 	$(info [kernel.tests] CC $@)
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $^ -c -o $@
+
+$(PREFIX_TESTS)/kernel/%_tests: $(PREFIX_TESTS)/kernel/%_tests.c.o $(PREFIX_KERNEL)/%.c.o $(PREFIX_DEPS)/unity/unity.o | dirs_tests
+	$(info [kernel.tests] LD $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@
 
 -include $(FILES_OBJ:.o=.d)

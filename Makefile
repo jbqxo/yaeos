@@ -28,7 +28,6 @@ export CPPFLAGS_DEBUG   :=
 export CPPFLAGS_RELEASE := -DNDEBUG
 export CPPFLAGS         += $(if $(findstring 1, $(NDEBUG)), $(CPPFLAGS_RELEASE), $(CPPFLAGS_DEBUG))
 
-# TODO(Maxim Lyapin): Try to move to the lld linker
 export LDFLAGS_DEBUG   :=
 export LDFLAGS_RELEASE :=
 export LDFLAGS         += -m32 \
@@ -42,24 +41,12 @@ else
 endif
 
 ifeq ($(TARGET), i686)
-# Default tools
-	export CC := gcc
-	export AS := nasm
-	exprot AR := ar
 	export CPPFLAGS := -D__i686__
-
 	ifneq ($(MAKECMDGOALS),test)
 		export CC := i686-elf-gcc
 		export AS := nasm -felf32
 		export AR := i686-elf-ar
 	endif
-endif
-
-# Thanks to Apple for deprecating i386.
-# If we are running tests right now, do not compile for i386.
-ifeq ($(MAKECMDGOALS),test)
-	export CFLAGS := $(filter-out -m32,$(CFLAGS))
-	export LDFLAGS := $(filter-out -m32,$(LDFLAGS))
 endif
 
 # Compiler diagnostics
@@ -73,7 +60,7 @@ export CPRP   := cp -R -p
 export FIND   := find
 
 .PHONY: all kernel libc run-qemu grub-iso deps test
-all: kernel libc grub-iso
+all: kernel libc grub-iso test
 
 build_dir:
 	@$(MKDIRP) $(PREFIX_BUILD)
@@ -100,13 +87,19 @@ libc: | build_dir
 	$(info [general] make libc)
 	@$(MAKE) -C $(DIR_LIBC)
 
-deps: | build_dir
-	$(info [general] make deps)
-	@$(MAKE) -C $(DIR_DEPS)
-
+# Use host compiler
+test: export CC := gcc
+test: export AS := nasm
+test: export AR := ar
+# Thanks to Apple for deprecating i386.
+# If we are running tests right now, do not compile for i386.
+test: export CFLAGS := $(filter-out -m32,$(CFLAGS))
+test: export LDFLAGS := $(filter-out -m32,$(LDFLAGS))
+# Add unity headers
 test: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
-test: deps | build_dir
+test: deps | build_dir	
 	$(info [general] make test)
+	@$(MAKE) -C $(DIR_DEPS) unity
 	@$(MAKE) -C $(DIR_LIBC) test
 	@$(MAKE) -C $(DIR_KERNEL) test
 

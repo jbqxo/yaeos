@@ -108,12 +108,20 @@ dirs_tests:
 test: $$(TESTS_LIBC) $$(TESTS_LIBK) | dirs_tests
 	@$(foreach t,$^, echo "[lib.tests] Running $t"; $t;)
 
-$(PREFIX_TESTS)/libc/%_tests: $(CWD)/%_tests.c $(CWD)/%.c $(PREFIX_DEPS)/unity/unity.o | dirs_tests
+$(PREFIX_TESTS)/libc/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
 	$(info [libc.tests] CC $@)
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBC) $^ -c -o $@
+
+$(PREFIX_TESTS)/libk/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
+	$(info [libk.tests] CC $@)
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBK) $^ -c -o $@
+
+$(PREFIX_TESTS)/libc/%_tests: $(PREFIX_TESTS)/libc/%_tests.c.o $(PREFIX_LIBC)/%.c.o $(PREFIX_DEPS)/unity/unity.o | dirs_tests
+	$(info [libc.tests] LD $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBC) $^ -o $@
 
-$(PREFIX_TESTS)/libk/%_tests: $(CWD)/%_tests.c $(CWD)/%.c $(PREFIX_DEPS)/unity/unity.o | dirs_tests
-	$(info [libk.tests] CC $@)
+$(PREFIX_TESTS)/libk/%_tests: $(PREFIX_TESTS)/libk/%_tests.c.o $(PREFIX_LIBK)/%.c.o $(PREFIX_DEPS)/unity/unity.o | dirs_tests
+	$(info [libk.tests] LD $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBK) $^ -o $@
 
 -include $(FILES_LIBC_OBJ:.o=.d) $(FILES_LIBK_OBJ:.o=.d)
