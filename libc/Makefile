@@ -109,11 +109,11 @@ test: test_libc test_libk
 
 test_libk:  $$(TESTS_LIBK) | dirs_tests
 	$(info [libk] Running tests for kernel-space)
-	@$(foreach t,$^, echo "[libk.tests] Running $t"; $t;)
+	@$(foreach t,$^, echo "[libk.tests] Running $t"; $t || true;)
 
 test_libc: $$(TESTS_LIBC) | dirs_tests
 	$(info [libc] Running tests for user-space)
-	@$(foreach t,$^, echo "[libc.tests] Running $t"; $t;)
+	@$(foreach t,$^, echo "[libc.tests] Running $t"; $t || true;)
 
 $(PREFIX_TESTS)/libc/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
 	$(info [libc.tests] CC $@)
