@@ -27,7 +27,7 @@ FILES_LIBK_OBJ := $(addprefix $(PREFIX_LIBK)/, $(FILES_REL_OBJ))
 DIR_ARCH := $(CWD)/arch/$(TARGET)
 include $(DIR_ARCH)/Makefile
 
-.PHONY: clean dirs_libc dirs_libk dirs_tests all install-headers test
+.PHONY: clean dirs_libc dirs_libk dirs_tests all install-headers test test_libc test_libk
 
 all: $(PREFIX_LIBC)/libc.a $(PREFIX_LIBK)/libk.a install-headers
 
@@ -96,17 +96,24 @@ $(PREFIX_LIBK)/%.nasm.d: $(CWD)/%.nasm | dirs_libk
 	@$(AS) -D__libk__ -MG -MT $(@:.d=.o) -MD $@ $<
 
 .SECONDEXPANSION:
-dirs_tests test: TESTS := $(patsubst %.c.o,%,$(FILES_TESTS_OBJ))
-dirs_tests test: TESTS_LIBC := $(addprefix libc/, $(TESTS))
-dirs_tests test: TESTS_LIBK := $(addprefix libk/, $(TESTS))
-dirs_tests test: TESTS_LIBC := $(addprefix $(PREFIX_TESTS)/, $(TESTS_LIBC))
-dirs_tests test: TESTS_LIBK := $(addprefix $(PREFIX_TESTS)/, $(TESTS_LIBK))
+dirs_tests test_libk test_libc: TESTS := $(patsubst %.c.o,%,$(FILES_TESTS_OBJ))
+dirs_tests test_libc: TESTS_LIBC := $(addprefix libc/, $(TESTS))
+dirs_tests test_libk: TESTS_LIBK := $(addprefix libk/, $(TESTS))
+dirs_tests test_libc: TESTS_LIBC := $(addprefix $(PREFIX_TESTS)/, $(TESTS_LIBC))
+dirs_tests test_libk: TESTS_LIBK := $(addprefix $(PREFIX_TESTS)/, $(TESTS_LIBK))
 dirs_tests:
 	$(info [libk.tests] Creating dir tree)
 	$(info [libc.tests] Creating dir tree)
 	@$(MKDIRP) $(dir $(TESTS_LIBC) $(TESTS_LIBK))
-test: $$(TESTS_LIBC) $$(TESTS_LIBK) | dirs_tests
-	@$(foreach t,$^, echo "[lib.tests] Running $t"; $t;)
+test: test_libc test_libk
+
+test_libk:  $$(TESTS_LIBK) | dirs_tests
+	$(info [libk] Running tests for kernel-space)
+	@$(foreach t,$^, echo "[libk.tests] Running $t"; $t;)
+
+test_libc: $$(TESTS_LIBC) | dirs_tests
+	$(info [libc] Running tests for user-space)
+	@$(foreach t,$^, echo "[libc.tests] Running $t"; $t;)
 
 $(PREFIX_TESTS)/libc/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
 	$(info [libc.tests] CC $@)
