@@ -66,11 +66,11 @@ $(PREFIX_KERNEL)/%.nasm.o: $(CWD)/%.nasm | prefix_dirs
 
 $(PREFIX_KERNEL)/%.c.d: $(CWD)/%.c | prefix_dirs
 	$(info [kernel] MD $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) -MM -MG -MT $(@:.d=.o) -MF $@ $<
+	@$(CC) $(CFLAGS) $(CPPFLAGS) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
 $(PREFIX_KERNEL)/%.nasm.d: $(CWD)/%.nasm | prefix_dirs
 	$(info [kernel] MD $@)
-	@$(AS) -MG -MT $(@:.d=.o) -MD $@ $<
+	@$(AS) -MG -MT $(@:.d=.o) -MD $@ $< -o /dev/null
 
 .SECONDEXPANSION:
 dirs_tests test: TESTS := $(addprefix $(PREFIX_TESTS)/kernel/, $(FILES_TESTS_OBJ))

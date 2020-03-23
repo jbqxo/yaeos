@@ -81,19 +81,19 @@ $(PREFIX_LIBK)/%.nasm.o: $(CWD)/%.nasm | dirs_libk
 
 $(PREFIX_LIBC)/%.c.d: $(CWD)/%.c | dirs_libc
 	$(info [libc] MD $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBC) -MM -MG -MT $(@:.d=.o) -MF $@ $<
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBC) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
 $(PREFIX_LIBK)/%.c.d: $(CWD)/%.c | dirs_libk
 	$(info [libk] MD $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBK) -MM -MG -MT $(@:.d=.o) -MF $@ $<
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBK) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
 $(PREFIX_LIBC)/%.nasm.d: $(CWD)/%.nasm | dirs_libc
 	$(info [libc] MD $@)
-	@$(AS) -D__libc__ -MG -MT $(@:.d=.o) -MD $@ $<
+	@$(AS) -D__libc__ -MG -MT $(@:.d=.o) -MD $@ $< -o /dev/null
 
 $(PREFIX_LIBK)/%.nasm.d: $(CWD)/%.nasm | dirs_libk
 	$(info [libk] MD $@)
-	@$(AS) -D__libk__ -MG -MT $(@:.d=.o) -MD $@ $<
+	@$(AS) -D__libk__ -MG -MT $(@:.d=.o) -MD $@ $< -o /dev/null
 
 .SECONDEXPANSION:
 dirs_tests test_libk test_libc: TESTS := $(patsubst %.c.o,%,$(FILES_TESTS_OBJ))
