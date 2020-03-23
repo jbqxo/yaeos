@@ -72,9 +72,6 @@ clean:
 	@$(MAKE) -C $(DIR_DEPS) clean
 	@$(RMRF) $(PREFIX_BUILD)
 
-compile_commands.json: clean
-	@compiledb --command-style -o $@ make all
-
 grub-iso: kernel libc | build_dir
 	$(info [general] make grub iso)
 	@$(MAKE) -C $(DIR_BOOT) $(PREFIX_BUILD)/grub.iso
@@ -102,9 +99,3 @@ test: deps | build_dir
 	@$(MAKE) -C $(DIR_DEPS) unity
 	@$(MAKE) -C $(DIR_LIBC) test
 	@$(MAKE) -C $(DIR_KERNEL) test
-
-run-qemu-debug: grub-iso
-	@qemu-system-i386 -s -S -cdrom $(PREFIX_BUILD)/grub.iso
-
-run-qemu: grub-iso
-	@qemu-system-i386 -no-reboot -cdrom $(PREFIX_BUILD)/grub.iso
