@@ -1,101 +1,38 @@
 export ROOT := $(shell pwd)
 
-# Names of the base directories
-export DIR_ISODIR ?= isodir
-export DIR_KERNEL ?= kernel
-export DIR_LIBC   ?= libc
-export DIR_LIBK   ?= libk
-export DIR_BOOT   ?= boot
-export DIR_DEPS   ?= deps
-
-# Name of the build prefixes
-export PREFIX_BUILD  ?= $(shell pwd)/build
-export PREFIX_ISODIR ?= $(PREFIX_BUILD)/$(DIR_ISODIR)
-export PREFIX_KERNEL ?= $(PREFIX_BUILD)/$(DIR_KERNEL)
-export PREFIX_LIBC   ?= $(PREFIX_BUILD)/$(DIR_LIBC)
-export PREFIX_LIBK   ?= $(PREFIX_BUILD)/$(DIR_LIBK)
-export PREFIX_BOOT   ?= $(PREFIX_BUILD)/$(DIR_BOOT)
-export PREFIX_TESTS  ?= $(PREFIX_BUILD)/tests
-export PREFIX_DEPS   ?= $(PREFIX_BUILD)/$(DIR_DEPS)
-
-# General build flags
-export TARGET           ?= i686
-export CFLAGS_DEBUG     := -O0 -g
-export CFLAGS_RELEASE   := -O2
-export CFLAGS           += -std=gnu18 -m32 \
-    $(if $(findstring 1, $(NDEBUG)), $(CFLAGS_RELEASE), $(CFLAGS_DEBUG))
-export CPPFLAGS_DEBUG   :=
-export CPPFLAGS_RELEASE := -DNDEBUG
-export CPPFLAGS         += $(if $(findstring 1, $(NDEBUG)), $(CPPFLAGS_RELEASE), $(CPPFLAGS_DEBUG))
-
-export LDFLAGS_DEBUG   :=
-export LDFLAGS_RELEASE :=
-export LDFLAGS         += -m32 \
-    $(if $(findstring 1, $(NDEBUG)), $(LDFLAGS_RELEASE), $(LDFLAGS_DEBUG))
-
-# Compilation toolchain
-ifeq ($(shell uname -s), Darwin)
-    export MAKE := gmake --no-print-directory
-else
-    export MAKE := make --no-print-directory
-endif
-
-ifeq ($(TARGET), i686)
-	export CPPFLAGS := -D__i686__
-	ifneq ($(MAKECMDGOALS),test)
-		export CC := i686-elf-gcc
-		export AS := nasm -felf32
-		export AR := i686-elf-ar
-	endif
-endif
-
-# Compiler diagnostics
-# All of these diagnostics there for a reason right?
-export CFLAGS += -Wall
-
-# Basic commands
-export MKDIRP := mkdir -p
-export RMRF   := rm -rf
-export CPRP   := cp -R -p
-export FIND   := find
+include conf.mk
 
 .PHONY: all kernel libc run-qemu grub-iso deps test
-all: kernel libc grub-iso test
+
+all: kernel libc grub-iso test build_dir
 
 build_dir:
-	@$(MKDIRP) $(PREFIX_BUILD)
+	@$(MKDIRP) $(BUILDDIR_BUILD)
 
 clean:
 	@$(MAKE) -C $(DIR_KERNEL) clean
 	@$(MAKE) -C $(DIR_LIBC) clean
 	@$(MAKE) -C $(DIR_BOOT) clean
 	@$(MAKE) -C $(DIR_DEPS) clean
-	@$(RMRF) $(PREFIX_BUILD)
+	@$(RMRF) $(BUILDDIR_BUILD)
 
 grub-iso: kernel libc | build_dir
-	$(info [general] make grub iso)
-	@$(MAKE) -C $(DIR_BOOT) $(PREFIX_BUILD)/grub.iso
+	$(info [build] make grub iso)
+	@$(MAKE) -C $(DIR_BOOT) $(BUILDDIR_BUILD)/grub.iso
 
 kernel: libc | build_dir
-	$(info [general] make kernel)
+	$(info [build] make kernel)
 	@$(MAKE) -C $(DIR_KERNEL)
 
 libc: | build_dir
-	$(info [general] make libc)
+	$(info [build] make libc)
 	@$(MAKE) -C $(DIR_LIBC)
 
-# Use host compiler
-test: export CC := gcc
-test: export AS := nasm
-test: export AR := ar
-# Thanks to Apple for deprecating i386.
-# If we are running tests right now, do not compile for i386.
-test: export CFLAGS := $(filter-out -m32,$(CFLAGS))
-test: export LDFLAGS := $(filter-out -m32,$(LDFLAGS))
 # Add unity headers
-test: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
-test: deps | build_dir	
-	$(info [general] make test)
+test: export BUILD_TEST = 1
+test: export BUILDDIR_BUILD = $(ROOT)/build/test
+test: clean deps | build_dir
+	$(info [build] make test)
 	@$(MAKE) -C $(DIR_DEPS) unity
 	@$(MAKE) -C $(DIR_LIBC) test
 	@$(MAKE) -C $(DIR_KERNEL) test

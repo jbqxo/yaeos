@@ -1,21 +1,23 @@
 CWD := $(shell pwd)
+ROOT := $(realpath $(CWD)/..)
+include $(ROOT)/conf.mk
 
-# Suppress all warnings
+# Suppress all warnings from dependencies
 CFLAGS += -w
 
-.PHONY: print all unity
+.PHONY: print all unity clean
 
 all: unity
 
-unity: $(PREFIX_DEPS)/unity/unity.o
+unity: $(BUILDDIR_DEPS)/unity/unity.o
 
 prefix_dirs:
-	@$(MKDIRP) $(PREFIX_DEPS)/unity
+	@$(MKDIRP) $(BUILDDIR_DEPS)/unity
 
-$(PREFIX_DEPS)/unity/%.o:	$(CWD)/unity/src/%.c | prefix_dirs
-	$(info [deps.unity] CC $@)
+$(BUILDDIR_DEPS)/unity/%.o:	$(CWD)/unity/src/%.c | prefix_dirs
+	$(info [deps.unity] CC $@ $(BUILD_TEST))
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 clean:
 	$(info [deps] Removing dependencies prefix directory)
-	@$(RMRF) $(PREFIX_DEPS)
+	@$(RMRF) $(BUILDDIR_DEPS)

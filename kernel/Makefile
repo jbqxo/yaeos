@@ -1,91 +1,115 @@
 CWD := $(shell pwd)
+ROOT := $(realpath $(CWD)/..)
+include ../conf.mk
+.SECONDEXPANSION:
+.SUFFIXES:
+.PHONY: all clean prefix_dirs install-headers
 
-CFLAGS += \
-	  -ffreestanding
+DIR_ARCH := arch/$(TARGET)
+BUILDDIR_KERNEL_ARCH := $(BUILDDIR_KERNEL)/$(DIR_ARCH)
 
 CPPFLAGS += \
-	    -D__libk__ \
-	    -I$(CWD)/include \
-	    -I$(CWD)/arch/$(TARGET)/include \
-	    -I$(ROOT)/$(DIR_LIBC)/include \
-	    -I$(ROOT)/$(DIR_LIBC)/arch/$(TARGET)/include
-LDFLAGS += -nostdlib -lgcc
+        -D__libk__ \
+        -I$(CWD)/include \
+        -I$(CWD)/arch/$(TARGET)/include \
+        -I$(ROOT)/$(DIR_LIBC)/include \
+        -I$(ROOT)/$(DIR_LIBC)/arch/$(TARGET)/include
+LDFLAGS += -nostdlib
 
-FILES_TESTS_OBJ :=\
-	$(addsuffix .o, \
-	$(shell $(FIND) kernel -name '*_tests.c'))
-
-FILES_OBJ :=\
-	$(addprefix $(PREFIX_KERNEL)/, \
-	$(filter-out $(FILES_TESTS_OBJ), \
-	$(addsuffix .o, \
-	$(shell $(FIND) kernel -name '*.c'))))
-
-
-DIR_ARCH := $(CWD)/arch/$(TARGET)
-PREFIX_KERNEL_ARCH := $(subst $(CWD), $(PREFIX_KERNEL), $(DIR_ARCH))
 include $(DIR_ARCH)/Makefile
 
-.PHONY: all clean prefix_dirs install-headers
-.SUFFIXES: .c .nasm .o .d
+FILES_TESTS_OBJ :=\
+    $(addsuffix .o, \
+    $(shell $(FIND) * -name '*_tests.c'))
 
-all: $(PREFIX_KERNEL)/kernel.bin install-headers
+FILES_OBJ :=\
+    $(filter-out $(FILES_TESTS_OBJ) $(FILES_OBJ_ARCH_BEGIN) $(FILES_OBJ_ARCH_END) $(FILES_OBJ_ARCH), \
+    $(addsuffix .o, \
+    $(shell $(FIND) * -name '*.c')))
+
+
+###### Phony rules
+
+all: $(BUILDDIR_KERNEL)/kernel.bin install-headers
 
 install-headers:
 	$(info [kernel] Copying headers to the build directory)
-	@$(MKDIRP) $(PREFIX_KERNEL)/include
-	@$(CPRP) $(CWD)/include/. $(PREFIX_KERNEL)/include/.
+	@$(MKDIRP) $(BUILDDIR_KERNEL)/include
+	@$(CPRP) $(CWD)/include/. $(BUILDDIR_KERNEL)/include/.
 	$(info [kernel] Copying platform-dependent headers ($(TARGET)) to the build directory)
-	@$(MKDIRP) $(PREFIX_KERNEL)/include/arch
-	@$(CPRP) $(CWD)/arch/$(TARGET)/include/. $(PREFIX_KERNEL)/include/.
+	@$(MKDIRP) $(BUILDDIR_KERNEL)/include/arch
+	@$(CPRP) $(CWD)/arch/$(TARGET)/include/. $(BUILDDIR_KERNEL)/include/.
+
+prefix_dirs $(BUILDDIR_KERNEL)/kernel.bin: FILES_OBJ := $(FILES_OBJ_ARCH_BEGIN) \
+    $(FILES_OBJ_ARCH) \
+    $(FILES_OBJ) \
+    $(FILES_OBJ_ARCH_END)
+prefix_dirs $(BUILDDIR_KERNEL)/kernel.bin: FILES_OBJ := $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ))
 
 clean:
 	$(info [kernel] Removing kernel prefix directory)
-	@$(RMRF) $(PREFIX_KERNEL)
+	@$(RMRF) $(BUILDDIR_KERNEL)
 	$(info [kernel] Removing tests prefix directory)
-	@$(RMRF) $(PREFIX_TESTS)
+	@$(RMRF) $(BUILDDIR_TESTS)
 
 prefix_dirs:
 	@$(MKDIRP) $(dir $(FILES_OBJ))
 
-$(PREFIX_KERNEL)/kernel.bin: $(FILES_OBJ) $(DIR_ARCH)/linker.ld $(PREFIX_LIBK)/libk.a
+###### Kernel rules
+
+$(BUILDDIR_KERNEL)/kernel.bin: $$(FILES_OBJ) $(DIR_ARCH)/linker.ld $(BUILDDIR_LIBK)/libk.a
 	$(info [kernel] LD $@)
-	@$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-T,$(DIR_ARCH)/linker.ld $(FILES_OBJ) $(PREFIX_LIBK)/libk.a -o $@
+	@$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-T,$(DIR_ARCH)/linker.ld $(FILES_OBJ) $(BUILDDIR_LIBK)/libk.a -o $@
 
-$(PREFIX_KERNEL_ARCH)/crtbegin.o $(PREFIX_KERNEL_ARCH)/crtend.o: | prefix_dirs
-	$(info [kernel] Copy $(notdir $@) to the build directory)
-	@CRT_O=`$(CC) $(CFLAGS) $(LDFLAGS) -print-file-name=$(@F)` && cp "$$CRT_O" $@
-
-$(PREFIX_KERNEL)/%.c.o: $(CWD)/%.c | prefix_dirs
+$(BUILDDIR_KERNEL)/%.c.o: CFLAGS += $(CFLAGS_COMMON) -ffreestanding
+$(BUILDDIR_KERNEL)/%.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
+$(BUILDDIR_KERNEL)/%.c.o: $(CWD)/%.c | prefix_dirs
 	$(info [kernel] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(PREFIX_KERNEL)/%.nasm.o: $(CWD)/%.nasm | prefix_dirs
+$(BUILDDIR_KERNEL)/%.nasm.o: $(CWD)/%.nasm | prefix_dirs
 	$(info [kernel] NASM $@)
-	@$(AS) $< -o $@
+	@$(NASM) $< -o $@
 
-$(PREFIX_KERNEL)/%.c.d: $(CWD)/%.c | prefix_dirs
-	$(info [kernel] MD $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
+###### Tests rules
 
-$(PREFIX_KERNEL)/%.nasm.d: $(CWD)/%.nasm | prefix_dirs
-	$(info [kernel] MD $@)
-	@$(AS) -MG -MT $(@:.d=.o) -MD $@ $< -o /dev/null
-
-.SECONDEXPANSION:
-dirs_tests test: TESTS := $(addprefix $(PREFIX_TESTS)/kernel/, $(FILES_TESTS_OBJ))
+dirs_tests test: FILES_TESTS_OBJ := $(addprefix $(BUILDDIR_TESTS)/kernel/, $(FILES_TESTS_OBJ))
 dirs_tests:
-	@$(MKDIRP) $(dir $(TESTS))
+	@$(MKDIRP) $(dir $(FILES_TESTS_OBJ))
+
+$(BUILDDIR_TESTS)/kernel/%_tests.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
 
 test: $$(patsubst %.c.o,%, $$(TESTS)) | dirs_tests
 	@$(foreach t, $^, echo "[kernel.tests] Running $t"; $t;)
 
-$(PREFIX_TESTS)/kernel/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
+$(BUILDDIR_TESTS)/kernel/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
 	$(info [kernel.tests] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $^ -c -o $@
 
-$(PREFIX_TESTS)/kernel/%_tests: $(PREFIX_TESTS)/kernel/%_tests.c.o $(PREFIX_KERNEL)/%.c.o $(PREFIX_DEPS)/unity/unity.o | dirs_tests
+$(BUILDDIR_TESTS)/kernel/%_tests: $(BUILDDIR_TESTS)/kernel/%_tests.c.o $(BUILDDIR_KERNEL)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
 	$(info [kernel.tests] LD $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@
 
--include $(FILES_OBJ:.o=.d)
+###### Dependencies rules
+
+$(BUILDDIR_KERNEL)/%.c.d: $(CWD)/%.c | prefix_dirs
+	$(info [kernel] MD $@)
+	@$(CC) $(CFLAGS) $(CPPFLAGS) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
+
+$(BUILDDIR_KERNEL)/%.nasm.d: $(CWD)/%.nasm | prefix_dirs
+	$(info [kernel] MD $@)
+	@$(NASM) -MG -MT $(@:.d=.o) -MD $@ $< -o /dev/null
+
+$(BUILDDIR_LIBK)/libk.a:
+	$(error You need to build libk first)
+
+$(BUILDDIR_DEPS)/unity/unity.o:
+	$(error You need to build unity framework first)
+
+$(BUILDDIR_KERNEL_ARCH)/crtbegin.o $(BUILDDIR_KERNEL_ARCH)/crtend.o: | prefix_dirs
+	$(info [kernel] Copy $(notdir $@) to the build directory)
+	@CRT_O=`$(CC) $(CFLAGS) $(LDFLAGS) -print-file-name=$(@F)` && cp "$$CRT_O" $@
+
+ifneq ($(MAKECMDGOALS),clean)
+    -include $(FILES_OBJ:.o=.d)
+endif

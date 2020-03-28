@@ -1,28 +1,18 @@
-CFLAGS +=
-CPPFLAGS +=
-LDFLAGS +=
+CFLAGS_ARCH +=
+CPPFLAGS_ARCH +=
+LDFLAGS_ARCH +=
 
-FILES_OBJ_CRT_BEGIN := \
-    $(PREFIX_KERNEL_ARCH)/crti.o \
-    $(PREFIX_KERNEL_ARCH)/crtbegin.o
-FILES_OBJ_CRT_END := \
-    $(PREFIX_KERNEL_ARCH)/crtend.o \
-    $(PREFIX_KERNEL_ARCH)/crtn.o
-FILES_OBJ_CRT_BEGIN :=
-FILES_OBJ_CRT_END :=
+FILES_OBJ_ARCH_BEGIN := \
+    $(DIR_ARCH)/crti.nasm.o \
+    $(DIR_ARCH)/crtbegin.o
+FILES_OBJ_ARCH_END := \
+    $(DIR_ARCH)/crtend.o \
+    $(DIR_ARCH)/crtn.nasm.o
 
 # Gather all source files in the directory
 # Change their suffixes to *.o
 # Remove anything related to CRT
 FILES_OBJ_ARCH := \
-    $(filter-out $(FILES_OBJ_CRT_BEGIN) $(FILES_OBJ_CRT_END),\
-    $(subst $(CWD)/, $(PREFIX_KERNEL)/,\
+    $(filter-out $(FILES_OBJ_ARCH_BEGIN) $(FILES_OBJ_ARCH_END),\
     $(addsuffix .o, \
-    $(shell $(FIND) $(DIR_ARCH) -name '*.c' -or -name '*.nasm'))))
-
-# Properly reorder TU files
-FILES_OBJ := \
-    $(FILES_OBJ_CRT_BEGIN) \
-    $(FILES_OBJ_ARCH) \
-    $(FILES_OBJ) \
-    $(FILES_OBJ_CRT_END)
+    $(shell $(FIND) $(DIR_ARCH) -name '*.c' -or -name '*.nasm')))
