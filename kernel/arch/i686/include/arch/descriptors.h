@@ -3,6 +3,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * struct gdt_entry - the structure contains description of one segment descriptor.
  * @limit_low: the lowest part of the segment limit.
@@ -123,3 +127,7 @@ extern void irq27(void);
 extern void irq28(void);
 extern void irq29(void);
 extern void irq30(void);
+
+#ifdef __cplusplus
+}
+#endif

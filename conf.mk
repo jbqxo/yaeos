@@ -41,6 +41,10 @@ CFLAGS_DEBUG     := -O0 -g
 CFLAGS_RELEASE   := -O2
 CFLAGS_COMMON    := -std=gnu18
 
+CXXFLAGS_DEBUG     := -O0 -g
+CXXFLAGS_RELEASE   := -O2
+CXXFLAGS_COMMON    := -std=c++17
+
 CPPFLAGS_DEBUG   :=
 CPPFLAGS_RELEASE := -DNDEBUG
 
@@ -58,13 +62,13 @@ endif
 ifeq ($(TARGET), i686)
     CPPFLAGS := -D__i686__
     ifeq ($(BUILD_TEST), 1)
-        CC := gcc
-        CXX := g++
+        CC := clang
+        CXX := clang++
         NASM := nasm
         AR := ar
     else
-        CC := i686-elf-gcc
-        CXX := i686-elf-g++
+        CC := clang -march=i686 --target=i686-pc-none-elf
+        CXX := clang++ -march=i686 --target=i686-pc-none-elf
         NASM := nasm -felf32
         AR := i686-elf-ar
         CFLAGS_COMMON += -m32

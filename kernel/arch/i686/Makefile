@@ -3,11 +3,14 @@ CPPFLAGS_ARCH +=
 LDFLAGS_ARCH +=
 
 FILES_OBJ_ARCH_BEGIN := \
-    $(DIR_ARCH)/crti.nasm.o \
-    $(DIR_ARCH)/crtbegin.o
+    $(DIR_ARCH)/crti.nasm.o
 FILES_OBJ_ARCH_END := \
-    $(DIR_ARCH)/crtend.o \
     $(DIR_ARCH)/crtn.nasm.o
+
+ifeq (,$(findstring clang,$(CC)))
+    FILES_OBJ_ARCH_BEGIN += $(DIR_ARCH)/crtbegin.o
+    FILES_OBJ_ARCH_END   := $(DIR_ARCH)/crtend.o $(FILES_OBJ_ARCH_END)
+endif
 
 # Gather all source files in the directory
 # Change their suffixes to *.o

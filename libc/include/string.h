@@ -2,6 +2,11 @@
 
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#define restrict __restrict
+#endif
+
 void *memcpy(void * restrict dest, const void * restrict src, size_t n);
 void *memmove(void *dest, const void *src, size_t n);
 char *strcpy(char * restrict dest, const char * restrict src);
@@ -24,3 +29,8 @@ char *strtok(char * restrict s1, const char * restrict s2);
 void *memset(void *str, int ch, size_t n);
 char *strerror(int errnum);
 size_t strlen(const char *str);
+
+#ifdef __cplusplus
+#undef restrict
+}
+#endif

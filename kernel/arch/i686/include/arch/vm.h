@@ -4,6 +4,10 @@
 
 #include <arch/platform.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern uint32_t boot_paging_pt[] asm("boot_paging_pt");
 extern uint32_t boot_paging_pd[] asm("boot_paging_pd");
 
@@ -138,3 +142,7 @@ void vm_paging_set(void *dir);
  * @hh_offset: Offset of the kernel itself.
  */
 void vm_paging_enable(uintptr_t hh_offset);
+
+#ifdef __cplusplus
+}
+#endif

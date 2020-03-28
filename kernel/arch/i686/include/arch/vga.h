@@ -2,6 +2,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 #define VGA_BUFFER_ADDR 0x000B8000u
@@ -46,3 +50,7 @@ static inline uint16_t vga_char(unsigned char uc, vga_char_color color)
 {
 	return (uint16_t)uc | (uint16_t)(color << 8);
 }
+
+#ifdef __cplusplus
+}
+#endif
