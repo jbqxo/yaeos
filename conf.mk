@@ -37,13 +37,15 @@ BUILDDIR_DEPS   ?= $(BUILDDIR_BUILD)/$(DIR_DEPS)
 
 # General build flags
 
+# TODO: Make -mgeneral-regs-only enabled only for the arch-specific code, when
+# floating point, sse, mmx, sse2, 3dnow and avx instructions will be available.
 CFLAGS_DEBUG     := -O0 -g
 CFLAGS_RELEASE   := -O2
-CFLAGS_COMMON    := -std=gnu18
+CFLAGS_COMMON    := -std=gnu18 -mgeneral-regs-only
 
 CXXFLAGS_DEBUG     := -O0 -g
 CXXFLAGS_RELEASE   := -O2
-CXXFLAGS_COMMON    := -std=c++17
+CXXFLAGS_COMMON    := -std=c++2a -fno-exceptions -fno-rtti -mgeneral-regs-only
 
 CPPFLAGS_DEBUG   :=
 CPPFLAGS_RELEASE := -DNDEBUG
@@ -67,11 +69,15 @@ ifeq ($(TARGET), i686)
         NASM := nasm
         AR := ar
     else
-        CC := clang -march=i686 --target=i686-pc-none-elf
-        CXX := clang++ -march=i686 --target=i686-pc-none-elf
+        # TODO: Fix horrible hack with -B flag.
+        # It's needed to help clang to find proper crtbegin.o and crtend.o
+        GCC_ROOT ?= /usr/local
+        CC := clang -march=i686 --target=i686-pc-none-elf -B$(GCC_ROOT)/lib/gcc/i686-elf/9.3.0
+        CXX := clang++ -march=i686 --target=i686-pc-none-elf -B$(GCC_ROOT)/lib/gcc/i686-elf/9.3.0
         NASM := nasm -felf32
         AR := i686-elf-ar
         CFLAGS_COMMON += -m32
+        CXXFLAGS_COMMON += -m32
     endif
 endif
 

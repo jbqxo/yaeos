@@ -87,11 +87,16 @@ static void setup_boot_paging(void)
 	vm_tlb_flush();
 }
 
+void call_global_ctors(void) asm("_init");
+void call_global_dtors(void) asm("_fini");
+
 void i686_init(void)
 {
 	setup_boot_paging();
 	boot_setup_gdt();
 	boot_setup_idt();
 
+	call_global_ctors();
 	kernel_init();
+	call_global_dtors();
 }

@@ -7,10 +7,8 @@ FILES_OBJ_ARCH_BEGIN := \
 FILES_OBJ_ARCH_END := \
     $(DIR_ARCH)/crtn.nasm.o
 
-ifeq (,$(findstring clang,$(CC)))
-    FILES_OBJ_ARCH_BEGIN += $(DIR_ARCH)/crtbegin.o
-    FILES_OBJ_ARCH_END   := $(DIR_ARCH)/crtend.o $(FILES_OBJ_ARCH_END)
-endif
+FILES_OBJ_ARCH_BEGIN += $(DIR_ARCH)/crtbegin.o
+FILES_OBJ_ARCH_END   := $(DIR_ARCH)/crtend.o $(FILES_OBJ_ARCH_END)
 
 # Gather all source files in the directory
 # Change their suffixes to *.o
