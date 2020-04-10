@@ -65,6 +65,7 @@ $(BUILDDIR_LIBK)/libk.a: $$(FILES_OBJ) | dirs_libk
 
 $(BUILDDIR_LIBC)/%.c.o: CPPFLAGS += $(CPPFLAGS_LIBC) -D__libc__
 $(BUILDDIR_LIBC)/%.c.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
+$(BUILDDIR_LIBC)/%.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_LIBC)/%.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE)) -ffreestanding
 $(BUILDDIR_LIBC)/%.c.o: $(CWD)/%.c | dirs_libc
 	$(info [libc] CC $@)
@@ -76,6 +77,7 @@ $(BUILDDIR_LIBC)/%.nasm.o: $(CWD)/%.nasm | dirs_libc
 
 $(BUILDDIR_LIBK)/%.c.o: CPPFLAGS += $(CPPFLAGS_LIBC) -D__libk__
 $(BUILDDIR_LIBK)/%.c.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
+$(BUILDDIR_LIBK)/%.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_LIBK)/%.c.o: CFLAGS += $(CFLAGS_COMMON) -ffreestanding
 $(BUILDDIR_LIBK)/%.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
 $(BUILDDIR_LIBK)/%.c.o: $(CWD)/%.c | dirs_libk
@@ -110,6 +112,7 @@ test_libc: $$(TESTS_LIBC) | dirs_tests
 
 $(BUILDDIR_TESTS)/libc/%_tests.c.o: CPPFLAGS +=	$(CPPFLAGS_LIBC) -D__libc__
 $(BUILDDIR_TESTS)/libc/%_tests.c.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
+$(BUILDDIR_TESTS)/libc/%_tests.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_TESTS)/libc/%_tests.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/libc/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
 	$(info [libc.tests] CC $@)
@@ -117,31 +120,34 @@ $(BUILDDIR_TESTS)/libc/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
 
 $(BUILDDIR_TESTS)/libk/%_tests.c.o: CPPFLAGS +=	$(CPPFLAGS_LIBC) -D__libk__
 $(BUILDDIR_TESTS)/libk/%_tests.c.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
+$(BUILDDIR_TESTS)/libk/%_tests.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_TESTS)/libk/%_tests.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/libk/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
 	$(info [libk.tests] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $^ -c -o $@
 
-$(BUILDDIR_TESTS)/libc/%_tests: CPPFLAGS +=	$(CPPFLAGS_LIBC) -D__libc__
-$(BUILDDIR_TESTS)/libc/%_tests: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/libc/%_tests: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/libc/%_tests: $(BUILDDIR_TESTS)/libc/%_tests.c.o $(BUILDDIR_LIBC)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
 	$(info [libc.tests] LD $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@
+	@$(CC) $(CFLAGS) $^ -o $@
 
-$(BUILDDIR_TESTS)/libk/%_tests: CPPFLAGS +=	$(CPPFLAGS_LIBC) -D__libk__
-$(BUILDDIR_TESTS)/libk/%_tests: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/libk/%_tests: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/libk/%_tests: $(BUILDDIR_TESTS)/libk/%_tests.c.o $(BUILDDIR_LIBK)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
 	$(info [libk.tests] LD $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@
+	@$(CC) $(CFLAGS) $^ -o $@
 
 ###### Dependencies rules
 
+$(BUILDDIR_LIBC)/%.c.d: CPPFLAGS += $(CPPFLAGS_LIBC) -D__libk__
+$(BUILDDIR_LIBC)/%.c.d: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
+$(BUILDDIR_LIBC)/%.c.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_LIBC)/%.c.d: $(CWD)/%.c | dirs_libc
 	$(info [libc] MD $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBC) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
+$(BUILDDIR_LIBK)/%.c.d: CPPFLAGS += $(CPPFLAGS_LIBC) -D__libk__
+$(BUILDDIR_LIBK)/%.c.d: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
+$(BUILDDIR_LIBK)/%.c.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_LIBK)/%.c.d: $(CWD)/%.c | dirs_libk
 	$(info [libk] MD $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBK) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
@@ -155,5 +161,6 @@ $(BUILDDIR_LIBK)/%.nasm.d: $(CWD)/%.nasm | dirs_libk
 	@$(AS) -D__libk__ -MG -MT $(@:.d=.o) -MD $@ $< -o /dev/null
 
 ifneq ($(MAKECMDGOALS),clean)
-    -include $(FILES_LIBC_OBJ:.o=.d) $(FILES_LIBK_OBJ:.o=.d)
+    -include $(addprefix $(BUILDDIR_LIBC)/, $(FILES_REL_OBJ:.o=.d))
+    -include $(addprefix $(BUILDDIR_LIBK)/, $(FILES_REL_OBJ:.o=.d))
 endif

@@ -60,6 +60,7 @@ $(BUILDDIR_KERNEL)/kernel.bin: $$(FILES_OBJ) $(DIR_ARCH)/linker.ld $(BUILDDIR_LI
 
 $(BUILDDIR_KERNEL)/%.c.o: CPPFLAGS += $(CPPFLAGS_KERNEL) $(CPPFLAGS_LIBC)
 $(BUILDDIR_KERNEL)/%.c.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
+$(BUILDDIR_KERNEL)/%.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_KERNEL)/%.c.o: CFLAGS += $(CFLAGS_COMMON) -ffreestanding
 $(BUILDDIR_KERNEL)/%.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
 $(BUILDDIR_KERNEL)/%.c.o: $(CWD)/%.c | prefix_dirs
@@ -91,9 +92,12 @@ $(BUILDDIR_TESTS)/kernel/%_tests: $(BUILDDIR_TESTS)/kernel/%_tests.c.o $(BUILDDI
 
 ###### Dependencies rules
 
+$(BUILDDIR_KERNEL)/%.c.d: CPPFLAGS += $(CPPFLAGS_KERNEL) $(CPPFLAGS_LIBC)
+$(BUILDDIR_KERNEL)/%.c.d: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
+$(BUILDDIR_KERNEL)/%.c.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_KERNEL)/%.c.d: $(CWD)/%.c | prefix_dirs
 	$(info [kernel] MD $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
+	@$(CC) $(CPPFLAGS) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
 $(BUILDDIR_KERNEL)/%.nasm.d: $(CWD)/%.nasm | prefix_dirs
 	$(info [kernel] MD $@)
@@ -105,10 +109,14 @@ $(BUILDDIR_LIBK)/libk.a:
 $(BUILDDIR_DEPS)/unity/unity.o:
 	$(error You need to build unity framework first)
 
+$(BUILDDIR_KERNEL_ARCH)/crtbegin.o $(BUILDDIR_KERNEL_ARCH)/crtend.o: CFLAGS += $(CFLAGS_COMMON) -ffreestanding
+$(BUILDDIR_KERNEL_ARCH)/crtbegin.o $(BUILDDIR_KERNEL_ARCH)/crtend.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
 $(BUILDDIR_KERNEL_ARCH)/crtbegin.o $(BUILDDIR_KERNEL_ARCH)/crtend.o: | prefix_dirs
 	$(info [kernel] Copy $(notdir $@) to the build directory)
 	@CRT_O=`$(CC) $(CFLAGS) $(LDFLAGS) -print-file-name=$(@F)` && cp "$$CRT_O" $@
 
 ifneq ($(MAKECMDGOALS),clean)
-    -include $(FILES_OBJ:.o=.d)
+    -include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ_ARCH:.o=.d))
+    -include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ_ARCH_END:.o=.d))
+    -include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ:.o=.d))
 endif
