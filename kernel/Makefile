@@ -17,12 +17,12 @@ include $(DIR_ARCH)/Makefile
 
 FILES_TESTS_OBJ :=\
     $(addsuffix .o, \
-    $(shell $(FIND) * -name '*_tests.c' -or -name '*_tests.cxx'))
+    $(shell $(FIND) * -name '*_tests.c'))
 
 FILES_OBJ :=\
     $(filter-out $(FILES_TESTS_OBJ) $(FILES_OBJ_ARCH_BEGIN) $(FILES_OBJ_ARCH_END) $(FILES_OBJ_ARCH), \
     $(addsuffix .o, \
-    $(shell $(FIND) * -name '*.c' -or -name '*.cxx' -or -name '*.nasm')))
+    $(shell $(FIND) * -name '*.c' -or -name '*.nasm')))
 
 
 ###### Phony rules
@@ -58,14 +58,6 @@ $(BUILDDIR_KERNEL)/kernel.bin: $$(FILES_OBJ) $(DIR_ARCH)/linker.ld $(BUILDDIR_LI
 	$(info [kernel] LD $@)
 	@$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-T,$(DIR_ARCH)/linker.ld $(FILES_OBJ) $(BUILDDIR_LIBK)/libk.a -o $@
 
-$(BUILDDIR_KERNEL)/%.cxx.o: CPPFLAGS += $(CPPFLAGS_KERNEL) $(CPPFLAGS_LIBC)
-$(BUILDDIR_KERNEL)/%.cxx.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
-$(BUILDDIR_KERNEL)/%.cxx.o: CXXFLAGS += $(CXXFLAGS_COMMON) -ffreestanding
-$(BUILDDIR_KERNEL)/%.cxx.o: CXXFLAGS += $(if $(BUILD_DEBUG),$(CXXFLAGS_DEBUG),$(CXXFLAGS_RELEASE))
-$(BUILDDIR_KERNEL)/%.cxx.o: $(CWD)/%.cxx | prefix_dirs
-	$(info [kernel] CXX $@)
-	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
-
 $(BUILDDIR_KERNEL)/%.c.o: CPPFLAGS += $(CPPFLAGS_KERNEL) $(CPPFLAGS_LIBC)
 $(BUILDDIR_KERNEL)/%.c.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
 $(BUILDDIR_KERNEL)/%.c.o: CFLAGS += $(CFLAGS_COMMON) -ffreestanding
@@ -84,26 +76,14 @@ dirs_tests test: FILES_TESTS_OBJ := $(addprefix $(BUILDDIR_TESTS)/kernel/, $(FIL
 dirs_tests:
 	@$(MKDIRP) $(dir $(FILES_TESTS_OBJ))
 
-test: $$(patsubst %.cxx.o,%, $$(patsubst %.c.o,%, $$(FILES_TESTS_OBJ))) | dirs_tests
+test: $$(patsubst %.c.o,%, $$(FILES_TESTS_OBJ)) | dirs_tests
 	@$(foreach t, $^, echo "[kernel.tests] Running $t"; $t;)
-
-$(BUILDDIR_TESTS)/kernel/%_tests.cxx.o: CXXFLAGS += $(CXXFLAGS_COMMON)
-$(BUILDDIR_TESTS)/kernel/%_tests.cxx.o: CXXFLAGS += $(if $(BUILD_DEBUG),$(CXXFLAGS_DEBUG),$(CXXFLAGS_RELEASE))
-$(BUILDDIR_TESTS)/kernel/%_tests.cxx.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
-$(BUILDDIR_TESTS)/kernel/%_tests.cxx.o: CPPFLAGS += $(CPPFLAGS_KERNEL)
-$(BUILDDIR_TESTS)/kernel/%_tests.cxx.o: $(CWD)/%_tests.cxx | dirs_tests
-	$(info [kernel.tests] CXX $@)
-	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) $^ -c -o $@
 
 $(BUILDDIR_TESTS)/kernel/%_tests.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
 $(BUILDDIR_TESTS)/kernel/%_tests.c.o: CPPFLAGS += $(CPPFLAGS_KERNEL)
 $(BUILDDIR_TESTS)/kernel/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
 	$(info [kernel.tests] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $^ -c -o $@
-
-$(BUILDDIR_TESTS)/kernel/%_tests: $(BUILDDIR_TESTS)/kernel/%_tests.cxx.o $(BUILDDIR_KERNEL)/%.cxx.o | dirs_tests
-	$(info [kernel.tests] LD $@)
-	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) $^ -o $@
 
 $(BUILDDIR_TESTS)/kernel/%_tests: $(BUILDDIR_TESTS)/kernel/%_tests.c.o $(BUILDDIR_KERNEL)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
 	$(info [kernel.tests] LD $@)

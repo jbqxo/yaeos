@@ -20,7 +20,7 @@ FILES_TESTS_OBJ :=\
 FILES_REL_OBJ :=\
     $(filter-out $(FILES_TESTS_OBJ), \
     $(addsuffix .o, \
-    $(shell $(FIND) lib -name '*.c' -or -name '*.cxx' -or -name '*.nasm')))
+    $(shell $(FIND) lib -name '*.c' -or -name '*.nasm')))
 
 dirs_libc $(BUILDDIR_LIBC)/libc.a: FILES_OBJ := $(addprefix $(BUILDDIR_LIBC)/, $(FILES_REL_OBJ))
 dirs_libk $(BUILDDIR_LIBK)/libk.a: FILES_OBJ := $(addprefix $(BUILDDIR_LIBK)/, $(FILES_REL_OBJ))
@@ -62,22 +62,6 @@ $(BUILDDIR_LIBC)/libc.a: $$(FILES_OBJ) | dirs_libc
 $(BUILDDIR_LIBK)/libk.a: $$(FILES_OBJ) | dirs_libk
 	$(info [libk] Archiving $(notdir $^))
 	@$(AR) rcs $@ $^
-
-$(BUILDDIR_LIBK)/%.cxx.o: CPPFLAGS += $(CPPFLAGS_LIBC) -D__libk__
-$(BUILDDIR_LIBK)/%.cxx.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
-$(BUILDDIR_LIBK)/%.cxx.o: CXXFLAGS += $(CXXFLAGS_COMMON) -ffreestanding
-$(BUILDDIR_LIBK)/%.cxx.o: CXXFLAGS += $(if $(BUILD_DEBUG),$(CXXFLAGS_DEBUG),$(CXXFLAGS_RELEASE))
-$(BUILDDIR_LIBK)/%.cxx.o: $(CWD)/%.cxx | prefix_dirs
-	$(info [libc] CXX $@)
-	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
-
-$(BUILDDIR_LIBC)/%.cxx.o: CPPFLAGS += $(CPPFLAGS_LIBC) -D__libc__
-$(BUILDDIR_LIBC)/%.cxx.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
-$(BUILDDIR_LIBC)/%.cxx.o: CXXFLAGS += $(CXXFLAGS_COMMON) -ffreestanding
-$(BUILDDIR_LIBC)/%.cxx.o: CXXFLAGS += $(if $(BUILD_DEBUG),$(CXXFLAGS_DEBUG),$(CXXFLAGS_RELEASE))
-$(BUILDDIR_LIBC)/%.cxx.o: $(CWD)/%.cxx | prefix_dirs
-	$(info [libc] CXX $@)
-	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
 
 $(BUILDDIR_LIBC)/%.c.o: CPPFLAGS += $(CPPFLAGS_LIBC) -D__libc__
 $(BUILDDIR_LIBC)/%.c.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
