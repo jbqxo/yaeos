@@ -46,8 +46,9 @@ CFLAGS_COMMON    := -std=gnu18 -mgeneral-regs-only
 CPPFLAGS_DEBUG   :=
 CPPFLAGS_RELEASE := -DNDEBUG
 
-LDFLAGS_DEBUG   :=
-LDFLAGS_RELEASE :=
+LDFLAGS_COMMON  :=
+LDFLAGS_DEBUG   := -fno-lto
+LDFLAGS_RELEASE := -flto
 
 TARGET           ?= i686
 # Compilation toolchain
@@ -77,6 +78,7 @@ endif
 # Compiler diagnostics
 # All of these diagnostics there for a reason right?
 CFLAGS_COMMON += -Wall
+CFLAGS_COMMON += -Wno-unused-command-line-argument
 
 # Basic commands
 MKDIRP := mkdir -p

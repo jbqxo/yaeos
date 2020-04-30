@@ -11,8 +11,6 @@ BUILDDIR_KERNEL_ARCH := $(BUILDDIR_KERNEL)/$(DIR_ARCH)
 CPPFLAGS_KERNEL := -I$(CWD)/include -I$(CWD)/arch/$(TARGET)/include
 CPPFLAGS_LIBC := -I$(ROOT)/$(DIR_LIBC)/include -I$(ROOT)/$(DIR_LIBC)/arch/$(TARGET)/include -D__libk__
 
-LDFLAGS += -nostdlib
-
 include $(DIR_ARCH)/Makefile
 
 FILES_TESTS_OBJ :=\
@@ -54,9 +52,11 @@ prefix_dirs:
 
 ###### Kernel rules
 
+$(BUILDDIR_KERNEL)/kernel.bin: LDFLAGS += -nostdlib $(LDFLAGS_COMMON)
+$(BUILDDIR_KERNEL)/kernel.bin: LDFLAGS += $(if $(BUILD_DEBUG),$(LDFLAGS_DEBUG),$(LDFLAGS_RELEASE))
 $(BUILDDIR_KERNEL)/kernel.bin: $$(FILES_OBJ) $(DIR_ARCH)/linker.ld $(BUILDDIR_LIBK)/libk.a
 	$(info [kernel] LD $@)
-	@$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-T,$(DIR_ARCH)/linker.ld $(FILES_OBJ) $(BUILDDIR_LIBK)/libk.a -o $@
+	@$(CC) -Wl,-T,$(DIR_ARCH)/linker.ld $(FILES_OBJ) $(BUILDDIR_LIBK)/libk.a $(LDFLAGS) -o $@
 
 $(BUILDDIR_KERNEL)/%.c.o: CPPFLAGS += $(CPPFLAGS_KERNEL) $(CPPFLAGS_LIBC)
 $(BUILDDIR_KERNEL)/%.c.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
@@ -80,15 +80,19 @@ dirs_tests:
 test: $$(patsubst %.c.o,%, $$(FILES_TESTS_OBJ)) | dirs_tests
 	@$(foreach t, $^, echo "[kernel.tests] Running $t"; $t;)
 
+$(BUILDDIR_TESTS)/kernel/%_tests.c.o: CFLAGS += $(CFLAGS_COMMON) -ffreestanding
+$(BUILDDIR_TESTS)/kernel/%_tests.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/kernel/%_tests.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
 $(BUILDDIR_TESTS)/kernel/%_tests.c.o: CPPFLAGS += $(CPPFLAGS_KERNEL)
 $(BUILDDIR_TESTS)/kernel/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
 	$(info [kernel.tests] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $^ -c -o $@
 
+$(BUILDDIR_TESTS)/kernel/%_tests: LDFLAGS += $(LDFLAGS_COMMON)
+$(BUILDDIR_TESTS)/kernel/%_tests: LDFLAGS += $(if $(BUILD_DEBUG),$(LDFLAGS_DEBUG),$(LDFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/kernel/%_tests: $(BUILDDIR_TESTS)/kernel/%_tests.c.o $(BUILDDIR_KERNEL)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
 	$(info [kernel.tests] LD $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) $^ -o $@
+	@$(CC) $(CPPFLAGS) $^ $(LDFLAGS) -o $@
 
 ###### Dependencies rules
 
@@ -117,6 +121,7 @@ $(BUILDDIR_KERNEL_ARCH)/crtbegin.o $(BUILDDIR_KERNEL_ARCH)/crtend.o: | prefix_di
 
 ifneq ($(MAKECMDGOALS),clean)
     -include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ_ARCH:.o=.d))
+    -include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ_ARCH_BEGIN:.o=.d))
     -include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ_ARCH_END:.o=.d))
     -include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ:.o=.d))
 endif

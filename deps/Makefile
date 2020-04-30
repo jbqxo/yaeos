@@ -14,7 +14,7 @@ unity: $(BUILDDIR_DEPS)/unity/unity.o
 prefix_dirs:
 	@$(MKDIRP) $(BUILDDIR_DEPS)/unity
 
-$(BUILDDIR_DEPS)/unity/%.o:	$(CWD)/unity/src/%.c | prefix_dirs
+$(BUILDDIR_DEPS)/unity/%.o: $(CWD)/unity/src/%.c | prefix_dirs
 	$(info [deps.unity] CC $@ $(BUILD_TEST))
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
