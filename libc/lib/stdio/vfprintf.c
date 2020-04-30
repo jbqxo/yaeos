@@ -1,31 +1,35 @@
+#include <stddef.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <string.h>
+#include <limits.h>
 
 #ifdef __libc__
+typedef FILE *output_t;
+
 static int print_char(FILE *stream, char c)
 {
 }
-#define PRINT_CHAR(character, desc, stream) print_char((stream), (character))
 #endif
 
 #ifdef __libk__
+typedef tty_descriptor_t output_t;
+
 static int print_char(tty_descriptor_t d, char c)
 {
 	tty_putchar(d, c);
 	return 1;
 }
-#define PRINT_CHAR(character, desc, stream) print_char((desc), (character))
 #endif
 
 enum conv_flags {
 	CF_MINUS = 0x1 << 0,
-	CF_PLUS = 0x1 << 1,
+	CF_PLUS  = 0x1 << 1,
 	CF_SPACE = 0x1 << 2,
-	CF_HASH = 0x1 << 3,
-	CF_ZERO = 0x1 << 4
+	CF_HASH  = 0x1 << 3,
+	CF_ZERO  = 0x1 << 4
 };
 enum conv_specifiers {
 	CS_INT,
@@ -43,23 +47,22 @@ enum conv_length {
 	CL_CHAR,
 	CL_SHORT,
 	CL_LONG,
-	CL_LONG_LONG,
+	CL_LLONG,
 	CL_INTMAX,
 	CL_SIZET,
 	CL_PTRDIFF,
-	CL_LONG_DOUBLE,
+	CL_LDOUBLE,
 	CL_NONE
 };
 #define WIDTH_EMPTY -2
-#define WIDTH_VAR -1
-#define PREC_EMPTY -2
-#define PREC_VAR -1
+#define WIDTH_VAR   -1
+#define PREC_EMPTY  -2
+#define PREC_VAR    -1
 struct conv_spec {
 	enum conv_flags flags;
-	// Could be -1, which means that width will be passed as argument.
 	int width;
 	int precision;
-	enum conv_length len;
+	enum conv_length length;
 	enum conv_specifiers spec;
 };
 
@@ -181,28 +184,28 @@ static struct conv_spec parse_conv_spec(const char **_format)
 		switch (*format) {
 		case 'h': {
 			if (format[1] == 'h') {
-				result.len = CL_CHAR;
+				result.length = CL_CHAR;
 				format++;
 			} else {
-				result.len = CL_SHORT;
+				result.length = CL_SHORT;
 			}
 		} break;
 		case 'l': {
 			if (format[1] == 'l') {
-				result.len = CL_LONG_LONG;
+				result.length = CL_LLONG;
 				format++;
 			} else {
-				result.len = CL_LONG;
+				result.length = CL_LONG;
 			}
 		} break;
-		case 'j': result.len = CL_INTMAX; break;
-		case 'z': result.len = CL_SIZET; break;
-		case 't': result.len = CL_PTRDIFF; break;
-		case 'L': result.len = CL_LONG_DOUBLE; break;
-		default: result.len = CL_NONE;
+		case 'j': result.length = CL_INTMAX; break;
+		case 'z': result.length = CL_SIZET; break;
+		case 't': result.length = CL_PTRDIFF; break;
+		case 'L': result.length = CL_LDOUBLE; break;
+		default: result.length = CL_NONE;
 		}
 
-		if (result.len != CL_NONE) {
+		if (result.length != CL_NONE) {
 			format++;
 		}
 	}
@@ -236,73 +239,179 @@ static struct conv_spec parse_conv_spec(const char **_format)
 	return result;
 }
 
-static bool is_spec_correct(struct conv_spec s)
-{
-	return true;
-}
+struct argument {
+	union {
+		uintmax_t i;
+	} val;
+	bool negative;
+};
 
-#ifdef __libc__
-static int print_conv_spec(FILE *restrict stream, struct conv_spec s,
-			   va_list *args)
-#elif __libk__
-static int print_conv_spec(tty_descriptor_t d, struct conv_spec s,
-			   va_list *args)
-#endif
+static struct argument fetch_arg(struct conv_spec s, va_list *args,
+				 struct argument *dest)
 {
-	int printed = 0;
+	struct argument arg = { 0 };
 	switch (s.spec) {
 	case CS_INT: {
+		int val = va_arg(*args, int);
+		switch (s.length) {
+#define CASE_BODY(type)                                                        \
+	do {                                                                   \
+		type v = (type)val;                                            \
+		arg.val.i = v;                                                 \
+		if (v < 0) {                                                   \
+			arg.negative = true;                                   \
+			arg.val.i *= -1;                                       \
+		}                                                              \
+	} while (0)
+		case CL_CHAR: CASE_BODY(char); break;
+		case CL_SHORT: CASE_BODY(short); break;
+		case CL_LONG: CASE_BODY(long); break;
+		case CL_LLONG: CASE_BODY(long long); break;
+		case CL_INTMAX: CASE_BODY(intmax_t); break;
+		case CL_SIZET: CASE_BODY(size_t); break;
+		case CL_NONE: CASE_BODY(int); break;
+		case CL_PTRDIFF: CASE_BODY(ptrdiff_t); break;
+#undef CASE_BODY
+		}
+	} break;
+	}
+	return arg;
+}
+
+struct conv_spec_funcs {
+	// Print the format specifier.
+	void (*print)(output_t out, struct conv_spec *s, struct argument *a);
+	// Calculate the length of the result of print function.
+	int (*length)(struct conv_spec *s, struct argument *a);
+};
+
+static int int_length(struct conv_spec *s, struct argument *a)
+{
+	// Special case:
+	// The result of converting a zero value with a precision of zero is no characters.
+	if (s->precision == 0 && a->val.i == 0) {
+		return 0;
+	}
+
+	int result = 1;
+	// Compiler may optimize it. (Clang with -O3 will)
+	for (int i = 19; i >= 0; i--) {
+		uintmax_t power = 1;
+		for (int j = 0; j < i; j++) {
+			power *= 10;
+		}
+		if (a->val.i >= power) {
+			result = i + 1;
+			break;
+		}
+	}
+
+	if (s->precision != PREC_EMPTY) {
+		if (s->precision >= result) {
+			return s->precision;
+		}
+	}
+
+	return result;
+}
+
+static void int_print(output_t out, struct conv_spec *s, struct argument *a)
+{
 		char buffer[21];
-		size_t buff_sz = sizeof(buffer) / sizeof(*buffer);
-		buffer[20] = '\0';
-		int bi = sizeof(buffer) / sizeof(*buffer) - 1;
-		int value = va_arg(*args, int);
-		bool negative = value < 0;
-		if (negative) {
-			value *= -1;
+	int buffer_size = sizeof(buffer) / sizeof(*buffer);
+	int buffer_i = buffer_size;
+
+	// Special case:
+	// The result of converting a zero value with a precision of zero is no characters.
+	if (s->precision == 0 && a->val.i == 0) {
+		return;
 		}
 
 		do {
-			bi--;
-			buffer[bi] = value % 10 + '0';
-		} while ((value /= 10) != 0 && bi > 0);
-		if (negative) {
-			// There is always some space for a minus sign in negative numbers. (I hope)
-			bi--;
-			buffer[bi] = '-';
-		}
+		buffer_i--;
+		buffer[buffer_i] = a->val.i % 10 + '0';
+	} while ((a->val.i /= 10) != 0 && buffer_i > 0);
 
-		while (buffer[bi] != '\0') {
-			PRINT_CHAR(buffer[bi], d, stream);
-			bi++;
+	if (s->precision != PREC_EMPTY) {
+		int already_printed = buffer_size - buffer_i;
+		s->precision -= already_printed;
+		for (int i = 0; i < s->precision; i++) {
+			print_char(out, '0');
+		}
+	}
+
+	while (buffer_i < buffer_size) {
+		print_char(out, buffer[buffer_i]);
+		buffer_i++;
+	}
+}
+
+static struct conv_spec_funcs cs_funcs_table[] = {
+	[CS_INT] = (struct conv_spec_funcs){ .print = int_print,
+					     .length = int_length },
+};
+
+/**
+ * @brief Print visible characters, specified by flags.
+ * 
+ * @return int Number of written characters.
+ */
+static int print_flags_chars(output_t out, struct conv_spec s,
+			     struct argument arg)
+{
+	int printed = 0;
+	if (arg.negative) {
+		print_char(out, '-');
+		printed++;
+	} else if (s.flags & CF_PLUS) {
+		print_char(out, '+');
+		printed++;
+	} else if (s.flags & CF_SPACE) {
+		print_char(out, ' ');
 			printed++;
 		}
-	} break;
-	case CS_UCHAR: {
-		int v = va_arg(*args, int);
-		PRINT_CHAR((unsigned char)v, d, stream);
+	return printed;
+}
+
+/**
+ * @brief Print given conversion specifier field.
+ *
+ * @return int Number of written characters.
+ */
+static int print_conv_spec(output_t out, struct conv_spec s, va_list *args)
+{
+	struct argument arg = fetch_arg(s, args, &arg);
+	int length = cs_funcs_table[s.spec].length(&s, &arg);
+	int width_to_fill = s.width - length - (arg.negative ? 1 : 0);
+	int printed = 0;
+
+	// If Width != 0 and the flag '-' was not specified, result must be right-justified
+	if (!(s.flags & CF_MINUS) && s.width != WIDTH_EMPTY) {
+		if (s.flags & CF_ZERO) {
+			printed += print_flags_chars(out, s, arg);
+		}
+		while (width_to_fill > 0) {
+			// remained_width could be < 0, so decrement in the loop
+			char c = s.flags & CF_ZERO ? '0' : ' ';
+			print_char(out, c);
 		printed++;
-	} break;
-	case CS_STR: {
-		int max_len = s.precision;
-		if (max_len == PREC_VAR) {
-			max_len = va_arg(*args, int);
+			width_to_fill--;
 		}
-		const char *str = va_arg(*args, char *);
-		if (max_len == PREC_EMPTY) {
-			while (*str != '\0') {
-				PRINT_CHAR(*str, d, stream);
-				printed++;
-				str++;
 			}
-		} else {
-			int i;
-			for (i = 0; i < max_len && str[i] != '\0'; i++) {
-				PRINT_CHAR(str[i], d, stream);
+	if (!(s.flags & CF_ZERO)) {
+		printed += print_flags_chars(out, s, arg);
 			}
-			printed += i;
+	cs_funcs_table[s.spec].print(out, &s, &arg);
+	printed += length;
+
+	// If Width != 0 and the flag '-' was specified, result must be left-justified
+	if (s.flags & CF_MINUS && s.width != WIDTH_EMPTY) {
+		while (width_to_fill > 0) {
+			// remained_width could be < 0, so decrement in the loop
+			print_char(out, ' ');
+			printed++;
+			width_to_fill--;
 		}
-	} break;
 	}
 	return printed;
 }
@@ -313,8 +422,6 @@ int vfprintf(FILE *restrict stream, const char *restrict format, va_list args)
 int vfprintf(tty_descriptor_t d, const char *restrict format, va_list args)
 #endif
 {
-	// TODO: I don't understand why I can't just take an address of args from function arguments.
-	// In both cases the structure should be on the stack, as far as I understand.
 	va_list ap;
 	va_copy(ap, args);
 
@@ -324,16 +431,19 @@ int vfprintf(tty_descriptor_t d, const char *restrict format, va_list args)
 		if (format[i] == '%') {
 			const char *new_pos = &format[i];
 			struct conv_spec s = parse_conv_spec(&new_pos);
-			if (is_spec_correct(s)) {
 #ifdef __libc__
 				printed += print_conv_spec(stream, s, &ap);
 #elif __libk__
 				printed += print_conv_spec(d, s, &ap);
 #endif
-			}
 			i = new_pos - format;
 		} else {
-			int res = PRINT_CHAR(format[i], d, stream);
+			int res;
+#ifdef __libc__
+			res = print_char(stream, format[i]);
+#elif __libk__
+			res = print_char(d, format[i]);
+#endif
 			if (res < 0) {
 				printed = res;
 				goto failed;
