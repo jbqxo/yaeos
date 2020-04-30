@@ -10,7 +10,11 @@
 #include <string.h>
 
 // TODO: Maybe add some "smart" recursive macrosses to patch the stack automatically?
-// TODOO: Make sure my home address is hidden on GitHub after that. Just in case...
+/**
+ * @brief Adjust the frame with given offset.
+ * @param level The depth of the frame to patch.
+ * @param offset The offset to apply to the addresses in the frame.
+ */
 #define PATCH_FRAME(level, offset)                                             \
 	do {                                                                   \
 		uint32_t *frame = __builtin_frame_address(level);              \
@@ -22,6 +26,12 @@
 		*bp += offset;                                                 \
 	} while (false)
 
+/**
+ * @brief Map the pages in the range of addresses to the high memory.
+ * 
+ * @param page_dir Page Directory to modify
+ * @param flags Flags to apply to every page.
+ */
 static void map_addr_range(void *page_dir, const void *start, const void *end,
 			   enum VM_TABLE_FLAGS flags)
 {
@@ -33,6 +43,9 @@ static void map_addr_range(void *page_dir, const void *start, const void *end,
 	}
 }
 
+/**
+ * @brief Map kernel sections from low memory to high memory.
+ */
 static void map_kernel(void *page_dir)
 {
 	map_addr_range(page_dir, (void *)LOW(&kernel_text_start[0]),
@@ -48,6 +61,9 @@ static void map_kernel(void *page_dir)
 		       VM_TABLE_FLAG_PRESENT | VM_TABLE_FLAG_RW);
 }
 
+/**
+ * @brief Map platform specific regions from low memory to high memory.
+ */
 static void map_platform(void *page_dir)
 {
 	void *paddr = (void *)VGA_BUFFER_ADDR;
@@ -56,6 +72,9 @@ static void map_platform(void *page_dir)
 	       VM_TABLE_FLAG_PRESENT | VM_TABLE_FLAG_RW);
 }
 
+/**
+ * @brief Setup paging to actualy boot the kernel.
+ */
 static void setup_boot_paging(void)
 {
 	void *boot_pt = (void *)LOW(&boot_paging_pt[0]);
