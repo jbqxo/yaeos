@@ -279,6 +279,7 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args,
 	} break;
 	case CS_UHEX:
 	case CS_UHEX_BIG:
+	case CS_UOCTAL:
 	case CS_UDEC: {
 		uintmax_t val = va_arg(*args, uintmax_t);
 		switch (s.length) {
@@ -320,6 +321,54 @@ static int length_for_intnumbase(uintmax_t num, unsigned base, unsigned max_num_
 		}
 	}
 	return 1;
+}
+
+static int oct_length(struct conv_spec *s, struct argument *a) {
+	// Special case:
+	// The result of converting a zero value with a precision of zero is no characters.
+	if (s->precision == 0 && a->val.d == 0) {
+		return 0;
+	}
+
+	int length = length_for_intnumbase(a->val.d, 8, 22);
+
+	if (s->precision != PREC_EMPTY) {
+		if (s->precision >= length) {
+			return s->precision;
+		}
+	}
+
+	return length;
+}
+
+static void oct_print(output_t out, struct conv_spec *s, struct argument *a) {
+	char buffer[22];
+	int buffer_size = sizeof(buffer) / sizeof(*buffer);
+	int buffer_i = buffer_size;
+
+	// Special case:
+	// The result of converting a zero value with a precision of zero is no characters.
+	if (s->precision == 0 && a->val.d == 0) {
+		return;
+	}
+
+	do {
+		buffer_i--;
+		buffer[buffer_i] = a->val.d % 8 + '0';
+	} while ((a->val.d /= 8) != 0 && buffer_i > 0);
+
+	if (s->precision != PREC_EMPTY) {
+		int already_printed = buffer_size - buffer_i;
+		s->precision -= already_printed;
+		for (int i = 0; i < s->precision; i++) {
+			put_char(out, '0');
+		}
+	}
+
+	while (buffer_i < buffer_size) {
+		put_char(out, buffer[buffer_i]);
+		buffer_i++;
+	}
 }
 
 static int dec_length(struct conv_spec *s, struct argument *a)
@@ -467,8 +516,8 @@ static struct conv_spec_funcs cs_funcs_table[] = {
 					     .length = dec_length,
 					     .prefix = NULL },
 	[CS_UDEC] = (struct conv_spec_funcs){ .print = dec_print,
-					     .length = dec_length,
-					     .prefix = NULL },
+					      .length = dec_length,
+					      .prefix = NULL },
 	[CS_PTR] = (struct conv_spec_funcs){ .print = hex_print,
 					     .length = hex_length,
 					     .prefix = hex_prefix },
@@ -476,14 +525,17 @@ static struct conv_spec_funcs cs_funcs_table[] = {
 					      .length = hex_length,
 					      .prefix = hex_prefix },
 	[CS_UHEX_BIG] = (struct conv_spec_funcs){ .print = hex_print,
-					      .length = hex_length,
-					      .prefix = hex_prefix },
+						  .length = hex_length,
+						  .prefix = hex_prefix },
 	[CS_STR] = (struct conv_spec_funcs){ .print = str_print,
 					     .length = str_length,
 					     .prefix = NULL },
 	[CS_UCHAR] = (struct conv_spec_funcs){ .print = char_print,
 					       .length = char_length,
-					       .prefix = NULL }
+					       .prefix = NULL },
+	[CS_UOCTAL] = (struct conv_spec_funcs){ .print = oct_print,
+						.length = oct_length,
+						.prefix = NULL }
 };
 
 /**

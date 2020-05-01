@@ -157,6 +157,25 @@ static void conv_uhex(void)
 
 static void conv_uoctal(void)
 {
+	VFPRINTF("7 + 3 = 12", "7 + 3 = %o", 07 + 03);
+
+	// Width
+	VFPRINTF("  12", "%4o", 012);
+
+	// Precision
+	VFPRINTF("12", "%.0o", 012);
+	VFPRINTF("", "%.0o", 00);
+	VFPRINTF("0", "%.1o", 00);
+
+	// Length
+	VFPRINTF("0", "%hho", 0400);
+	VFPRINTF("0", "%ho", 0200000);
+
+	// TODO: Test all length modifiers
+
+	// Flags
+	VFPRINTF("12 ", "%-3o", 012);
+	VFPRINTF("0012", "%04o", 012);
 }
 
 static void conv_uchar(void)
@@ -182,6 +201,7 @@ int main(void)
 	RUN_TEST(conv_ptr);
 	RUN_TEST(conv_uchar);
 	RUN_TEST(conv_uhex);
+	RUN_TEST(conv_uoctal);
 
 	return UNITY_END();
 }
