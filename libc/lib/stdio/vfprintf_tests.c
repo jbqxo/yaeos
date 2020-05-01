@@ -119,6 +119,8 @@ static void conv_udec(void)
 }
 static void conv_uchar(void)
 {
+	VFPRINTF("F", "%c", 'F');
+	VFPRINTF("Some string", "Some str%cng", 'i');
 }
 static void conv_written_output(void)
 {
@@ -135,6 +137,7 @@ int main(void)
 	RUN_TEST(conv_int);
 	RUN_TEST(conv_str);
 	RUN_TEST(conv_ptr);
+	RUN_TEST(conv_uchar);
 
 	return UNITY_END();
 }
