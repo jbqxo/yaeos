@@ -9,15 +9,16 @@
 #ifdef __libc__
 typedef FILE *output_t;
 
-static int print_char(FILE *stream, char c)
+static int put_char(FILE *stream, char c)
 {
+	return 0;
 }
 #endif
 
 #ifdef __libk__
 typedef tty_descriptor_t output_t;
 
-static int print_char(tty_descriptor_t d, char c)
+static int put_char(tty_descriptor_t d, char c)
 {
 	tty_putchar(d, c);
 	return 1;
@@ -26,7 +27,7 @@ static int print_char(tty_descriptor_t d, char c)
 
 static void putn(output_t out, const char *str, unsigned n) {
 	for (int i = 0; i < n; i++) {
-		print_char(out, str[i]);
+		put_char(out, str[i]);
 	}
 }
 
@@ -350,12 +351,12 @@ static void int_print(output_t out, struct conv_spec *s, struct argument *a)
 		int already_printed = buffer_size - buffer_i;
 		s->precision -= already_printed;
 		for (int i = 0; i < s->precision; i++) {
-			print_char(out, '0');
+			put_char(out, '0');
 		}
 	}
 
 	while (buffer_i < buffer_size) {
-		print_char(out, buffer[buffer_i]);
+		put_char(out, buffer[buffer_i]);
 		buffer_i++;
 	}
 }
@@ -380,7 +381,7 @@ static void ptr_print(output_t out, struct conv_spec *s, struct argument *a) {
 	} while((a->val.i /= 16) != 0 && buffer_i > 0);
 
 	while (buffer_i < buffer_size) {
-		print_char(out, buffer[buffer_i]);
+		put_char(out, buffer[buffer_i]);
 		buffer_i++;
 	}
 }
@@ -399,7 +400,7 @@ static void str_print(output_t out, struct conv_spec *s, struct argument *a) {
 	int len = str_length(s, a);
 
 	for (int i = 0; i < len; i++) {
-		print_char(out, str[i]);
+		put_char(out, str[i]);
 	}
 }
 
@@ -408,7 +409,7 @@ static int char_length(struct conv_spec *s, struct argument *a) {
 }
 
 static void char_print(output_t out, struct conv_spec *s, struct argument *a) {
-	print_char(out, a->val.i);
+	put_char(out, a->val.i);
 }
 
 static struct conv_spec_funcs cs_funcs_table[] = {
@@ -436,13 +437,13 @@ static int put_flags(output_t out, struct conv_spec s,
 {
 	int printed = 0;
 	if (arg.negative) {
-		print_char(out, '-');
+		put_char(out, '-');
 		printed++;
 	} else if (s.flags & CF_PLUS) {
-		print_char(out, '+');
+		put_char(out, '+');
 		printed++;
 	} else if (s.flags & CF_SPACE) {
-		print_char(out, ' ');
+		put_char(out, ' ');
 		printed++;
 	}
 	return printed;
@@ -478,7 +479,7 @@ static int print_conv_spec(output_t out, struct conv_spec s, va_list *args)
 		while (width_to_fill > 0) {
 			// remained_width could be < 0, so decrement in the loop
 			char c = s.flags & CF_ZERO ? '0' : ' ';
-			print_char(out, c);
+			put_char(out, c);
 			printed++;
 			width_to_fill--;
 		}
@@ -495,7 +496,7 @@ static int print_conv_spec(output_t out, struct conv_spec s, va_list *args)
 	if (s.flags & CF_MINUS && s.width != WIDTH_EMPTY) {
 		while (width_to_fill > 0) {
 			// remained_width could be < 0, so decrement in the loop
-			print_char(out, ' ');
+			put_char(out, ' ');
 			printed++;
 			width_to_fill--;
 		}
@@ -503,11 +504,7 @@ static int print_conv_spec(output_t out, struct conv_spec s, va_list *args)
 	return printed;
 }
 
-#ifdef __libc__
-int vfprintf(FILE *restrict stream, const char *restrict format, va_list args)
-#elif __libk__
-int vfprintf(tty_descriptor_t d, const char *restrict format, va_list args)
-#endif
+int vfprintf(output_t out, const char *restrict format, va_list args)
 {
 	va_list ap;
 	va_copy(ap, args);
@@ -518,19 +515,11 @@ int vfprintf(tty_descriptor_t d, const char *restrict format, va_list args)
 		if (format[i] == '%') {
 			const char *new_pos = &format[i];
 			struct conv_spec s = parse_conv_spec(&new_pos);
-#ifdef __libc__
-			printed += print_conv_spec(stream, s, &ap);
-#elif __libk__
-			printed += print_conv_spec(d, s, &ap);
-#endif
+			printed += print_conv_spec(out, s, &ap);
 			i = new_pos - format;
 		} else {
 			int res;
-#ifdef __libc__
-			res = print_char(stream, format[i]);
-#elif __libk__
-			res = print_char(d, format[i]);
-#endif
+			res = put_char(out, format[i]);
 			if (res < 0) {
 				printed = res;
 				goto failed;
@@ -544,21 +533,11 @@ failed:
 	return printed;
 }
 
-#ifdef __libc__
-int fprintf(FILE *restrict stream, const char *restrict format, ...)
-#elif __libk__
-int fprintf(tty_descriptor_t d, const char *restrict format, ...)
-#endif
+int fprintf(output_t out, const char *restrict format, ...)
 {
 	va_list args;
 	va_start(args, format);
-
-#ifdef __libc__
-	int i = vfprintf(stream, format, args);
-#elif __libk__
-	int i = vfprintf(d, format, args);
-#endif
-
+	int i = vfprintf(out, format, args);
 	va_end(args);
 	return i;
 }

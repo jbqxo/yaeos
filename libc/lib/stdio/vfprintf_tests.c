@@ -40,6 +40,10 @@ void tearDown(void)
 		reset();                                                       \
 	} while (0);
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat"
+#pragma clang diagnostic ignored "-Wint-conversion"
+
 static void simple(void)
 {
 	VFPRINTF("16", "16");
@@ -141,6 +145,7 @@ int main(void)
 
 	return UNITY_END();
 }
+#pragma clang diagnostic pop
 #endif //__libk__
 
 // TODO: Implement unit tests for user-space libc
