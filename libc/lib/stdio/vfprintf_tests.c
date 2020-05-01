@@ -132,6 +132,9 @@ int main(void)
 	UNITY_BEGIN();
 
 	RUN_TEST(simple);
+	RUN_TEST(conv_int);
+	RUN_TEST(conv_str);
+	RUN_TEST(conv_ptr);
 
 	return UNITY_END();
 }
