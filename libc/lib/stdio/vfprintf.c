@@ -283,6 +283,7 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args,
 	} break;
 	case CS_PTR: arg.val.i = va_arg(*args, int); break;
 	case CS_STR: arg.val.str = va_arg(*args, char*); break;
+	case CS_UCHAR: arg.val.i = va_arg(*args, int); break;
 	}
 	return arg;
 }
@@ -402,6 +403,14 @@ static void str_print(output_t out, struct conv_spec *s, struct argument *a) {
 	}
 }
 
+static int char_length(struct conv_spec *s, struct argument *a) {
+	return 1;
+}
+
+static void char_print(output_t out, struct conv_spec *s, struct argument *a) {
+	print_char(out, a->val.i);
+}
+
 static struct conv_spec_funcs cs_funcs_table[] = {
 	[CS_INT] = (struct conv_spec_funcs){ .print = int_print,
 					     .length = int_length,
@@ -411,7 +420,10 @@ static struct conv_spec_funcs cs_funcs_table[] = {
 					     .prefix = "0x" },
 	[CS_STR] = (struct conv_spec_funcs){ .print = str_print,
 					     .length = str_length,
-					     .prefix = NULL }
+					     .prefix = NULL },
+	[CS_UCHAR] = (struct conv_spec_funcs){ .print = char_print,
+					       .length = char_length,
+					       .prefix = NULL }
 };
 
 /**
