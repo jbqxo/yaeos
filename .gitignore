@@ -1,5 +1,6 @@
 .ccls-cache/
 .clangd/
+.vscode/
 .DS_Store
 compile_commands.json
 build/
