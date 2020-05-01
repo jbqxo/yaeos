@@ -248,6 +248,7 @@ static struct conv_spec parse_conv_spec(const char **_format)
 struct argument {
 	union {
 		uintmax_t i;
+		char *str;
 	} val;
 	bool negative;
 };
@@ -281,6 +282,7 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args,
 		}
 	} break;
 	case CS_PTR: arg.val.i = va_arg(*args, int); break;
+	case CS_STR: arg.val.str = va_arg(*args, char*); break;
 	}
 	return arg;
 }
@@ -382,6 +384,24 @@ static void ptr_print(output_t out, struct conv_spec *s, struct argument *a) {
 	}
 }
 
+static int str_length(struct conv_spec *s, struct argument *a) {
+	int l = strlen(a->val.str);
+	if (s->precision != PREC_EMPTY && s->precision < l) {
+		return s->precision;
+	}
+	return l;
+}
+
+static void str_print(output_t out, struct conv_spec *s, struct argument *a) {
+	const char *str = a->val.str;
+	// TODO: Find a way to reuse the result.
+	int len = str_length(s, a);
+
+	for (int i = 0; i < len; i++) {
+		print_char(out, str[i]);
+	}
+}
+
 static struct conv_spec_funcs cs_funcs_table[] = {
 	[CS_INT] = (struct conv_spec_funcs){ .print = int_print,
 					     .length = int_length,
@@ -389,6 +409,9 @@ static struct conv_spec_funcs cs_funcs_table[] = {
 	[CS_PTR] = (struct conv_spec_funcs){ .print = ptr_print,
 					     .length = ptr_length,
 					     .prefix = "0x" },
+	[CS_STR] = (struct conv_spec_funcs){ .print = str_print,
+					     .length = str_length,
+					     .prefix = NULL }
 };
 
 /**
