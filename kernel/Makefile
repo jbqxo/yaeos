@@ -28,10 +28,10 @@ FILES_OBJ :=\
 all: $(BUILDDIR_KERNEL)/kernel.bin install-headers
 
 install-headers:
-	$(info [kernel] Copying headers to the build directory)
+	$(call log, [kernel] Copying headers to the build directory)
 	@$(MKDIRP) $(BUILDDIR_KERNEL)/include
 	@$(CPRP) $(CWD)/include/. $(BUILDDIR_KERNEL)/include/.
-	$(info [kernel] Copying platform-dependent headers ($(TARGET)) to the build directory)
+	$(call log, [kernel] Copying platform-dependent headers ($(TARGET)) to the build directory)
 	@$(MKDIRP) $(BUILDDIR_KERNEL)/include/arch
 	@$(CPRP) $(CWD)/arch/$(TARGET)/include/. $(BUILDDIR_KERNEL)/include/.
 
@@ -42,9 +42,9 @@ prefix_dirs $(BUILDDIR_KERNEL)/kernel.bin: FILES_OBJ := $(FILES_OBJ_ARCH_BEGIN) 
 prefix_dirs $(BUILDDIR_KERNEL)/kernel.bin: FILES_OBJ := $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ))
 
 clean:
-	$(info [kernel] Removing kernel prefix directory)
+	$(call log, [kernel] Removing kernel prefix directory)
 	@$(RMRF) $(BUILDDIR_KERNEL)
-	$(info [kernel] Removing tests prefix directory)
+	$(call log, [kernel] Removing tests prefix directory)
 	@$(RMRF) $(BUILDDIR_TESTS)
 
 prefix_dirs:
@@ -55,7 +55,7 @@ prefix_dirs:
 $(BUILDDIR_KERNEL)/kernel.bin: LDFLAGS += -nostdlib $(LDFLAGS_COMMON)
 $(BUILDDIR_KERNEL)/kernel.bin: LDFLAGS += $(if $(BUILD_DEBUG),$(LDFLAGS_DEBUG),$(LDFLAGS_RELEASE))
 $(BUILDDIR_KERNEL)/kernel.bin: $$(FILES_OBJ) $(DIR_ARCH)/linker.ld $(BUILDDIR_LIBK)/libk.a
-	$(info [kernel] LD $@)
+	$(call log, [kernel] LD $@)
 	@$(CC) -Wl,-T,$(DIR_ARCH)/linker.ld $(FILES_OBJ) $(BUILDDIR_LIBK)/libk.a $(LDFLAGS) -o $@
 
 $(BUILDDIR_KERNEL)/%.c.o: CPPFLAGS += $(CPPFLAGS_KERNEL) $(CPPFLAGS_LIBC)
@@ -64,11 +64,11 @@ $(BUILDDIR_KERNEL)/%.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_KERNEL)/%.c.o: CFLAGS += $(CFLAGS_COMMON) -ffreestanding
 $(BUILDDIR_KERNEL)/%.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
 $(BUILDDIR_KERNEL)/%.c.o: $(CWD)/%.c | prefix_dirs
-	$(info [kernel] CC $@)
+	$(call log, [kernel] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 $(BUILDDIR_KERNEL)/%.nasm.o: $(CWD)/%.nasm | prefix_dirs
-	$(info [kernel] NASM $@)
+	$(call log, [kernel] NASM $@)
 	@$(NASM) $< -o $@
 
 ###### Tests rules
@@ -85,13 +85,13 @@ $(BUILDDIR_TESTS)/kernel/%_tests.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEB
 $(BUILDDIR_TESTS)/kernel/%_tests.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
 $(BUILDDIR_TESTS)/kernel/%_tests.c.o: CPPFLAGS += $(CPPFLAGS_KERNEL)
 $(BUILDDIR_TESTS)/kernel/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
-	$(info [kernel.tests] CC $@)
+	$(call log, [kernel.tests] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $^ -c -o $@
 
 $(BUILDDIR_TESTS)/kernel/%_tests: LDFLAGS += $(LDFLAGS_COMMON)
 $(BUILDDIR_TESTS)/kernel/%_tests: LDFLAGS += $(if $(BUILD_DEBUG),$(LDFLAGS_DEBUG),$(LDFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/kernel/%_tests: $(BUILDDIR_TESTS)/kernel/%_tests.c.o $(BUILDDIR_KERNEL)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
-	$(info [kernel.tests] LD $@)
+	$(call log, [kernel.tests] LD $@)
 	@$(CC) $(CPPFLAGS) $^ $(LDFLAGS) -o $@
 
 ###### Dependencies rules
@@ -100,11 +100,11 @@ $(BUILDDIR_KERNEL)/%.c.d: CPPFLAGS += $(CPPFLAGS_KERNEL) $(CPPFLAGS_LIBC)
 $(BUILDDIR_KERNEL)/%.c.d: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
 $(BUILDDIR_KERNEL)/%.c.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_KERNEL)/%.c.d: $(CWD)/%.c | prefix_dirs
-	$(info [kernel] MD $@)
+	$(call log, [kernel] MD $@)
 	@$(CC) $(CPPFLAGS) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
 $(BUILDDIR_KERNEL)/%.nasm.d: $(CWD)/%.nasm | prefix_dirs
-	$(info [kernel] MD $@)
+	$(call log, [kernel] MD $@)
 	@$(NASM) -MG -MT $(@:.d=.o) -MD $@ $< -o /dev/null
 
 $(BUILDDIR_LIBK)/libk.a:
@@ -116,7 +116,7 @@ $(BUILDDIR_DEPS)/unity/unity.o:
 $(BUILDDIR_KERNEL_ARCH)/crtbegin.o $(BUILDDIR_KERNEL_ARCH)/crtend.o: CFLAGS += $(CFLAGS_COMMON) -ffreestanding
 $(BUILDDIR_KERNEL_ARCH)/crtbegin.o $(BUILDDIR_KERNEL_ARCH)/crtend.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
 $(BUILDDIR_KERNEL_ARCH)/crtbegin.o $(BUILDDIR_KERNEL_ARCH)/crtend.o: | prefix_dirs
-	$(info [kernel] Copy $(notdir $@) to the build directory)
+	$(call log, [kernel] Copy $(notdir $@) to the build directory)
 	@CRT_O=`$(CC) $(CFLAGS) $(LDFLAGS) -print-file-name=$(@F)` && cp "$$CRT_O" $@
 
 ifneq ($(MAKECMDGOALS),clean)

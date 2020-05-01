@@ -30,37 +30,37 @@ dirs_libk $(BUILDDIR_LIBK)/libk.a: FILES_OBJ := $(addprefix $(BUILDDIR_LIBK)/, $
 all: $(BUILDDIR_LIBC)/libc.a $(BUILDDIR_LIBK)/libk.a install-headers
 
 dirs_libc:
-	$(info [libc] Creating dir tree)
+	$(call log, [libc] Creating dir tree)
 	@$(MKDIRP) $(dir $(FILES_OBJ))
 
 dirs_libk:
-	$(info [libk] Creating dir tree)
+	$(call log, [libk] Creating dir tree)
 	@$(MKDIRP) $(dir $(FILES_OBJ))
 
 clean:
-	$(info [libc] Removing libc prefix directory)
+	$(call log, [libc] Removing libc prefix directory)
 	@$(RMRF) $(BUILDDIR_LIBC)
-	$(info [libk] Removing libk prefix directory)
+	$(call log, [libk] Removing libk prefix directory)
 	@$(RMRF) $(BUILDDIR_LIBK)
-	$(info [lib] Removing tests prefix directory)
+	$(call log, [lib] Removing tests prefix directory)
 	@$(RMRF) $(BUILDDIR_TESTS)
 
 install-headers:
 	@$(MKDIRP) $(BUILDDIR_LIBC)/include
-	$(info [libc] Copying headers to the build directory)
+	$(call log, [libc] Copying headers to the build directory)
 	@$(CPRP) $(CWD)/include/. $(BUILDDIR_LIBC)/include/.
-	$(info [libc] Copying platform-dependent headers ($(TARGET)) to the build directory)
+	$(call log, [libc] Copying platform-dependent headers ($(TARGET)) to the build directory)
 	@$(MKDIRP) $(BUILDDIR_LIBC)/include/arch
 	@$(CPRP) $(CWD)/arch/$(TARGET)/include/. $(BUILDDIR_LIBC)/include/.
 
 ###### Libc rules
 
 $(BUILDDIR_LIBC)/libc.a: $$(FILES_OBJ) | dirs_libc
-	$(info [libc] Archiving $(notdir $^))
+	$(call log, [libc] Archiving $(notdir $^))
 	@$(AR) rcs $@ $^
 
 $(BUILDDIR_LIBK)/libk.a: $$(FILES_OBJ) | dirs_libk
-	$(info [libk] Archiving $(notdir $^))
+	$(call log, [libk] Archiving $(notdir $^))
 	@$(AR) rcs $@ $^
 
 $(BUILDDIR_LIBC)/%.c.o: CPPFLAGS += $(CPPFLAGS_LIBC) -D__libc__
@@ -68,11 +68,11 @@ $(BUILDDIR_LIBC)/%.c.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPF
 $(BUILDDIR_LIBC)/%.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_LIBC)/%.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE)) -ffreestanding
 $(BUILDDIR_LIBC)/%.c.o: $(CWD)/%.c | dirs_libc
-	$(info [libc] CC $@)
+	$(call log, [libc] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 $(BUILDDIR_LIBC)/%.nasm.o: $(CWD)/%.nasm | dirs_libc
-	$(info [libc] NASM $@)
+	$(call log, [libc] NASM $@)
 	@$(AS) -D__libc__ $< -o $@
 
 $(BUILDDIR_LIBK)/%.c.o: CPPFLAGS += $(CPPFLAGS_LIBC) -D__libk__
@@ -81,11 +81,11 @@ $(BUILDDIR_LIBK)/%.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_LIBK)/%.c.o: CFLAGS += $(CFLAGS_COMMON) -ffreestanding
 $(BUILDDIR_LIBK)/%.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
 $(BUILDDIR_LIBK)/%.c.o: $(CWD)/%.c | dirs_libk
-	$(info [libk] CC $@)
+	$(call log, [libk] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 $(BUILDDIR_LIBK)/%.nasm.o: $(CWD)/%.nasm | dirs_libk
-	$(info [libk] NASM $@)
+	$(call log, [libk] NASM $@)
 	@$(AS) -D__libk__ $< -o $@
 
 ###### Tests rules
@@ -97,14 +97,14 @@ dirs_tests test: TESTS_LIBK := $(addprefix libk/, $(TESTS))
 dirs_tests test: TESTS_LIBC := $(addprefix $(BUILDDIR_TESTS)/, $(TESTS_LIBC))
 dirs_tests test: TESTS_LIBK := $(addprefix $(BUILDDIR_TESTS)/, $(TESTS_LIBK))
 dirs_tests:
-	$(info [libk.tests] Creating dir tree)
-	$(info [libc.tests] Creating dir tree)
+	$(call log, [libk.tests] Creating dir tree)
+	$(call log, [libc.tests] Creating dir tree)
 	@$(MKDIRP) $(dir $(TESTS_LIBC) $(TESTS_LIBK))
 
 test: $$(TESTS_LIBC) $$(TESTS_LIBK) | dirs_tests
-	$(info [libk] Running tests for kernel-space)
+	$(call log, [libk] Running tests for kernel-space)
 	@$(foreach t,$(TESTS_LIBK), echo "[libk.tests] Running $t"; $t || true;)
-	$(info [libc] Running tests for user-space)
+	$(call log, [libc] Running tests for user-space)
 	@$(foreach t,$(TESTS_LIBC), echo "[libc.tests] Running $t"; $t || true;)
 
 $(BUILDDIR_TESTS)/libc/%_tests.c.o: CPPFLAGS +=	$(CPPFLAGS_LIBC) -D__libc__
@@ -113,7 +113,7 @@ $(BUILDDIR_TESTS)/libc/%_tests.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_TESTS)/libc/%_tests.c.o: CFLAGS += $(CFLAGS_COMMON)
 $(BUILDDIR_TESTS)/libc/%_tests.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/libc/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
-	$(info [libc.tests] CC $@)
+	$(call log, [libc.tests] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $^ -c -o $@
 
 $(BUILDDIR_TESTS)/libk/%_tests.c.o: CPPFLAGS +=	$(CPPFLAGS_LIBC) -D__libk__
@@ -122,19 +122,19 @@ $(BUILDDIR_TESTS)/libk/%_tests.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_TESTS)/libk/%_tests.c.o: CFLAGS += $(CFLAGS_COMMON)
 $(BUILDDIR_TESTS)/libk/%_tests.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE)) -ffreestanding
 $(BUILDDIR_TESTS)/libk/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
-	$(info [libk.tests] CC $@)
+	$(call log, [libk.tests] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $^ -c -o $@
 
 $(BUILDDIR_TESTS)/libc/%_tests: LDFLAGS += $(LDFLAGS_COMMON)
 $(BUILDDIR_TESTS)/libc/%_tests: LDFLAGS += $(if $(BUILD_DEBUG),$(LDFLAGS_DEBUG),$(LDFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/libc/%_tests: $(BUILDDIR_TESTS)/libc/%_tests.c.o $(BUILDDIR_LIBC)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
-	$(info [libc.tests] LD $@)
+	$(call log, [libc.tests] LD $@)
 	@$(CC) $^ $(LDFLAGS) -o $@
 
 $(BUILDDIR_TESTS)/libk/%_tests: LDFLAGS += $(LDFLAGS_COMMON)
 $(BUILDDIR_TESTS)/libk/%_tests: LDFLAGS += $(if $(BUILD_DEBUG),$(LDFLAGS_DEBUG),$(LDFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/libk/%_tests: $(BUILDDIR_TESTS)/libk/%_tests.c.o $(BUILDDIR_LIBK)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
-	$(info [libk.tests] LD $@)
+	$(call log, [libk.tests] LD $@)
 	@$(CC) $^ $(LDFLAGS) -o $@
 
 ###### Dependencies rules
@@ -143,22 +143,22 @@ $(BUILDDIR_LIBC)/%.c.d: CPPFLAGS += $(CPPFLAGS_LIBC) -D__libk__
 $(BUILDDIR_LIBC)/%.c.d: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
 $(BUILDDIR_LIBC)/%.c.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_LIBC)/%.c.d: $(CWD)/%.c | dirs_libc
-	$(info [libc] MD $@)
+	$(call log, [libc] MD $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBC) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
 $(BUILDDIR_LIBK)/%.c.d: CPPFLAGS += $(CPPFLAGS_LIBC) -D__libk__
 $(BUILDDIR_LIBK)/%.c.d: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
 $(BUILDDIR_LIBK)/%.c.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_LIBK)/%.c.d: $(CWD)/%.c | dirs_libk
-	$(info [libk] MD $@)
+	$(call log, [libk] MD $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBK) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
 $(BUILDDIR_LIBC)/%.nasm.d: $(CWD)/%.nasm | dirs_libc
-	$(info [libc] MD $@)
+	$(call log, [libc] MD $@)
 	@$(AS) -D__libc__ -MG -MT $(@:.d=.o) -MD $@ $< -o /dev/null
 
 $(BUILDDIR_LIBK)/%.nasm.d: $(CWD)/%.nasm | dirs_libk
-	$(info [libk] MD $@)
+	$(call log, [libk] MD $@)
 	@$(AS) -D__libk__ -MG -MT $(@:.d=.o) -MD $@ $< -o /dev/null
 
 ifneq ($(MAKECMDGOALS),clean)

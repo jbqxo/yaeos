@@ -85,3 +85,11 @@ MKDIRP := mkdir -p
 RMRF   := rm -rf
 CPRP   := cp -R -p
 FIND   := find
+
+# Do not remove intermediate files
+.SECONDARY:
+
+# Common functions
+define log
+@if [ $(STEPS) ]; then echo "$(strip $(1))"; fi
+endef
