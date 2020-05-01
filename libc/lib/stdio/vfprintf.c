@@ -24,6 +24,12 @@ static int print_char(tty_descriptor_t d, char c)
 }
 #endif
 
+static void putn(output_t out, const char *str, unsigned n) {
+	for (int i = 0; i < n; i++) {
+		print_char(out, str[i]);
+	}
+}
+
 enum conv_flags {
 	CF_MINUS = 0x1 << 0,
 	CF_PLUS  = 0x1 << 1,
@@ -283,7 +289,22 @@ struct conv_spec_funcs {
 	void (*print)(output_t out, struct conv_spec *s, struct argument *a);
 	// Calculate the length of the result of print function.
 	int (*length)(struct conv_spec *s, struct argument *a);
+	// Null-terminated string to prepend to the value ("0x" for ptr/hex values, for example). Could be NULL.
+	const char *prefix;
 };
+
+static int length_for_intnumbase(uintmax_t num, unsigned base, unsigned max_num_digits) {
+	for (int i = max_num_digits - 1; i >= 0; i--) {
+		uintmax_t power = 1;
+		for (int j = 0; j < i; j++) {
+			power *= base;
+		}
+		if (num >= power) {
+			return i + 1;
+		}
+	}
+	return 1;
+}
 
 static int int_length(struct conv_spec *s, struct argument *a)
 {
@@ -293,31 +314,20 @@ static int int_length(struct conv_spec *s, struct argument *a)
 		return 0;
 	}
 
-	int result = 1;
-	// Compiler may optimize it. (Clang with -O3 will)
-	for (int i = 19; i >= 0; i--) {
-		uintmax_t power = 1;
-		for (int j = 0; j < i; j++) {
-			power *= 10;
-		}
-		if (a->val.i >= power) {
-			result = i + 1;
-			break;
-		}
-	}
+	int length = length_for_intnumbase(a->val.i, 10, 20);
 
 	if (s->precision != PREC_EMPTY) {
-		if (s->precision >= result) {
+		if (s->precision >= length) {
 			return s->precision;
 		}
 	}
 
-	return result;
+	return length;
 }
 
 static void int_print(output_t out, struct conv_spec *s, struct argument *a)
 {
-		char buffer[21];
+	char buffer[20];
 	int buffer_size = sizeof(buffer) / sizeof(*buffer);
 	int buffer_i = buffer_size;
 
@@ -348,7 +358,8 @@ static void int_print(output_t out, struct conv_spec *s, struct argument *a)
 
 static struct conv_spec_funcs cs_funcs_table[] = {
 	[CS_INT] = (struct conv_spec_funcs){ .print = int_print,
-					     .length = int_length },
+					     .length = int_length,
+					     .prefix = NULL },
 };
 
 /**
@@ -356,7 +367,7 @@ static struct conv_spec_funcs cs_funcs_table[] = {
  * 
  * @return int Number of written characters.
  */
-static int print_flags_chars(output_t out, struct conv_spec s,
+static int put_flags(output_t out, struct conv_spec s,
 			     struct argument arg)
 {
 	int printed = 0;
@@ -381,14 +392,24 @@ static int print_flags_chars(output_t out, struct conv_spec s,
 static int print_conv_spec(output_t out, struct conv_spec s, va_list *args)
 {
 	struct argument arg = fetch_arg(s, args, &arg);
-	int length = cs_funcs_table[s.spec].length(&s, &arg);
-	int width_to_fill = s.width - length - (arg.negative ? 1 : 0);
+	int num_len = cs_funcs_table[s.spec].length(&s, &arg);
 	int printed = 0;
+
+	const char *prefix = cs_funcs_table[s.spec].prefix;
+	unsigned prefix_len = 0;
+	if (prefix) {
+		prefix_len = strlen(prefix);
+	}
+
+	bool flag_present = arg.negative || (s.flags & (CF_PLUS | CF_SPACE));
+	int width_to_fill = s.width - num_len - prefix_len - (flag_present ? 1 : 0);
 
 	// If Width != 0 and the flag '-' was not specified, result must be right-justified
 	if (!(s.flags & CF_MINUS) && s.width != WIDTH_EMPTY) {
 		if (s.flags & CF_ZERO) {
-			printed += print_flags_chars(out, s, arg);
+			putn(out, prefix, prefix_len);
+			printed += prefix_len;
+			printed += put_flags(out, s, arg);
 		}
 		while (width_to_fill > 0) {
 			// remained_width could be < 0, so decrement in the loop
@@ -399,10 +420,12 @@ static int print_conv_spec(output_t out, struct conv_spec s, va_list *args)
 		}
 			}
 	if (!(s.flags & CF_ZERO)) {
-		printed += print_flags_chars(out, s, arg);
+		putn(out, prefix, prefix_len);
+		printed += prefix_len;
+		printed += put_flags(out, s, arg);
 			}
 	cs_funcs_table[s.spec].print(out, &s, &arg);
-	printed += length;
+	printed += num_len;
 
 	// If Width != 0 and the flag '-' was specified, result must be left-justified
 	if (s.flags & CF_MINUS && s.width != WIDTH_EMPTY) {
