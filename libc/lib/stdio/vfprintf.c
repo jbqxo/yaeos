@@ -280,6 +280,7 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args,
 #undef CASE_BODY
 		}
 	} break;
+	case CS_PTR: arg.val.i = va_arg(*args, int); break;
 	}
 	return arg;
 }
@@ -335,9 +336,9 @@ static void int_print(output_t out, struct conv_spec *s, struct argument *a)
 	// The result of converting a zero value with a precision of zero is no characters.
 	if (s->precision == 0 && a->val.i == 0) {
 		return;
-		}
+	}
 
-		do {
+	do {
 		buffer_i--;
 		buffer[buffer_i] = a->val.i % 10 + '0';
 	} while ((a->val.i /= 10) != 0 && buffer_i > 0);
@@ -356,10 +357,38 @@ static void int_print(output_t out, struct conv_spec *s, struct argument *a)
 	}
 }
 
+static int ptr_length(struct conv_spec *s, struct argument *a) {
+	return length_for_intnumbase(a->val.i, 16, 16);
+}
+
+static void ptr_print(output_t out, struct conv_spec *s, struct argument *a) {
+	char buffer[16];
+	int buffer_size = sizeof(buffer) / sizeof(*buffer);
+	int buffer_i = buffer_size;
+
+	do {
+		buffer_i--;
+		unsigned char n = a->val.i % 16;
+		if (n < 10) {
+			buffer[buffer_i] = n + '0';
+		} else {
+			buffer[buffer_i] = (n - 10) + 'A';
+		}
+	} while((a->val.i /= 16) != 0 && buffer_i > 0);
+
+	while (buffer_i < buffer_size) {
+		print_char(out, buffer[buffer_i]);
+		buffer_i++;
+	}
+}
+
 static struct conv_spec_funcs cs_funcs_table[] = {
 	[CS_INT] = (struct conv_spec_funcs){ .print = int_print,
 					     .length = int_length,
 					     .prefix = NULL },
+	[CS_PTR] = (struct conv_spec_funcs){ .print = ptr_print,
+					     .length = ptr_length,
+					     .prefix = "0x" },
 };
 
 /**
@@ -379,8 +408,8 @@ static int put_flags(output_t out, struct conv_spec s,
 		printed++;
 	} else if (s.flags & CF_SPACE) {
 		print_char(out, ' ');
-			printed++;
-		}
+		printed++;
+	}
 	return printed;
 }
 
@@ -415,15 +444,15 @@ static int print_conv_spec(output_t out, struct conv_spec s, va_list *args)
 			// remained_width could be < 0, so decrement in the loop
 			char c = s.flags & CF_ZERO ? '0' : ' ';
 			print_char(out, c);
-		printed++;
+			printed++;
 			width_to_fill--;
 		}
-			}
+	}
 	if (!(s.flags & CF_ZERO)) {
 		putn(out, prefix, prefix_len);
 		printed += prefix_len;
 		printed += put_flags(out, s, arg);
-			}
+	}
 	cs_funcs_table[s.spec].print(out, &s, &arg);
 	printed += num_len;
 
@@ -455,9 +484,9 @@ int vfprintf(tty_descriptor_t d, const char *restrict format, va_list args)
 			const char *new_pos = &format[i];
 			struct conv_spec s = parse_conv_spec(&new_pos);
 #ifdef __libc__
-				printed += print_conv_spec(stream, s, &ap);
+			printed += print_conv_spec(stream, s, &ap);
 #elif __libk__
-				printed += print_conv_spec(d, s, &ap);
+			printed += print_conv_spec(d, s, &ap);
 #endif
 			i = new_pos - format;
 		} else {
