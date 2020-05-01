@@ -47,6 +47,7 @@ void tearDown(void)
 static void simple(void)
 {
 	VFPRINTF("16", "16");
+	VFPRINTF("20% + 80% = 100%", "%d%% + %d%% = %d%%", 20, 80, 100);
 }
 
 static void conv_int(void)

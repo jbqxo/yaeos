@@ -626,6 +626,13 @@ int vfprintf(output_t out, const char *restrict format, va_list args)
 		if (format[i] == '%') {
 			const char *new_pos = &format[i];
 			struct conv_spec s = parse_conv_spec(&new_pos);
+			// TODO: Refactor
+			if (s.spec == CS_PERCENTAGE) {
+				put_char(out, format[i]);
+				i += 2;
+				printed += 1;
+				continue;
+			}
 			printed += print_conv_spec(out, s, &ap);
 			i = new_pos - format;
 		} else {
