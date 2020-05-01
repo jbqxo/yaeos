@@ -4,10 +4,10 @@ KERNEL_DS_SELECTOR equ 0x10
 %macro GEN_IRQ_NOERR 1
 global irq%1:function (irq%1.end - irq%1)
 irq%1:
-    cli
-    push dword 0
-    push dword %1
-    jmp common_handler
+	cli
+	push dword 0
+	push dword %1
+	jmp common_handler
 .end:
 %endmacro
 
@@ -15,9 +15,9 @@ irq%1:
 %macro GEN_IRQ_ERR 1
 global irq%1:function (irq%1.end - irq%1)
 irq%1:
-    cli
-    push dword %1
-    jmp common_handler
+	cli
+	push dword %1
+	jmp common_handler
 .end:
 %endmacro
 
@@ -27,33 +27,33 @@ section .text
 extern irq_handler
 ;; The routine prepares environment for interrupt handler.
 common_handler:
-    ;; Save GP registers of the interrupted task.
-    pusha
+	;; Save GP registers of the interrupted task.
+	pusha
 
 ;; TODO: Save all segment selectors.
-    ;; Save Data segment selector.
-    mov ax, ds
-    push eax
-
-    mov ax, KERNEL_DS_SELECTOR
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-
-    call irq_handler
-
-    pop eax
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-
-    popa
-    ;; Erase error code and Vector number
-    add esp, 8
-    sti
-    iret
+	;; Save Data segment selector.
+	mov ax, ds
+	push eax
+	
+	mov ax, KERNEL_DS_SELECTOR
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	
+	call irq_handler
+	
+	pop eax
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	
+	popa
+	;; Erase error code and Vector number
+	add esp, 8
+	sti
+	iret
 
 GEN_IRQ_NOERR 0
 GEN_IRQ_NOERR 1

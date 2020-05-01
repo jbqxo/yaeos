@@ -25,7 +25,8 @@ static int put_char(tty_descriptor_t d, char c)
 }
 #endif
 
-static void putn(output_t out, const char *str, unsigned n) {
+static void putn(output_t out, const char *str, unsigned n)
+{
 	for (int i = 0; i < n; i++) {
 		put_char(out, str[i]);
 	}
@@ -283,18 +284,18 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args,
 	case CS_UDEC: {
 		uintmax_t val = va_arg(*args, uintmax_t);
 		switch (s.length) {
-			case CL_CHAR: arg.val.d = (unsigned char)val; break;
-			case CL_SHORT: arg.val.d = (unsigned short)val; break;
-			case CL_LONG: arg.val.d = (unsigned long)val; break;
-			case CL_LLONG: arg.val.d = (unsigned long long)val; break;
-			case CL_INTMAX: arg.val.d = (uintmax_t)val; break;
-			case CL_SIZET: arg.val.d = (size_t)val; break;
-			case CL_NONE: arg.val.d = (unsigned)val; break;
-			case CL_PTRDIFF: arg.val.d = (ptrdiff_t)val; break;
+		case CL_CHAR: arg.val.d = (unsigned char)val; break;
+		case CL_SHORT: arg.val.d = (unsigned short)val; break;
+		case CL_LONG: arg.val.d = (unsigned long)val; break;
+		case CL_LLONG: arg.val.d = (unsigned long long)val; break;
+		case CL_INTMAX: arg.val.d = (uintmax_t)val; break;
+		case CL_SIZET: arg.val.d = (size_t)val; break;
+		case CL_NONE: arg.val.d = (unsigned)val; break;
+		case CL_PTRDIFF: arg.val.d = (ptrdiff_t)val; break;
 		}
 	} break;
 	case CS_PTR: arg.val.d = va_arg(*args, int); break;
-	case CS_STR: arg.val.str = va_arg(*args, char*); break;
+	case CS_STR: arg.val.str = va_arg(*args, char *); break;
 	case CS_UCHAR: arg.val.d = va_arg(*args, int); break;
 	}
 	return arg;
@@ -307,10 +308,13 @@ struct conv_spec_funcs {
 	int (*length)(struct conv_spec *s, struct argument *a);
 	// Function that returns string to prepend to the value ("0x" for ptr/hex values, for example)
 	// and it's length. Could be NULL.
-	const char *(*prefix)(struct conv_spec *s, struct argument *a, unsigned *length);
+	const char *(*prefix)(struct conv_spec *s, struct argument *a,
+			      unsigned *length);
 };
 
-static int length_for_intnumbase(uintmax_t num, unsigned base, unsigned max_num_digits) {
+static int length_for_intnumbase(uintmax_t num, unsigned base,
+				 unsigned max_num_digits)
+{
 	for (int i = max_num_digits - 1; i >= 0; i--) {
 		uintmax_t power = 1;
 		for (int j = 0; j < i; j++) {
@@ -323,7 +327,8 @@ static int length_for_intnumbase(uintmax_t num, unsigned base, unsigned max_num_
 	return 1;
 }
 
-static int oct_length(struct conv_spec *s, struct argument *a) {
+static int oct_length(struct conv_spec *s, struct argument *a)
+{
 	// Special case:
 	// The result of converting a zero value with a precision of zero is no characters.
 	if (s->precision == 0 && a->val.d == 0) {
@@ -341,7 +346,8 @@ static int oct_length(struct conv_spec *s, struct argument *a) {
 	return length;
 }
 
-static void oct_print(output_t out, struct conv_spec *s, struct argument *a) {
+static void oct_print(output_t out, struct conv_spec *s, struct argument *a)
+{
 	char buffer[22];
 	int buffer_size = sizeof(buffer) / sizeof(*buffer);
 	int buffer_i = buffer_size;
@@ -421,7 +427,8 @@ static void dec_print(output_t out, struct conv_spec *s, struct argument *a)
 	}
 }
 
-static int hex_length(struct conv_spec *s, struct argument *a) {
+static int hex_length(struct conv_spec *s, struct argument *a)
+{
 	if (s->spec == CS_UHEX || s->spec == CS_UHEX_BIG) {
 		if (s->precision == 0 && a->val.d == 0) {
 			return 0;
@@ -430,13 +437,14 @@ static int hex_length(struct conv_spec *s, struct argument *a) {
 	return length_for_intnumbase(a->val.d, 16, 16);
 }
 
-static void hex_print(output_t out, struct conv_spec *s, struct argument *a) {
+static void hex_print(output_t out, struct conv_spec *s, struct argument *a)
+{
 	char buffer[16];
 	int buffer_size = sizeof(buffer) / sizeof(*buffer);
 	int buffer_i = buffer_size;
 
 	// A little bit hacky, but it makes no sense to write the same code for the second and third time.
-	if (s->spec == CS_UHEX || s->spec ==  CS_UHEX_BIG) {
+	if (s->spec == CS_UHEX || s->spec == CS_UHEX_BIG) {
 		if (s->precision == 0 && a->val.d == 0) {
 			return;
 		}
@@ -458,7 +466,7 @@ static void hex_print(output_t out, struct conv_spec *s, struct argument *a) {
 		} else {
 			buffer[buffer_i] = (n - 10) + hex_offset;
 		}
-	} while((a->val.d /= 16) != 0 && buffer_i > 0);
+	} while ((a->val.d /= 16) != 0 && buffer_i > 0);
 
 	while (buffer_i < buffer_size) {
 		put_char(out, buffer[buffer_i]);
@@ -466,7 +474,9 @@ static void hex_print(output_t out, struct conv_spec *s, struct argument *a) {
 	}
 }
 
-static const char *hex_prefix(struct conv_spec *s, struct argument *a, unsigned *len) {
+static const char *hex_prefix(struct conv_spec *s, struct argument *a,
+			      unsigned *len)
+{
 	static const char zx[] = "0x";
 	// Do not count null-terminator.
 	static const unsigned zx_len = sizeof(zx) - 1;
@@ -485,7 +495,8 @@ static const char *hex_prefix(struct conv_spec *s, struct argument *a, unsigned 
 	return "";
 }
 
-static int str_length(struct conv_spec *s, struct argument *a) {
+static int str_length(struct conv_spec *s, struct argument *a)
+{
 	int l = strlen(a->val.str);
 	if (s->precision != PREC_EMPTY && s->precision < l) {
 		return s->precision;
@@ -493,7 +504,8 @@ static int str_length(struct conv_spec *s, struct argument *a) {
 	return l;
 }
 
-static void str_print(output_t out, struct conv_spec *s, struct argument *a) {
+static void str_print(output_t out, struct conv_spec *s, struct argument *a)
+{
 	const char *str = a->val.str;
 	// TODO: Find a way to reuse the result.
 	int len = str_length(s, a);
@@ -503,11 +515,13 @@ static void str_print(output_t out, struct conv_spec *s, struct argument *a) {
 	}
 }
 
-static int char_length(struct conv_spec *s, struct argument *a) {
+static int char_length(struct conv_spec *s, struct argument *a)
+{
 	return 1;
 }
 
-static void char_print(output_t out, struct conv_spec *s, struct argument *a) {
+static void char_print(output_t out, struct conv_spec *s, struct argument *a)
+{
 	put_char(out, a->val.d);
 }
 
@@ -543,8 +557,7 @@ static struct conv_spec_funcs cs_funcs_table[] = {
  * 
  * @return int Number of written characters.
  */
-static int put_flags(output_t out, struct conv_spec s,
-			     struct argument arg)
+static int put_flags(output_t out, struct conv_spec s, struct argument arg)
 {
 	int printed = 0;
 	if (arg.negative) {
@@ -578,7 +591,8 @@ static int print_conv_spec(output_t out, struct conv_spec s, va_list *args)
 	}
 
 	bool flag_present = arg.negative || (s.flags & (CF_PLUS | CF_SPACE));
-	int width_to_fill = s.width - num_len - prefix_len - (flag_present ? 1 : 0);
+	int width_to_fill =
+		s.width - num_len - prefix_len - (flag_present ? 1 : 0);
 
 	// If Width != 0 and the flag '-' was not specified, result must be right-justified
 	if (!(s.flags & CF_MINUS) && s.width != WIDTH_EMPTY) {

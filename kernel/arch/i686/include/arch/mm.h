@@ -56,4 +56,5 @@ mm_mem_range_cont_t mm_mem_range_cont_init(arch_info_t info);
  * @return true More memory regions are available.
  * @return false There are no more available memory regions.
  */
-bool mm_next_mem_range(arch_info_t info, mm_mem_range_cont_t *continuation, struct range_addr *range);
+bool mm_next_mem_range(arch_info_t info, mm_mem_range_cont_t *continuation,
+		       struct range_addr *range);

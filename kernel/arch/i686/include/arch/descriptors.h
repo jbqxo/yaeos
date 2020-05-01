@@ -26,21 +26,21 @@ extern "C" {
  * @base_high: the highest part of the segment base address.
  */
 struct gdt_entry {
-    uint16_t limit_low : 16;
-    uint32_t base_low : 24;
-    bool accessed : 1;
-    bool writable : 1;
-    bool direction_conforming : 1;
-    bool code : 1;
-    bool code_or_data : 1;
-    uint8_t privelege : 2;
-    bool present : 1;
-    uint16_t limit_high : 4;
-    bool available : 1;
-    bool must_be_false : 1;
-    bool size : 1;
-    bool granularity : 1;
-    uint8_t base_high : 8;
+	uint16_t limit_low : 16;
+	uint32_t base_low : 24;
+	bool accessed : 1;
+	bool writable : 1;
+	bool direction_conforming : 1;
+	bool code : 1;
+	bool code_or_data : 1;
+	uint8_t privelege : 2;
+	bool present : 1;
+	uint16_t limit_high : 4;
+	bool available : 1;
+	bool must_be_false : 1;
+	bool size : 1;
+	bool granularity : 1;
+	uint8_t base_high : 8;
 } __attribute__((packed));
 
 /**
@@ -49,8 +49,8 @@ struct gdt_entry {
  * @base: the address of the table.
  */
 struct gdt_ptr {
-    uint16_t limit;
-    uint32_t base;
+	uint16_t limit;
+	uint32_t base;
 } __attribute__((packed));
 
 /**
@@ -59,7 +59,8 @@ struct gdt_ptr {
  * @data_offset - offset in the gdt table for data selector.
  * @code_offset - offset in the gdt table for code selector.
  */
-void gdt_set_table(struct gdt_ptr *table, uint16_t data_offset, uint16_t code_offset);
+void gdt_set_table(struct gdt_ptr *table, uint16_t data_offset,
+		   uint16_t code_offset);
 void boot_setup_gdt(void);
 
 enum gate_type {
@@ -95,6 +96,7 @@ struct idt_ptr {
 void idt_set_table(struct idt_ptr *table);
 void boot_setup_idt(void);
 
+void divide_err_exception(void *frame);
 // TODO: Is there better way to declare these?
 extern void irq0(void);
 extern void irq1(void);

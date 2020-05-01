@@ -23,7 +23,7 @@
 	do {                                                                   \
 		uint32_t *frame = __builtin_frame_address(level);              \
 		/* Patch return address */                                     \
-		uint32_t *ra = &frame[1];                                     \
+		uint32_t *ra = &frame[1];                                      \
 		*ra += offset;                                                 \
 		/* Patch previous ebp */                                       \
 		uint32_t *bp = &frame[0];                                      \
@@ -100,7 +100,6 @@ static void setup_boot_paging(void)
 	vm_paging_set(boot_pd);
 	vm_paging_enable(KERNEL_VMA);
 
-	// It is important to do it in reverse order!
 	// Patch i686_init(...)
 	PATCH_FRAME(1, KERNEL_VMA);
 	// Patch setup_boot_paging(...)
@@ -116,7 +115,8 @@ static void setup_boot_paging(void)
  * 
  * @param info Multiboot info block.
  */
-static void patch_multiboot_info(multiboot_info_t *info) {
+static void patch_multiboot_info(multiboot_info_t *info)
+{
 	info->mmap_addr = HIGH(info->mmap_addr);
 }
 
@@ -135,7 +135,7 @@ void i686_init(multiboot_info_t *info, uint32_t magic)
 	boot_setup_gdt();
 	boot_setup_idt();
 
-	i686_info.info = (void*)HIGH(info);
+	i686_info.info = (void *)HIGH(info);
 	patch_multiboot_info(i686_info.info);
 
 	call_global_ctors();
