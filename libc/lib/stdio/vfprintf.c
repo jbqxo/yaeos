@@ -43,6 +43,7 @@ enum conv_specifiers {
 	CS_UOCTAL,
 	CS_UDEC,
 	CS_UHEX,
+	CS_UHEX_BIG,
 	CS_UCHAR,
 	CS_STR,
 	CS_PTR,
@@ -222,20 +223,14 @@ static struct conv_spec parse_conv_spec(const char **_format)
 		switch (*format) {
 		case 'd':
 		case 'i': result.spec = CS_INT; break;
-
 		case 'o': result.spec = CS_UOCTAL; break;
 		case 'u': result.spec = CS_UDEC; break;
-		case 'x':
-		case 'X': result.spec = CS_UHEX; break;
-
+		case 'x': result.spec = CS_UHEX; break;
+		case 'X': result.spec = CS_UHEX_BIG; break;
 		case 'c': result.spec = CS_UCHAR; break;
-
 		case 's': result.spec = CS_STR; break;
-
 		case 'p': result.spec = CS_PTR; break;
-
 		case 'n': result.spec = CS_WRITTEN_OUT; break;
-
 		case '%': result.spec = CS_PERCENTAGE; break;
 		default: result.spec = CS_INVALID;
 		}
@@ -282,6 +277,8 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args,
 #undef CASE_BODY
 		}
 	} break;
+	case CS_UHEX:
+	case CS_UHEX_BIG:
 	case CS_UDEC: {
 		uintmax_t val = va_arg(*args, uintmax_t);
 		switch (s.length) {
@@ -307,8 +304,9 @@ struct conv_spec_funcs {
 	void (*print)(output_t out, struct conv_spec *s, struct argument *a);
 	// Calculate the length of the result of print function.
 	int (*length)(struct conv_spec *s, struct argument *a);
-	// Null-terminated string to prepend to the value ("0x" for ptr/hex values, for example). Could be NULL.
-	const char *prefix;
+	// Function that returns string to prepend to the value ("0x" for ptr/hex values, for example)
+	// and it's length. Could be NULL.
+	const char *(*prefix)(struct conv_spec *s, struct argument *a, unsigned *length);
 };
 
 static int length_for_intnumbase(uintmax_t num, unsigned base, unsigned max_num_digits) {
@@ -374,13 +372,34 @@ static void dec_print(output_t out, struct conv_spec *s, struct argument *a)
 	}
 }
 
+static int hex_length(struct conv_spec *s, struct argument *a) {
+	if (s->spec == CS_UHEX || s->spec == CS_UHEX_BIG) {
+		if (s->precision == 0 && a->val.d == 0) {
+			return 0;
+		}
+	}
 	return length_for_intnumbase(a->val.d, 16, 16);
 }
 
-static void ptr_print(output_t out, struct conv_spec *s, struct argument *a) {
+static void hex_print(output_t out, struct conv_spec *s, struct argument *a) {
 	char buffer[16];
 	int buffer_size = sizeof(buffer) / sizeof(*buffer);
 	int buffer_i = buffer_size;
+
+	// A little bit hacky, but it makes no sense to write the same code for the second and third time.
+	if (s->spec == CS_UHEX || s->spec ==  CS_UHEX_BIG) {
+		if (s->precision == 0 && a->val.d == 0) {
+			return;
+		}
+	}
+
+	char hex_offset;
+	if (s->spec == CS_UHEX) {
+		hex_offset = 'a';
+	} else {
+		// CS_UHEX_BIG or CS_PTR
+		hex_offset = 'A';
+	}
 
 	do {
 		buffer_i--;
@@ -388,7 +407,7 @@ static void ptr_print(output_t out, struct conv_spec *s, struct argument *a) {
 		if (n < 10) {
 			buffer[buffer_i] = n + '0';
 		} else {
-			buffer[buffer_i] = (n - 10) + 'A';
+			buffer[buffer_i] = (n - 10) + hex_offset;
 		}
 	} while((a->val.d /= 16) != 0 && buffer_i > 0);
 
@@ -396,6 +415,25 @@ static void ptr_print(output_t out, struct conv_spec *s, struct argument *a) {
 		put_char(out, buffer[buffer_i]);
 		buffer_i++;
 	}
+}
+
+static const char *hex_prefix(struct conv_spec *s, struct argument *a, unsigned *len) {
+	static const char zx[] = "0x";
+	// Do not count null-terminator.
+	static const unsigned zx_len = sizeof(zx) - 1;
+
+	if (s->spec == CS_PTR) {
+		*len = zx_len;
+		return zx;
+	}
+
+	if (s->flags & (CF_HASH)) {
+		*len = zx_len;
+		return zx;
+	}
+
+	*len = 0;
+	return "";
 }
 
 static int str_length(struct conv_spec *s, struct argument *a) {
@@ -431,9 +469,15 @@ static struct conv_spec_funcs cs_funcs_table[] = {
 	[CS_UDEC] = (struct conv_spec_funcs){ .print = dec_print,
 					     .length = dec_length,
 					     .prefix = NULL },
-	[CS_PTR] = (struct conv_spec_funcs){ .print = ptr_print,
-					     .length = ptr_length,
-					     .prefix = "0x" },
+	[CS_PTR] = (struct conv_spec_funcs){ .print = hex_print,
+					     .length = hex_length,
+					     .prefix = hex_prefix },
+	[CS_UHEX] = (struct conv_spec_funcs){ .print = hex_print,
+					      .length = hex_length,
+					      .prefix = hex_prefix },
+	[CS_UHEX_BIG] = (struct conv_spec_funcs){ .print = hex_print,
+					      .length = hex_length,
+					      .prefix = hex_prefix },
 	[CS_STR] = (struct conv_spec_funcs){ .print = str_print,
 					     .length = str_length,
 					     .prefix = NULL },
@@ -475,10 +519,10 @@ static int print_conv_spec(output_t out, struct conv_spec s, va_list *args)
 	int num_len = cs_funcs_table[s.spec].length(&s, &arg);
 	int printed = 0;
 
-	const char *prefix = cs_funcs_table[s.spec].prefix;
+	const char *prefix = NULL;
 	unsigned prefix_len = 0;
-	if (prefix) {
-		prefix_len = strlen(prefix);
+	if (cs_funcs_table[s.spec].prefix) {
+		prefix = cs_funcs_table[s.spec].prefix(&s, &arg, &prefix_len);
 	}
 
 	bool flag_present = arg.negative || (s.flags & (CF_PLUS | CF_SPACE));

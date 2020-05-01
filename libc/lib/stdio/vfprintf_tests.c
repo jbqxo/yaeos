@@ -129,13 +129,36 @@ static void conv_ptr(void)
 
 static void conv_uhex(void)
 {
+	VFPRINTF("0x1 + 0xe = f", "0x1 + 0xe = %x", 0x1 + 0xe);
+	VFPRINTF("0x1 + 0xE = F", "0x1 + 0xE = %X", 0x1 + 0xE);
+
+	// Width
+	VFPRINTF("  f", "%3x", 0xf);
+	VFPRINTF("  F", "%3X", 0xf);
+
+	// Precision
+	VFPRINTF("f", "%.0x", 0xf);
+	VFPRINTF("", "%.0x", 0);
+	VFPRINTF("0", "%.1x", 0);
+
+	// Length
+	VFPRINTF("0", "%hhx", 0xFF + 1);
+	VFPRINTF("0", "%hx", 0xFFFF + 1);
+
+	// TODO: Test all length modifiers
+
+	// Flags
+	VFPRINTF("10 ", "%-3x", 16);
+	VFPRINTF("0010", "%04x", 16);
+	VFPRINTF("0xf", "%#x", 15);
+	VFPRINTF("0xF", "%#X", 15);
+	VFPRINTF("0x00f", "%#05x", 15);
 }
+
 static void conv_uoctal(void)
 {
 }
-static void conv_udec(void)
-{
-}
+
 static void conv_uchar(void)
 {
 	VFPRINTF("F", "%c", 'F');
@@ -158,6 +181,7 @@ int main(void)
 	RUN_TEST(conv_str);
 	RUN_TEST(conv_ptr);
 	RUN_TEST(conv_uchar);
+	RUN_TEST(conv_uhex);
 
 	return UNITY_END();
 }
