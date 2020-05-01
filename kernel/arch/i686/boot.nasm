@@ -41,6 +41,8 @@ _start:
     mov ebp, esp
 
     extern i686_init
+    push eax
+    push ebx
     call i686_init
 
     cli

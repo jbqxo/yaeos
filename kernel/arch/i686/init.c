@@ -4,9 +4,13 @@
 #include <arch/vm.h>
 #include <arch/platform.h>
 #include <arch/descriptors.h>
+#include <arch/mm.h>
+
+#include <multiboot.h>
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
 
 // TODO: Maybe add some "smart" recursive macrosses to patch the stack automatically?
@@ -66,10 +70,11 @@ static void map_kernel(void *page_dir)
  */
 static void map_platform(void *page_dir)
 {
-	void *paddr = (void *)VGA_BUFFER_ADDR;
-	void *vaddr = (void *)HIGH(VGA_BUFFER_ADDR);
-	vm_map(page_dir, vaddr, paddr,
-	       VM_TABLE_FLAG_PRESENT | VM_TABLE_FLAG_RW);
+	// Map low 1MiB
+	const uintptr_t start = 0x0;
+	const uintptr_t end = 1 * 1024 * 1024;
+	map_addr_range(page_dir, (void *)start, (void *)end,
+		       VM_TABLE_FLAG_PRESENT | VM_TABLE_FLAG_RW);
 }
 
 /**
@@ -106,16 +111,34 @@ static void setup_boot_paging(void)
 	vm_tlb_flush();
 }
 
-void call_global_ctors(void) asm("_init");
-void call_global_dtors(void) asm("_fini");
+/**
+ * @brief Patch some multiboot information in order to use it from high memory.
+ * 
+ * @param info Multiboot info block.
+ */
+static void patch_multiboot_info(multiboot_info_t *info) {
+	info->mmap_addr = HIGH(info->mmap_addr);
+}
 
-void i686_init(void)
+extern void call_global_ctors(void) asm("_init");
+extern void call_global_dtors(void) asm("_fini");
+
+static struct arch_info_i686 i686_info;
+
+void i686_init(multiboot_info_t *info, uint32_t magic)
 {
+	if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
+		// TODO: Panic
+		return;
+	}
 	setup_boot_paging();
 	boot_setup_gdt();
 	boot_setup_idt();
 
+	i686_info.info = (void*)HIGH(info);
+	patch_multiboot_info(i686_info.info);
+
 	call_global_ctors();
-	kernel_init();
+	kernel_init((arch_info_t)&i686_info);
 	call_global_dtors();
 }

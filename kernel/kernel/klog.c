@@ -2,6 +2,8 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <x86intrin.h>
 
 static struct klog_state {
 	tty_descriptor_t descriptor;
@@ -38,7 +40,8 @@ static char lvl_to_char(enum LOG_LEVEL lvl)
 void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, int line,
 		  const char *restrict format, ...)
 {
-	fprintf(STATE.descriptor, "[UNKNOWN:%c] %s:%d | ", lvl_to_char(lvl),
+	uint64_t cycle = __rdtsc();
+	fprintf(STATE.descriptor, "[%llu:%c] %s:%d | ", cycle, lvl_to_char(lvl),
 		find_filename(path), line);
 
 	va_list ap;
