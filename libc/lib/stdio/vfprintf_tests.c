@@ -64,32 +64,47 @@ static void conv_int(void)
 	VFPRINTF("", "%.0d", 0);
 	VFPRINTF("0", "%.1d", 0);
 
-	// Length: hh
+	// Length
 	VFPRINTF("-128", "%hhd", 0x7F + 1);
-
-	// Length: h
 	VFPRINTF("-32768", "%hd", 0x7FFF + 1);
 
 	// TODO: Test all length modifiers
 
-	// Flag: -
+	// Flags
 	VFPRINTF("16 ", "%-3d", 16);
-
-	// Flag: +
 	VFPRINTF("+16", "%+d", 16);
 	VFPRINTF("-16", "%+d", -16);
 	VFPRINTF("16", "%d", 16);
 	VFPRINTF("-16", "%d", -16);
-
-	// Flag: _space_
 	VFPRINTF(" 16", "% d", 16);
 	VFPRINTF("-16", "% d", -16);
 	VFPRINTF("+16", "% +d", 16);
 	VFPRINTF("-16", "% +d", -16);
-
-	// Flag: 0
 	VFPRINTF("0016", "%04d", 16);
 	VFPRINTF("-016", "%04d", -16);
+}
+
+static void conv_uint(void)
+{
+	VFPRINTF("2 + 14 = 16", "2 + 14 = %u", 16);
+
+	// Width
+	VFPRINTF("  16", "%4u", 16);
+
+	// Precision
+	VFPRINTF("16", "%.0u", 16);
+	VFPRINTF("", "%.0u", 0);
+	VFPRINTF("0", "%.1u", 0);
+
+	// Length
+	VFPRINTF("0", "%hhu", 0xFF + 1);
+	VFPRINTF("0", "%hu", 0xFFFF + 1);
+
+	// TODO: Test all length modifiers
+
+	// Flag
+	VFPRINTF("16 ", "%-3u", 16);
+	VFPRINTF("0016", "%04u", 16);
 }
 
 static void conv_str(void)
@@ -139,6 +154,7 @@ int main(void)
 
 	RUN_TEST(simple);
 	RUN_TEST(conv_int);
+	RUN_TEST(conv_uint);
 	RUN_TEST(conv_str);
 	RUN_TEST(conv_ptr);
 	RUN_TEST(conv_uchar);

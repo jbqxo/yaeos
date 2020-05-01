@@ -248,7 +248,7 @@ static struct conv_spec parse_conv_spec(const char **_format)
 
 struct argument {
 	union {
-		uintmax_t i;
+		uintmax_t d;
 		char *str;
 	} val;
 	bool negative;
@@ -260,15 +260,15 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args,
 	struct argument arg = { 0 };
 	switch (s.spec) {
 	case CS_INT: {
-		int val = va_arg(*args, int);
+		intmax_t val = va_arg(*args, intmax_t);
 		switch (s.length) {
 #define CASE_BODY(type)                                                        \
 	do {                                                                   \
 		type v = (type)val;                                            \
-		arg.val.i = v;                                                 \
+		arg.val.d = v;                                                 \
 		if (v < 0) {                                                   \
 			arg.negative = true;                                   \
-			arg.val.i *= -1;                                       \
+			arg.val.d *= -1;                                       \
 		}                                                              \
 	} while (0)
 		case CL_CHAR: CASE_BODY(char); break;
@@ -282,9 +282,22 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args,
 #undef CASE_BODY
 		}
 	} break;
-	case CS_PTR: arg.val.i = va_arg(*args, int); break;
+	case CS_UDEC: {
+		uintmax_t val = va_arg(*args, uintmax_t);
+		switch (s.length) {
+			case CL_CHAR: arg.val.d = (unsigned char)val; break;
+			case CL_SHORT: arg.val.d = (unsigned short)val; break;
+			case CL_LONG: arg.val.d = (unsigned long)val; break;
+			case CL_LLONG: arg.val.d = (unsigned long long)val; break;
+			case CL_INTMAX: arg.val.d = (uintmax_t)val; break;
+			case CL_SIZET: arg.val.d = (size_t)val; break;
+			case CL_NONE: arg.val.d = (unsigned)val; break;
+			case CL_PTRDIFF: arg.val.d = (ptrdiff_t)val; break;
+		}
+	} break;
+	case CS_PTR: arg.val.d = va_arg(*args, int); break;
 	case CS_STR: arg.val.str = va_arg(*args, char*); break;
-	case CS_UCHAR: arg.val.i = va_arg(*args, int); break;
+	case CS_UCHAR: arg.val.d = va_arg(*args, int); break;
 	}
 	return arg;
 }
@@ -311,15 +324,15 @@ static int length_for_intnumbase(uintmax_t num, unsigned base, unsigned max_num_
 	return 1;
 }
 
-static int int_length(struct conv_spec *s, struct argument *a)
+static int dec_length(struct conv_spec *s, struct argument *a)
 {
 	// Special case:
 	// The result of converting a zero value with a precision of zero is no characters.
-	if (s->precision == 0 && a->val.i == 0) {
+	if (s->precision == 0 && a->val.d == 0) {
 		return 0;
 	}
 
-	int length = length_for_intnumbase(a->val.i, 10, 20);
+	int length = length_for_intnumbase(a->val.d, 10, 20);
 
 	if (s->precision != PREC_EMPTY) {
 		if (s->precision >= length) {
@@ -330,7 +343,7 @@ static int int_length(struct conv_spec *s, struct argument *a)
 	return length;
 }
 
-static void int_print(output_t out, struct conv_spec *s, struct argument *a)
+static void dec_print(output_t out, struct conv_spec *s, struct argument *a)
 {
 	char buffer[20];
 	int buffer_size = sizeof(buffer) / sizeof(*buffer);
@@ -338,14 +351,14 @@ static void int_print(output_t out, struct conv_spec *s, struct argument *a)
 
 	// Special case:
 	// The result of converting a zero value with a precision of zero is no characters.
-	if (s->precision == 0 && a->val.i == 0) {
+	if (s->precision == 0 && a->val.d == 0) {
 		return;
 	}
 
 	do {
 		buffer_i--;
-		buffer[buffer_i] = a->val.i % 10 + '0';
-	} while ((a->val.i /= 10) != 0 && buffer_i > 0);
+		buffer[buffer_i] = a->val.d % 10 + '0';
+	} while ((a->val.d /= 10) != 0 && buffer_i > 0);
 
 	if (s->precision != PREC_EMPTY) {
 		int already_printed = buffer_size - buffer_i;
@@ -361,8 +374,7 @@ static void int_print(output_t out, struct conv_spec *s, struct argument *a)
 	}
 }
 
-static int ptr_length(struct conv_spec *s, struct argument *a) {
-	return length_for_intnumbase(a->val.i, 16, 16);
+	return length_for_intnumbase(a->val.d, 16, 16);
 }
 
 static void ptr_print(output_t out, struct conv_spec *s, struct argument *a) {
@@ -372,13 +384,13 @@ static void ptr_print(output_t out, struct conv_spec *s, struct argument *a) {
 
 	do {
 		buffer_i--;
-		unsigned char n = a->val.i % 16;
+		unsigned char n = a->val.d % 16;
 		if (n < 10) {
 			buffer[buffer_i] = n + '0';
 		} else {
 			buffer[buffer_i] = (n - 10) + 'A';
 		}
-	} while((a->val.i /= 16) != 0 && buffer_i > 0);
+	} while((a->val.d /= 16) != 0 && buffer_i > 0);
 
 	while (buffer_i < buffer_size) {
 		put_char(out, buffer[buffer_i]);
@@ -409,12 +421,15 @@ static int char_length(struct conv_spec *s, struct argument *a) {
 }
 
 static void char_print(output_t out, struct conv_spec *s, struct argument *a) {
-	put_char(out, a->val.i);
+	put_char(out, a->val.d);
 }
 
 static struct conv_spec_funcs cs_funcs_table[] = {
-	[CS_INT] = (struct conv_spec_funcs){ .print = int_print,
-					     .length = int_length,
+	[CS_INT] = (struct conv_spec_funcs){ .print = dec_print,
+					     .length = dec_length,
+					     .prefix = NULL },
+	[CS_UDEC] = (struct conv_spec_funcs){ .print = dec_print,
+					     .length = dec_length,
 					     .prefix = NULL },
 	[CS_PTR] = (struct conv_spec_funcs){ .print = ptr_print,
 					     .length = ptr_length,
