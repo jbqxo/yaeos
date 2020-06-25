@@ -39,6 +39,7 @@
 static void map_addr_range(void *page_dir, const void *start, const void *end,
 			   enum VM_TABLE_FLAGS flags)
 {
+	// TODO: Enforce page boundary checks
 	uintptr_t paddr = (uintptr_t)start;
 	while (paddr < (uintptr_t)end) {
 		uintptr_t vaddr = KERNEL_VMA + paddr;

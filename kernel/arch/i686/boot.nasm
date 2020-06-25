@@ -16,7 +16,7 @@ section .multiboot align=4
 %define STACK_SIZE         16384 ; 16 KiB
 
 ; Preallocate space used for boot-time stack.
-section .bootstack write nobits align=16
+section .bootstack write nobits align=4096
 global bootstack_bottom:data, bootstack_top:data
 bootstack_bottom:
 	resb STACK_SIZE
