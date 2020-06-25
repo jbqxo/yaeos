@@ -4,9 +4,9 @@
 extern "C" {
 #endif
 
-typedef void *arch_info_t;
+typedef void arch_info_t;
 
-void kernel_init(arch_info_t info);
+void kernel_init(arch_info_t *info);
 
 #ifdef __cplusplus
 }

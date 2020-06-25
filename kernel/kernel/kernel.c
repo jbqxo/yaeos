@@ -1,10 +1,9 @@
 #include "kernel/klog.h"
 #include <kernel/kernel.h>
 #include <kernel/tty.h>
+#include <kernel/arch/mm.h>
 
-#include <arch/mm.h>
-
-void kernel_init(arch_info_t info)
+void kernel_init(arch_info_t *info)
 {
 	tty_descriptor_t d = tty_platform_get_descriptor();
 	klog_init(d);
