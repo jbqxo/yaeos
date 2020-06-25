@@ -14,7 +14,7 @@ clean:
 	@$(MAKE) -C $(DIR_LIBC) clean
 	@$(MAKE) -C $(DIR_BOOT) clean
 	@$(MAKE) -C $(DIR_DEPS) clean
-	@$(RMRF) $(BUILDDIR_BUILD)
+	@$(RMRF) $(BUILDDIR_BUILD)/*
 
 grub-iso: kernel libc | build_dir
 	$(call log, [build] make grub iso)
