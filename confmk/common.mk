@@ -51,28 +51,13 @@ LDFLAGS_DEBUG   := -fno-lto
 LDFLAGS_RELEASE := -flto
 
 TARGET           ?= i686
+include $(ROOT)/confmk/$(TARGET).mk
+
 # Compilation toolchain
 ifeq ($(shell uname -s), Darwin)
     MAKE := gmake --no-print-directory
 else
     MAKE := make --no-print-directory
-endif
-
-ifeq ($(TARGET), i686)
-    CPPFLAGS := -D__i686__
-    ifeq ($(BUILD_TEST), 1)
-        CC := clang
-        NASM := nasm
-        AR := ar
-    else
-        # TODO: Fix horrible hack with -B flag.
-        # It's needed to help clang to find proper crtbegin.o and crtend.o
-        GCC_ROOT ?= /usr
-        CC := clang -march=i686 --target=i686-pc-none-elf -B$(GCC_ROOT)/lib/gcc/i686-elf/9.2.0
-        NASM := nasm -felf32
-        AR := i686-elf-ar
-        CFLAGS_COMMON += -m32
-    endif
 endif
 
 # Compiler diagnostics
@@ -85,6 +70,7 @@ MKDIRP := mkdir -p
 RMRF   := rm -rf
 CPRP   := cp -R -p
 FIND   := find
+COMPILEDB := compiledb
 
 # Do not remove intermediate files
 .SECONDARY:

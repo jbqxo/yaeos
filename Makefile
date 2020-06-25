@@ -1,6 +1,6 @@
 export ROOT := $(shell pwd)
 
-include conf.mk
+include confmk/common.mk
 
 .PHONY: all kernel libc run-qemu grub-iso deps test
 

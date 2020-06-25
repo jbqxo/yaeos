@@ -1,6 +1,6 @@
 CWD := $(shell pwd)
 ROOT := $(realpath $(CWD)/..)
-include ../conf.mk
+include $(ROOT)/confmk/common.mk
 .PHONY: clean dirs_libc dirs_libk dirs_tests all install-headers test test_libc test_libk
 .SECONDEXPANSION:
 
@@ -69,7 +69,7 @@ $(BUILDDIR_LIBC)/%.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_LIBC)/%.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE)) -ffreestanding
 $(BUILDDIR_LIBC)/%.c.o: $(CWD)/%.c | dirs_libc
 	$(call log, [libc] CC $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 $(BUILDDIR_LIBC)/%.nasm.o: $(CWD)/%.nasm | dirs_libc
 	$(call log, [libc] NASM $@)
@@ -129,13 +129,13 @@ $(BUILDDIR_TESTS)/libc/%_tests: LDFLAGS += $(LDFLAGS_COMMON)
 $(BUILDDIR_TESTS)/libc/%_tests: LDFLAGS += $(if $(BUILD_DEBUG),$(LDFLAGS_DEBUG),$(LDFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/libc/%_tests: $(BUILDDIR_TESTS)/libc/%_tests.c.o $(BUILDDIR_LIBC)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
 	$(call log, [libc.tests] LD $@)
-	@$(CC) $^ $(LDFLAGS) -o $@
+	@$(LD) $^ $(LDFLAGS) -o $@
 
 $(BUILDDIR_TESTS)/libk/%_tests: LDFLAGS += $(LDFLAGS_COMMON)
 $(BUILDDIR_TESTS)/libk/%_tests: LDFLAGS += $(if $(BUILD_DEBUG),$(LDFLAGS_DEBUG),$(LDFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/libk/%_tests: $(BUILDDIR_TESTS)/libk/%_tests.c.o $(BUILDDIR_LIBK)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
 	$(call log, [libk.tests] LD $@)
-	@$(CC) $^ $(LDFLAGS) -o $@
+	@$(LD) $^ $(LDFLAGS) -o $@
 
 ###### Dependencies rules
 

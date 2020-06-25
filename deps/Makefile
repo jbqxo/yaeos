@@ -1,6 +1,6 @@
 CWD := $(shell pwd)
 ROOT := $(realpath $(CWD)/..)
-include $(ROOT)/conf.mk
+include $(ROOT)/confmk/common.mk
 
 # Suppress all warnings from dependencies
 CFLAGS += -w

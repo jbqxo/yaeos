@@ -1,6 +1,6 @@
 CWD := $(shell pwd)
 ROOT := $(realpath $(CWD)/..)
-include ../conf.mk
+include $(ROOT)/confmk/common.mk
 .SECONDEXPANSION:
 .SUFFIXES:
 .PHONY: all clean prefix_dirs install-headers
@@ -56,7 +56,7 @@ $(BUILDDIR_KERNEL)/kernel.bin: LDFLAGS += -nostdlib $(LDFLAGS_COMMON)
 $(BUILDDIR_KERNEL)/kernel.bin: LDFLAGS += $(if $(BUILD_DEBUG),$(LDFLAGS_DEBUG),$(LDFLAGS_RELEASE))
 $(BUILDDIR_KERNEL)/kernel.bin: $$(FILES_OBJ) $(DIR_ARCH)/linker.ld $(BUILDDIR_LIBK)/libk.a
 	$(call log, [kernel] LD $@)
-	@$(CC) -Wl,-T,$(DIR_ARCH)/linker.ld $(FILES_OBJ) $(BUILDDIR_LIBK)/libk.a $(LDFLAGS) -o $@
+	@$(LD) -Wl,-T,$(DIR_ARCH)/linker.ld $(FILES_OBJ) $(BUILDDIR_LIBK)/libk.a $(LDFLAGS) -o $@
 
 $(BUILDDIR_KERNEL)/%.c.o: CPPFLAGS += $(CPPFLAGS_KERNEL) $(CPPFLAGS_LIBC)
 $(BUILDDIR_KERNEL)/%.c.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
@@ -92,7 +92,7 @@ $(BUILDDIR_TESTS)/kernel/%_tests: LDFLAGS += $(LDFLAGS_COMMON)
 $(BUILDDIR_TESTS)/kernel/%_tests: LDFLAGS += $(if $(BUILD_DEBUG),$(LDFLAGS_DEBUG),$(LDFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/kernel/%_tests: $(BUILDDIR_TESTS)/kernel/%_tests.c.o $(BUILDDIR_KERNEL)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
 	$(call log, [kernel.tests] LD $@)
-	@$(CC) $(CPPFLAGS) $^ $(LDFLAGS) -o $@
+	@$(LD) $(CPPFLAGS) $^ $(LDFLAGS) -o $@
 
 ###### Dependencies rules
 

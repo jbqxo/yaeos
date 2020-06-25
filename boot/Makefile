@@ -1,6 +1,6 @@
 CWD := $(shell pwd)
 ROOT := $(realpath $(CWD)/..)
-include $(ROOT)/conf.mk
+include $(ROOT)/confmk/common.mk
 
 KERNEL_BIN := $(BUILDDIR_ISODIR)/boot/kernel.bin
 GRUB_CFG := $(BUILDDIR_ISODIR)/boot/grub/grub.cfg
