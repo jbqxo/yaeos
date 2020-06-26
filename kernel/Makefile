@@ -20,7 +20,7 @@ FILES_TESTS_OBJ :=\
 FILES_OBJ :=\
     $(filter-out $(FILES_TESTS_OBJ) $(FILES_OBJ_ARCH_BEGIN) $(FILES_OBJ_ARCH_END) $(FILES_OBJ_ARCH), \
     $(addsuffix .o, \
-    $(shell $(FIND) * -name '*.c' -or -name '*.nasm')))
+    $(shell $(FIND) * -name '*.c' -or -name '*.asm')))
 
 
 ###### Phony rules
@@ -67,9 +67,14 @@ $(BUILDDIR_KERNEL)/%.c.o: $(CWD)/%.c | prefix_dirs
 	$(call log, [kernel] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(BUILDDIR_KERNEL)/%.nasm.o: $(CWD)/%.nasm | prefix_dirs
-	$(call log, [kernel] NASM $@)
-	@$(NASM) $< -o $@
+$(BUILDDIR_KERNEL)/%.asm.o: CPPFLAGS += $(CPPFLAGS_KERNEL) $(CPPFLAGS_LIBC)
+$(BUILDDIR_KERNEL)/%.asm.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
+$(BUILDDIR_KERNEL)/%.asm.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
+$(BUILDDIR_KERNEL)/%.asm.o: CFLAGS += $(CFLAGS_COMMON) -ffreestanding
+$(BUILDDIR_KERNEL)/%.asm.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
+$(BUILDDIR_KERNEL)/%.asm.o: $(CWD)/%.asm | prefix_dirs
+	$(call log, [kernel] AS $@)
+	@$(AS) $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 ###### Tests rules
 
@@ -103,9 +108,12 @@ $(BUILDDIR_KERNEL)/%.c.d: $(CWD)/%.c | prefix_dirs
 	$(call log, [kernel] MD $@)
 	@$(CC) $(CPPFLAGS) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
-$(BUILDDIR_KERNEL)/%.nasm.d: $(CWD)/%.nasm | prefix_dirs
+$(BUILDDIR_KERNEL)/%.asm.d: CPPFLAGS += $(CPPFLAGS_KERNEL) $(CPPFLAGS_LIBC)
+$(BUILDDIR_KERNEL)/%.asm.d: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
+$(BUILDDIR_KERNEL)/%.asm.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
+$(BUILDDIR_KERNEL)/%.asm.d: $(CWD)/%.asm | prefix_dirs
 	$(call log, [kernel] MD $@)
-	@$(NASM) -MG -MT $(@:.d=.o) -MD $@ $< -o /dev/null
+	@$(AS) $(CPPFLAGS) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
 $(BUILDDIR_LIBK)/libk.a:
 	$(error You need to build libk first)

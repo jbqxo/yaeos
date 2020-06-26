@@ -5,7 +5,9 @@ RUN pip install compiledb
 # Required to build GCC
 RUN pacman --noconfirm -Syu gmp libmpc mpfr
 # Required to build the project
-RUN pacman --noconfirm -Syu nasm clang grub xorriso mtools
+RUN pacman --noconfirm -Syu clang grub xorriso mtools
+
+ARG TARGET=i686-elf
 
 # Fetch gcc sources and binutils sources.
 RUN curl -O https://ftp.gnu.org/gnu/binutils/binutils-2.34.tar.xz && \
@@ -16,14 +18,14 @@ RUN curl -O https://ftp.gnu.org/gnu/binutils/binutils-2.34.tar.xz && \
     rm binutils-2.34.tar.xz && \
     rm gcc-10.1.0.tar.xz
 
-ENV PATH="/tools/i686/bin:$PATH"
+ENV PATH="/tools/${TARGET}/bin:$PATH"
 
 # Build binutils cross-toolchain.
 RUN mkdir -p /tools/build/binutils
 WORKDIR /tools/build/binutils
 RUN /tools/src/binutils-2.34/configure \
- --target=i686-elf \
- --prefix="/tools/i686" \
+ --target=${TARGET} \
+ --prefix="/tools/${TARGET}" \
  --with-sysroot \
  --disable-nls \
  --disable-werror && \
@@ -35,8 +37,8 @@ RUN /tools/src/binutils-2.34/configure \
 RUN mkdir -p /tools/build/gcc
 WORKDIR /tools/build/gcc
 RUN /tools/src/gcc-10.1.0/configure \
- --target=i686-elf \
- --prefix="/tools/i686" \
+ --target=${TARGET} \
+ --prefix="/tools/${TARGET}" \
  --disable-nls \
  --enable-languages=c,c++ \
  --without-headers && \

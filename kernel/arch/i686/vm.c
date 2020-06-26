@@ -21,7 +21,7 @@ void vm_map(void *page_dir, void *virt_addr, void *phys_addr,
 	uint32_t *pdir_entry = vm_dir_entry_addr(page_dir, virt_addr);
 	// TODO: Assert that the table is present.
 	// Discard PDE flags.
-	void *ptable = (void *)((uintptr_t)*pdir_entry & -0x1000u);
+	void *ptable = (void *)((uintptr_t)*pdir_entry & -0x1000);
 	uint32_t *ptable_entry = vm_table_entry_addr(ptable, virt_addr);
 	vm_set_table_entry(ptable_entry, phys_addr, flags);
 }

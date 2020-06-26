@@ -20,7 +20,7 @@ FILES_TESTS_OBJ :=\
 FILES_REL_OBJ :=\
     $(filter-out $(FILES_TESTS_OBJ), \
     $(addsuffix .o, \
-    $(shell $(FIND) lib -name '*.c' -or -name '*.nasm')))
+    $(shell $(FIND) lib -name '*.c' -or -name '*.asm')))
 
 dirs_libc $(BUILDDIR_LIBC)/libc.a: FILES_OBJ := $(addprefix $(BUILDDIR_LIBC)/, $(FILES_REL_OBJ))
 dirs_libk $(BUILDDIR_LIBK)/libk.a: FILES_OBJ := $(addprefix $(BUILDDIR_LIBK)/, $(FILES_REL_OBJ))
@@ -69,10 +69,14 @@ $(BUILDDIR_LIBC)/%.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_LIBC)/%.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE)) -ffreestanding
 $(BUILDDIR_LIBC)/%.c.o: $(CWD)/%.c | dirs_libc
 	$(call log, [libc] CC $@)
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(BUILDDIR_LIBC)/%.nasm.o: $(CWD)/%.nasm | dirs_libc
-	$(call log, [libc] NASM $@)
+$(BUILDDIR_LIBC)/%.asm.o: CPPFLAGS += $(CPPFLAGS_LIBC) -D__libc__
+$(BUILDDIR_LIBC)/%.asm.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
+$(BUILDDIR_LIBC)/%.asm.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
+$(BUILDDIR_LIBC)/%.asm.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE)) -ffreestanding
+$(BUILDDIR_LIBC)/%.asm.o: $(CWD)/%.asm | dirs_libc
+	$(call log, [libc] AS $@)
 	@$(AS) -D__libc__ $< -o $@
 
 $(BUILDDIR_LIBK)/%.c.o: CPPFLAGS += $(CPPFLAGS_LIBC) -D__libk__
@@ -84,8 +88,13 @@ $(BUILDDIR_LIBK)/%.c.o: $(CWD)/%.c | dirs_libk
 	$(call log, [libk] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(BUILDDIR_LIBK)/%.nasm.o: $(CWD)/%.nasm | dirs_libk
-	$(call log, [libk] NASM $@)
+$(BUILDDIR_LIBK)/%.asm.o: CPPFLAGS += $(CPPFLAGS_LIBC) -D__libk__
+$(BUILDDIR_LIBK)/%.asm.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
+$(BUILDDIR_LIBK)/%.asm.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
+$(BUILDDIR_LIBK)/%.asm.o: CFLAGS += $(CFLAGS_COMMON) -ffreestanding
+$(BUILDDIR_LIBK)/%.asm.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
+$(BUILDDIR_LIBK)/%.asm.o: $(CWD)/%.asm | dirs_libk
+	$(call log, [libk] AS $@)
 	@$(AS) -D__libk__ $< -o $@
 
 ###### Tests rules
@@ -153,13 +162,19 @@ $(BUILDDIR_LIBK)/%.c.d: $(CWD)/%.c | dirs_libk
 	$(call log, [libk] MD $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPFLAGS_LIBK) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
-$(BUILDDIR_LIBC)/%.nasm.d: $(CWD)/%.nasm | dirs_libc
+$(BUILDDIR_LIBC)/%.asm.d: CPPFLAGS += $(CPPFLAGS_LIBC) -D__libk__
+$(BUILDDIR_LIBC)/%.asm.d: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
+$(BUILDDIR_LIBC)/%.asm.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
+$(BUILDDIR_LIBC)/%.asm.d: $(CWD)/%.asm | dirs_libc
 	$(call log, [libc] MD $@)
-	@$(AS) -D__libc__ -MG -MT $(@:.d=.o) -MD $@ $< -o /dev/null
+	@$(AS) -D__libc__ -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
-$(BUILDDIR_LIBK)/%.nasm.d: $(CWD)/%.nasm | dirs_libk
+$(BUILDDIR_LIBK)/%.asm.d: CPPFLAGS += $(CPPFLAGS_LIBC) -D__libk__
+$(BUILDDIR_LIBK)/%.asm.d: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
+$(BUILDDIR_LIBK)/%.asm.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
+$(BUILDDIR_LIBK)/%.asm.d: $(CWD)/%.asm | dirs_libk
 	$(call log, [libk] MD $@)
-	@$(AS) -D__libk__ -MG -MT $(@:.d=.o) -MD $@ $< -o /dev/null
+	@$(AS) -D__libk__ -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
 ifneq ($(MAKECMDGOALS),clean)
     -include $(addprefix $(BUILDDIR_LIBC)/, $(FILES_REL_OBJ:.o=.d))
