@@ -7,12 +7,12 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-mm_mem_range_cont_t mm_mem_range_cont_init(arch_info_t *info)
+mm_mem_range_cont_t mm_mem_range_cont_init(void *info)
 {
 	return ((struct arch_info_i686 *)info)->info->mmap_addr;
 }
 
-bool mm_next_mem_range(arch_info_t *_info, mm_mem_range_cont_t *cont,
+bool mm_next_mem_range(void *_info, mm_mem_range_cont_t *cont,
 		       struct range_addr *range)
 {
 	multiboot_info_t *info = ((struct arch_info_i686 *)_info)->info;

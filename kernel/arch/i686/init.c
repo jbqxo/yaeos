@@ -140,6 +140,6 @@ void i686_init(multiboot_info_t *info, uint32_t magic)
 	patch_multiboot_info(i686_info.info);
 
 	call_global_ctors();
-	kernel_init((arch_info_t*)&i686_info);
+	kernel_init(&i686_info);
 	call_global_dtors();
 }
