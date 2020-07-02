@@ -50,8 +50,8 @@ LDFLAGS_COMMON  := -lgcc
 LDFLAGS_DEBUG   := -fno-lto
 LDFLAGS_RELEASE := -flto
 
-TARGET           ?= i686
-include $(ROOT)/confmk/$(TARGET).mk
+TARGET_ARCH           ?= i686
+include $(ROOT)/confmk/$(TARGET_ARCH).mk
 
 # Compilation toolchain
 ifeq ($(shell uname -s), Darwin)
@@ -71,11 +71,13 @@ RMRF   := rm -rf
 CPRP   := cp -R -p
 FIND   := find
 COMPILEDB := compiledb
+GREP   := grep
 
 # Do not remove intermediate files
 .SECONDARY:
 
 # Common functions
+STEPS ?= 0
 define log
-@if [ $(STEPS) ]; then echo "$(strip $(1))"; fi
+@bash -c "if [ $(STEPS) -gt 0 ]; then echo \"$(strip $(1))\"; fi"
 endef

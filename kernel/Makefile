@@ -5,11 +5,11 @@ include $(ROOT)/confmk/common.mk
 .SUFFIXES:
 .PHONY: all clean prefix_dirs install-headers
 
-DIR_ARCH := arch/$(TARGET)
+DIR_ARCH := arch/$(TARGET_ARCH)
 BUILDDIR_KERNEL_ARCH := $(BUILDDIR_KERNEL)/$(DIR_ARCH)
 
-CPPFLAGS_KERNEL := -I$(CWD)/include -I$(CWD)/arch/$(TARGET)/include
-CPPFLAGS_LIBC := -I$(ROOT)/$(DIR_LIBC)/include -I$(ROOT)/$(DIR_LIBC)/arch/$(TARGET)/include -D__libk__
+CPPFLAGS_KERNEL := -I$(CWD)/include -I$(CWD)/arch/$(TARGET_ARCH)/include
+CPPFLAGS_LIBC := -I$(ROOT)/$(DIR_LIBC)/include -I$(ROOT)/$(DIR_LIBC)/arch/$(TARGET_ARCH)/include -D__libk__
 
 include $(DIR_ARCH)/Makefile
 
@@ -17,11 +17,14 @@ FILES_TESTS_OBJ :=\
     $(addsuffix .o, \
     $(shell $(FIND) * -name '*_tests.c'))
 
+# Generate options to ignore all architectures except for current TARGET
+FIND_IGNORE_ARCHS :=\
+    $(patsubst %, -not \( -path % -prune \), \
+    $(shell $(FIND) * -type d -path 'arch/*' -prune | $(GREP) -v $(TARGET_ARCH)))
 FILES_OBJ :=\
     $(filter-out $(FILES_TESTS_OBJ) $(FILES_OBJ_ARCH_BEGIN) $(FILES_OBJ_ARCH_END) $(FILES_OBJ_ARCH), \
     $(addsuffix .o, \
-    $(shell $(FIND) * -name '*.c' -or -name '*.asm')))
-
+    $(shell $(FIND) * $(FIND_IGNORE_ARCHS) -name '*.c' -or -name '*.asm')))
 
 ###### Phony rules
 
@@ -31,9 +34,9 @@ install-headers:
 	$(call log, [kernel] Copying headers to the build directory)
 	@$(MKDIRP) $(BUILDDIR_KERNEL)/include
 	@$(CPRP) $(CWD)/include/. $(BUILDDIR_KERNEL)/include/.
-	$(call log, [kernel] Copying platform-dependent headers ($(TARGET)) to the build directory)
+	$(call log, [kernel] Copying platform-dependent headers ($(TARGET_ARCH)) to the build directory)
 	@$(MKDIRP) $(BUILDDIR_KERNEL)/include/arch
-	@$(CPRP) $(CWD)/arch/$(TARGET)/include/. $(BUILDDIR_KERNEL)/include/.
+	@$(CPRP) $(CWD)/arch/$(TARGET_ARCH)/include/. $(BUILDDIR_KERNEL)/include/.
 
 prefix_dirs $(BUILDDIR_KERNEL)/kernel.bin: FILES_OBJ := $(FILES_OBJ_ARCH_BEGIN) \
     $(FILES_OBJ_ARCH) \

@@ -4,16 +4,17 @@ include $(ROOT)/confmk/common.mk
 .PHONY: clean dirs_libc dirs_libk dirs_tests all install-headers test test_libc test_libk
 .SECONDEXPANSION:
 
-DIR_ARCH := $(CWD)/arch/$(TARGET)
+DIR_ARCH := $(CWD)/arch/$(TARGET_ARCH)
 
 include $(DIR_ARCH)/Makefile
 
 CPPFLAGS_LIBC += \
       -I$(CWD)/include \
-      -I$(CWD)/arch/$(TARGET)/include \
+      -I$(CWD)/arch/$(TARGET_ARCH)/include \
       -I$(ROOT)/$(DIR_KERNEL)/include \
-      -I$(ROOT)/$(DIR_KERNEL)/arch/$(TARGET)/include
+      -I$(ROOT)/$(DIR_KERNEL)/arch/$(TARGET_ARCH)/include
 
+# TODO Ignore all architectures except for current TARGET
 FILES_TESTS_OBJ :=\
     $(addsuffix .o, \
     $(shell $(FIND) lib -name '*_tests.c'))
@@ -49,9 +50,9 @@ install-headers:
 	@$(MKDIRP) $(BUILDDIR_LIBC)/include
 	$(call log, [libc] Copying headers to the build directory)
 	@$(CPRP) $(CWD)/include/. $(BUILDDIR_LIBC)/include/.
-	$(call log, [libc] Copying platform-dependent headers ($(TARGET)) to the build directory)
+	$(call log, [libc] Copying platform-dependent headers ($(TARGET_ARCH)) to the build directory)
 	@$(MKDIRP) $(BUILDDIR_LIBC)/include/arch
-	@$(CPRP) $(CWD)/arch/$(TARGET)/include/. $(BUILDDIR_LIBC)/include/.
+	@$(CPRP) $(CWD)/arch/$(TARGET_ARCH)/include/. $(BUILDDIR_LIBC)/include/.
 
 ###### Libc rules
 

@@ -1,7 +1,7 @@
 # This file is not intended to be included directly.
 
-ifeq ($(TARGET), i686)
-    CPPFLAGS := -D__i686__
+ifeq ($(TARGET_ARCH), i686)
+    CPPFLAGS += -D__i686__
     ifeq ($(BUILD_TEST), 1)
         CC := clang
         LD := gcc
