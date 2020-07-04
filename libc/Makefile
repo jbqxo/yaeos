@@ -117,7 +117,6 @@ dirs_tests:
 	$(call log, [libc.tests] Creating dir tree)
 	@$(MKDIRP) $(dir $(TESTS_LIBC) $(TESTS_LIBK))
 
-test: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
 test: $$(TESTS_LIBC) $$(TESTS_LIBK) | dirs_tests
 	$(call log, [libk] Running tests for kernel-space)
 	@$(foreach t,$(TESTS_LIBK), echo "[libk.tests] Running $t"; $t || true;)
@@ -128,17 +127,19 @@ $(BUILDDIR_TESTS)/libc/%_tests: $(BUILDDIR_TESTS)/libc/%_tests.c.o $(BUILDDIR_LI
 	$(call log, [libc.tests] LD $@)
 	@$(LD) $^ $(LDFLAGS) -o $@
 
+$(BUILDDIR_TESTS)/libc/%_tests.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
 $(BUILDDIR_TESTS)/libc/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
 	$(call log, [libc.tests] CC $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libc__ $^ -c -o $@
+	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libc__ $< -c -o $@
 
 $(BUILDDIR_TESTS)/libk/%_tests: $(BUILDDIR_TESTS)/libk/%_tests.c.o $(BUILDDIR_LIBK)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
 	$(call log, [libk.tests] LD $@)
 	@$(LD) $^ $(LDFLAGS) -o $@
 
+$(BUILDDIR_TESTS)/libk/%_tests.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
 $(BUILDDIR_TESTS)/libk/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
 	$(call log, [libk.tests] CC $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libk__ $^ -c -o $@
+	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libk__ $< -c -o $@
 
 ###### Dependencies rules
 
@@ -158,7 +159,19 @@ $(BUILDDIR_LIBK)/%.asm.d: $(CWD)/%.asm | dirs_libk
 	$(call log, [libk] MD $@)
 	@$(AS) $(CPPFLAGS) -D__libk__ -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
+$(BUILDDIR_TESTS)/libk/%_tests.c.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
+$(BUILDDIR_TESTS)/libk/%_tests.c.d: $(CWD)/%_tests.c | dirs_tests
+	$(call log, [libk.tests] MD $@)
+	@$(CC) $(CPPFLAGS) -D__libk__ -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
+
+$(BUILDDIR_TESTS)/libc/%_tests.c.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
+$(BUILDDIR_TESTS)/libc/%_tests.c.d: $(CWD)/%_tests.c | dirs_tests
+	$(call log, [libc.tests] MD $@)
+	@$(CC) $(CPPFLAGS) -D__libc__ -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
+
 ifneq ($(MAKECMDGOALS),clean)
     -include $(addprefix $(BUILDDIR_LIBC)/, $(FILES_REL_OBJ:.o=.d))
     -include $(addprefix $(BUILDDIR_LIBK)/, $(FILES_REL_OBJ:.o=.d))
+    -include $(addprefix $(BUILDDIR_TESTS)/, $(addprefix libc/, $(FILES_TESTS_OBJ:.o=.d)))
+    -include $(addprefix $(BUILDDIR_TESTS)/, $(addprefix libk/, $(FILES_TESTS_OBJ:.o=.d)))
 endif

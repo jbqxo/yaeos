@@ -38,7 +38,7 @@ compile_commands:
 # Add unity headers
 test: export BUILD_TEST = 1
 test: export BUILDDIR_BUILD = $(ROOT)/build/test
-test: clean deps | build_dir
+test: | build_dir
 	$(call log, [build] make test)
 	@$(MAKE) -C $(DIR_DEPS) unity
 	@$(MAKE) -C $(DIR_LIBC) test

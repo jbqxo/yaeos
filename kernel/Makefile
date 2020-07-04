@@ -105,7 +105,7 @@ test: $$(patsubst %.c.o,%, $$(FILES_TESTS_OBJ)) | dirs_tests
 $(BUILDDIR_TESTS)/kernel/%_tests.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
 $(BUILDDIR_TESTS)/kernel/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
 	$(call log, [kernel.tests] CC $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) $^ -c -o $@
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $< -c -o $@
 
 $(BUILDDIR_TESTS)/kernel/%_tests: $(BUILDDIR_TESTS)/kernel/%_tests.c.o $(BUILDDIR_KERNEL)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
 	$(call log, [kernel.tests] LD $@)
@@ -120,6 +120,11 @@ $(BUILDDIR_KERNEL)/%.c.d: $(CWD)/%.c | prefix_dirs
 $(BUILDDIR_KERNEL)/%.asm.d: $(CWD)/%.asm | prefix_dirs
 	$(call log, [kernel] MD $@)
 	@$(AS) $(CPPFLAGS) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
+
+$(BUILDDIR_TESTS)/kernel/%_tests.c.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
+$(BUILDDIR_TESTS)/kernel/%_tests.c.d: $(CWD)/%_tests.c | dirs_tests
+	$(call log, [kernel.tests] MD $@)
+	@$(CC) $(CPPFLAGS) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
 $(BUILDDIR_LIBK)/libk.a:
 	$(error You need to build libk first)
