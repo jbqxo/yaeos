@@ -15,9 +15,9 @@ prefix_dirs:
 	@$(MKDIRP) $(BUILDDIR_DEPS)/unity
 
 $(BUILDDIR_DEPS)/unity/%.o: $(CWD)/unity/src/%.c | prefix_dirs
-	$(call log, [deps.unity] CC $@ $(BUILD_TEST))
+	$(info [deps.unity] CC $@ $(BUILD_TEST))
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 clean:
-	$(call log, [deps] Removing dependencies prefix directory)
+	$(info [deps] Removing dependencies prefix directory)
 	@$(RMRF) $(BUILDDIR_DEPS)

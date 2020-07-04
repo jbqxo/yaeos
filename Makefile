@@ -36,10 +36,10 @@ compile_commands:
 	@$(MAKE) BUILD_TEST=1 BUILDDIR_BUILD=$(ROOT)/build/test -C $(DIR_KERNEL) compile_commands_tests
 
 # Add unity headers
-test: export BUILD_TEST = 1
-test: export BUILDDIR_BUILD = $(ROOT)/build/test
-test: | build_dir
-	$(call log, [build] make test)
+tests: export BUILD_TEST = 1
+tests: export BUILDDIR_BUILD = $(ROOT)/build/test
+tests: | build_dir
+	$(call log, [build] make tests)
 	@$(MAKE) -C $(DIR_DEPS) unity
-	@$(MAKE) -C $(DIR_LIBC) test
-	@$(MAKE) -C $(DIR_KERNEL) test
+	@$(MAKE) -C $(DIR_LIBC) tests
+	@$(MAKE) -C $(DIR_KERNEL) tests

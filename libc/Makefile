@@ -1,7 +1,10 @@
 CWD := $(shell pwd)
 ROOT := $(realpath $(CWD)/..)
 include $(ROOT)/confmk/common.mk
-.PHONY: clean dirs_libc dirs_libk dirs_tests all install-headers test test_libc test_libk compile_commands_libk compile_commands_libk_tests
+.PHONY: dirs_libc dirs_libk dirs_tests \
+    all clean install-headers \
+    tests test_libc test_libk \
+    compile_commands_libk compile_commands_libk_tests
 .SECONDEXPANSION:
 
 DIR_ARCH := $(CWD)/arch/$(TARGET_ARCH)
@@ -24,14 +27,17 @@ LDFLAGS += \
     $(LDFLAGS_COMMON) \
     $(if $(BUILD_DEBUG),$(LDFLAGS_DEBUG),$(LDFLAGS_RELEASE))
 
-# TODO Ignore all architectures except for current TARGET
+# Generate options to ignore all architectures except for current TARGET
+FIND_IGNORE_ARCHS :=\
+    $(patsubst %, -not \( -path % -prune \), \
+    $(shell $(FIND) * -type d -path 'arch/*' -prune | $(GREP) -v $(TARGET_ARCH)))
 FILES_TESTS_OBJ :=\
     $(addsuffix .o, \
-    $(shell $(FIND) lib -name '*_tests.c'))
+    $(shell $(FIND) * $(FIND_IGNORE_ARCHS) -name '*_tests.c'))
 FILES_REL_OBJ :=\
     $(filter-out $(FILES_TESTS_OBJ), \
     $(addsuffix .o, \
-    $(shell $(FIND) lib -name '*.c' -or -name '*.asm')))
+    $(shell $(FIND) * $(FIND_IGNORE_ARCHS) -name '*.c' -or -name '*.asm')))
 
 dirs_libc $(BUILDDIR_LIBC)/libc.a: FILES_OBJ := $(addprefix $(BUILDDIR_LIBC)/, $(FILES_REL_OBJ))
 dirs_libk $(BUILDDIR_LIBK)/libk.a: FILES_OBJ := $(addprefix $(BUILDDIR_LIBK)/, $(FILES_REL_OBJ))
@@ -41,53 +47,53 @@ dirs_libk $(BUILDDIR_LIBK)/libk.a: FILES_OBJ := $(addprefix $(BUILDDIR_LIBK)/, $
 all: $(BUILDDIR_LIBC)/libc.a $(BUILDDIR_LIBK)/libk.a install-headers
 
 dirs_libc:
-	$(call log, [libc] Creating dir tree)
+	$(info [libc] Creating dir tree)
 	@$(MKDIRP) $(dir $(FILES_OBJ))
 
 dirs_libk:
-	$(call log, [libk] Creating dir tree)
+	$(info [libk] Creating dir tree)
 	@$(MKDIRP) $(dir $(FILES_OBJ))
 
 clean:
-	$(call log, [libc] Removing libc prefix directory)
+	$(info [libc] Removing libc prefix directory)
 	@$(RMRF) $(BUILDDIR_LIBC)
-	$(call log, [libk] Removing libk prefix directory)
+	$(info [libk] Removing libk prefix directory)
 	@$(RMRF) $(BUILDDIR_LIBK)
-	$(call log, [lib] Removing tests prefix directory)
+	$(info [lib] Removing tests prefix directory)
 	@$(RMRF) $(BUILDDIR_TESTS)
 
 install-headers:
 	@$(MKDIRP) $(BUILDDIR_LIBC)/include
-	$(call log, [libc] Copying headers to the build directory)
+	$(info [libc] Copying headers to the build directory)
 	@$(CPRP) $(CWD)/include/. $(BUILDDIR_LIBC)/include/.
-	$(call log, [libc] Copying platform-dependent headers ($(TARGET_ARCH)) to the build directory)
+	$(info [libc] Copying platform-dependent headers ($(TARGET_ARCH)) to the build directory)
 	@$(MKDIRP) $(BUILDDIR_LIBC)/include/arch
 	@$(CPRP) $(CWD)/arch/$(TARGET_ARCH)/include/. $(BUILDDIR_LIBC)/include/.
 
 ###### Libc rules
 
 $(BUILDDIR_LIBC)/libc.a: $$(FILES_OBJ) | dirs_libc
-	$(call log, [libc] Archiving $(notdir $^))
+	$(info [libc] Archiving $(notdir $^))
 	@$(AR) rcs $@ $^
 
 $(BUILDDIR_LIBC)/%.c.o: $(CWD)/%.c | dirs_libc
-	$(call log, [libc] CC $@)
+	$(info [libc] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libc__ -c $< -o $@
 
 $(BUILDDIR_LIBC)/%.asm.o: $(CWD)/%.asm | dirs_libc
-	$(call log, [libc] AS $@)
+	$(info [libc] AS $@)
 	@$(AS) $(CFLAGS) $(CPPFLAGS) -D__libc__ $< -o $@
 
 $(BUILDDIR_LIBK)/libk.a: $$(FILES_OBJ) | dirs_libk
-	$(call log, [libk] Archiving $(notdir $^))
+	$(info [libk] Archiving $(notdir $^))
 	@$(AR) rcs $@ $^
 
 $(BUILDDIR_LIBK)/%.c.o: $(CWD)/%.c | dirs_libk
-	$(call log, [libk] CC $@)
+	$(info [libk] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libk__ -c $< -o $@
 
 $(BUILDDIR_LIBK)/%.asm.o: $(CWD)/%.asm | dirs_libk
-	$(call log, [libk] AS $@)
+	$(info [libk] AS $@)
 	@$(AS) $(CPPFLAGS) $(CFLAGS) -D__libk__ $< -o $@
 
 ###### Compilation commands rules
@@ -97,81 +103,77 @@ compile_commands_libk: $(addprefix $(BUILDDIR_LIBK)/,$(FILES_REL_OBJ:.o=.json))
 compile_commands_libk_tests: $(addprefix $(BUILDDIR_TESTS)/libk/,$(FILES_TESTS_OBJ:.o=.json))
 
 $(BUILDDIR_LIBK)/%.c.json: $(CWD)/%.c | dirs_libk
-	$(call log, [libk] MJ $@)
+	$(info [libk] MJ $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libk__ -MJ $@ -c $< -o /dev/null
 
 $(BUILDDIR_TESTS)/libk/%_tests.c.json: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
 $(BUILDDIR_TESTS)/libk/%_tests.c.json: $(CWD)/%_tests.c | dirs_tests
-	$(call log, [libk.tests] MJ $@)
+	$(info [libk.tests] MJ $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libk__ -MJ $@ $^ -c -o /dev/null
 
 ###### Tests rules
 
-dirs_tests test: TESTS := $(patsubst %.c.o,%,$(FILES_TESTS_OBJ))
-dirs_tests test: TESTS_LIBC := $(addprefix libc/, $(TESTS))
-dirs_tests test: TESTS_LIBK := $(addprefix libk/, $(TESTS))
-dirs_tests test: TESTS_LIBC := $(addprefix $(BUILDDIR_TESTS)/, $(TESTS_LIBC))
-dirs_tests test: TESTS_LIBK := $(addprefix $(BUILDDIR_TESTS)/, $(TESTS_LIBK))
+dirs_tests tests: TESTS := $(patsubst %.c.o,%,$(FILES_TESTS_OBJ))
+dirs_tests tests: TESTS_LIBC := $(addprefix libc/, $(TESTS))
+dirs_tests tests: TESTS_LIBK := $(addprefix libk/, $(TESTS))
+dirs_tests tests: TESTS_LIBC := $(addprefix $(BUILDDIR_TESTS)/, $(TESTS_LIBC))
+dirs_tests tests: TESTS_LIBK := $(addprefix $(BUILDDIR_TESTS)/, $(TESTS_LIBK))
 dirs_tests:
-	$(call log, [libk.tests] Creating dir tree)
-	$(call log, [libc.tests] Creating dir tree)
+	$(info [libk.tests] Creating dir tree)
+	$(info [libc.tests] Creating dir tree)
 	@$(MKDIRP) $(dir $(TESTS_LIBC) $(TESTS_LIBK))
 
-test: $$(TESTS_LIBC) $$(TESTS_LIBK) | dirs_tests
-	$(call log, [libk] Running tests for kernel-space)
-	@$(foreach t,$(TESTS_LIBK), echo "[libk.tests] Running $t"; $t || true;)
-	$(call log, [libc] Running tests for user-space)
-	@$(foreach t,$(TESTS_LIBC), echo "[libc.tests] Running $t"; $t || true;)
+tests: $$(TESTS_LIBC) $$(TESTS_LIBK) | dirs_tests
 
 $(BUILDDIR_TESTS)/libc/%_tests: $(BUILDDIR_TESTS)/libc/%_tests.c.o $(BUILDDIR_LIBC)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
-	$(call log, [libc.tests] LD $@)
+	$(info [libc.tests] LD $@)
 	@$(LD) $^ $(LDFLAGS) -o $@
 
 $(BUILDDIR_TESTS)/libc/%_tests.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
 $(BUILDDIR_TESTS)/libc/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
-	$(call log, [libc.tests] CC $@)
+	$(info [libc.tests] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libc__ $< -c -o $@
 
 $(BUILDDIR_TESTS)/libk/%_tests: $(BUILDDIR_TESTS)/libk/%_tests.c.o $(BUILDDIR_LIBK)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
-	$(call log, [libk.tests] LD $@)
+	$(info [libk.tests] LD $@)
 	@$(LD) $^ $(LDFLAGS) -o $@
 
 $(BUILDDIR_TESTS)/libk/%_tests.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
 $(BUILDDIR_TESTS)/libk/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
-	$(call log, [libk.tests] CC $@)
+	$(info [libk.tests] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libk__ $< -c -o $@
 
 ###### Dependencies rules
 
 $(BUILDDIR_LIBC)/%.c.d: $(CWD)/%.c | dirs_libc
-	$(call log, [libc] MD $@)
+	$(info [libc] MD $@)
 	@$(CC) $(CPPFLAGS) -D__libc__ -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
 $(BUILDDIR_LIBC)/%.asm.d: $(CWD)/%.asm | dirs_libc
-	$(call log, [libc] MD $@)
+	$(info [libc] MD $@)
 	@$(AS) $(CPPFLAGS) -D__libc__ -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
 $(BUILDDIR_LIBK)/%.c.d: $(CWD)/%.c | dirs_libk
-	$(call log, [libk] MD $@)
+	$(info [libk] MD $@)
 	@$(CC) $(CPPFLAGS) -D__libk__ -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
 $(BUILDDIR_LIBK)/%.asm.d: $(CWD)/%.asm | dirs_libk
-	$(call log, [libk] MD $@)
+	$(info [libk] MD $@)
 	@$(AS) $(CPPFLAGS) -D__libk__ -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
 $(BUILDDIR_TESTS)/libk/%_tests.c.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
 $(BUILDDIR_TESTS)/libk/%_tests.c.d: $(CWD)/%_tests.c | dirs_tests
-	$(call log, [libk.tests] MD $@)
+	$(info [libk.tests] MD $@)
 	@$(CC) $(CPPFLAGS) -D__libk__ -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
 $(BUILDDIR_TESTS)/libc/%_tests.c.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
 $(BUILDDIR_TESTS)/libc/%_tests.c.d: $(CWD)/%_tests.c | dirs_tests
-	$(call log, [libc.tests] MD $@)
+	$(info [libc.tests] MD $@)
 	@$(CC) $(CPPFLAGS) -D__libc__ -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
 ifneq ($(MAKECMDGOALS),clean)
     -include $(addprefix $(BUILDDIR_LIBC)/, $(FILES_REL_OBJ:.o=.d))
     -include $(addprefix $(BUILDDIR_LIBK)/, $(FILES_REL_OBJ:.o=.d))
-    -include $(addprefix $(BUILDDIR_TESTS)/, $(addprefix libc/, $(FILES_TESTS_OBJ:.o=.d)))
-    -include $(addprefix $(BUILDDIR_TESTS)/, $(addprefix libk/, $(FILES_TESTS_OBJ:.o=.d)))
+    -include $(addprefix $(BUILDDIR_LIBC)/, $(FILES_TESTS_OBJ:.o=.d))
+    -include $(addprefix $(BUILDDIR_LIBK)/, $(FILES_TESTS_OBJ:.o=.d))
 endif

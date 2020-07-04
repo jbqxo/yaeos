@@ -54,7 +54,6 @@ RUN rm -rf /tools/build /tools/src
 
 RUN mkdir -p ${SOURCE} ${BUILD}
 VOLUME [ ${SOURCE}, ${BUILD} ]
-ENV BUILDDIR_BUILD=${BUILD}
 
 WORKDIR ${SOURCE}
 CMD [ "make", "grub-iso" ]

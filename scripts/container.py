@@ -30,14 +30,11 @@ def build_image(dclient, dir_root, dir_out, image_name, target):
                 print(line)
 
 
-def run_cmd(dclient, dir_root, dir_out, verbose_lvl, image_name, command):
+def run_cmd(dclient, dir_root, dir_out, image_name, command):
     volumes = {
         dir_root: {"bind": dir_root, "mode": "rw"},
         dir_out: {"bind": dir_out, "mode": "rw"},
     }
-    envvars = {}
-    if verbose_lvl > 0:
-        envvars["STEPS"] = "1"
 
     container = dclient.containers.run(
         image=image_name,
@@ -46,7 +43,6 @@ def run_cmd(dclient, dir_root, dir_out, verbose_lvl, image_name, command):
         stdout=True,
         stderr=True,
         detach=True,
-        environment=envvars,
     )
     container.wait()
     sys.stdout.buffer.write(container.logs())
@@ -72,9 +68,6 @@ def build_argparser():
         "action", help="Action to perform (exec, build_image, make)"
     )
     a.add_argument("cmd", help="Command to execute.", nargs="*")
-    a.add_argument(
-        "-v", dest="verbose", action="count", default=0, help="Print build steps"
-    )
     return a
 
 
@@ -90,7 +83,6 @@ def main():
             dclient=dclient,
             dir_root=args.project_root,
             dir_out=args.output,
-            verbose_lvl=args.verbose,
             image_name=image_name,
             command=" ".join(args.cmd),
         )

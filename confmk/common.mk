@@ -75,9 +75,3 @@ GREP   := grep
 
 # Do not remove intermediate files
 .SECONDARY:
-
-# Common functions
-STEPS ?= 0
-define log
-@bash -c "if [ $(STEPS) -gt 0 ]; then echo \"$(strip $(1))\"; fi"
-endef
