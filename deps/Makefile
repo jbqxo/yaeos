@@ -5,7 +5,7 @@ include $(ROOT)/confmk/common.mk
 # Suppress all warnings from dependencies
 CFLAGS += -w
 
-.PHONY: print all unity clean
+.PHONY: all unity prefix_dirs clean
 
 all: unity
 

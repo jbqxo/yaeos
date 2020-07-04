@@ -7,11 +7,22 @@ include $(ROOT)/confmk/common.mk
 
 DIR_ARCH := arch/$(TARGET_ARCH)
 BUILDDIR_KERNEL_ARCH := $(BUILDDIR_KERNEL)/$(DIR_ARCH)
-
-CPPFLAGS_KERNEL := -I$(CWD)/include -I$(CWD)/arch/$(TARGET_ARCH)/include
-CPPFLAGS_LIBC := -I$(ROOT)/$(DIR_LIBC)/include -I$(ROOT)/$(DIR_LIBC)/arch/$(TARGET_ARCH)/include -D__libk__
-
 include $(DIR_ARCH)/Makefile
+
+CFLAGS += \
+    $(CFLAGS_COMMON) -ffreestanding \
+    $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
+
+CPPFLAGS += \
+    $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE)) \
+    -I$(CWD)/include -I$(CWD)/arch/$(TARGET_ARCH)/include \
+    -I$(ROOT)/$(DIR_LIBC)/include -I$(ROOT)/$(DIR_LIBC)/arch/$(TARGET_ARCH)/include \
+    -I$(ROOT)/$(DIR_DEPS) \
+    -D__libk__
+
+LDFLAGS += \
+    $(LDFLAGS_COMMON) \
+    $(if $(BUILD_DEBUG),$(LDFLAGS_DEBUG),$(LDFLAGS_RELEASE))
 
 FILES_TESTS_OBJ :=\
     $(addsuffix .o, \
@@ -55,26 +66,15 @@ prefix_dirs:
 
 ###### Kernel rules
 
-$(BUILDDIR_KERNEL)/kernel.bin: LDFLAGS += -nostdlib $(LDFLAGS_COMMON)
-$(BUILDDIR_KERNEL)/kernel.bin: LDFLAGS += $(if $(BUILD_DEBUG),$(LDFLAGS_DEBUG),$(LDFLAGS_RELEASE))
+$(BUILDDIR_KERNEL)/kernel.bin: LDFLAGS += -nostdlib
 $(BUILDDIR_KERNEL)/kernel.bin: $$(FILES_OBJ) $(DIR_ARCH)/linker.ld $(BUILDDIR_LIBK)/libk.a
 	$(call log, [kernel] LD $@)
 	@$(LD) -Wl,-T,$(DIR_ARCH)/linker.ld $(FILES_OBJ) $(BUILDDIR_LIBK)/libk.a $(LDFLAGS) -o $@
 
-$(BUILDDIR_KERNEL)/%.c.o: CPPFLAGS += $(CPPFLAGS_KERNEL) $(CPPFLAGS_LIBC)
-$(BUILDDIR_KERNEL)/%.c.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
-$(BUILDDIR_KERNEL)/%.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
-$(BUILDDIR_KERNEL)/%.c.o: CFLAGS += $(CFLAGS_COMMON) -ffreestanding
-$(BUILDDIR_KERNEL)/%.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
 $(BUILDDIR_KERNEL)/%.c.o: $(CWD)/%.c | prefix_dirs
 	$(call log, [kernel] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(BUILDDIR_KERNEL)/%.asm.o: CPPFLAGS += $(CPPFLAGS_KERNEL) $(CPPFLAGS_LIBC)
-$(BUILDDIR_KERNEL)/%.asm.o: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
-$(BUILDDIR_KERNEL)/%.asm.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
-$(BUILDDIR_KERNEL)/%.asm.o: CFLAGS += $(CFLAGS_COMMON) -ffreestanding
-$(BUILDDIR_KERNEL)/%.asm.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
 $(BUILDDIR_KERNEL)/%.asm.o: $(CWD)/%.asm | prefix_dirs
 	$(call log, [kernel] AS $@)
 	@$(AS) $(CFLAGS) $(CPPFLAGS) $< -o $@
@@ -88,32 +88,21 @@ dirs_tests:
 test: $$(patsubst %.c.o,%, $$(FILES_TESTS_OBJ)) | dirs_tests
 	@$(foreach t, $^, echo "[kernel.tests] Running $t"; $t;)
 
-$(BUILDDIR_TESTS)/kernel/%_tests.c.o: CFLAGS += $(CFLAGS_COMMON) -ffreestanding
-$(BUILDDIR_TESTS)/kernel/%_tests.c.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/kernel/%_tests.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
-$(BUILDDIR_TESTS)/kernel/%_tests.c.o: CPPFLAGS += $(CPPFLAGS_KERNEL)
 $(BUILDDIR_TESTS)/kernel/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
 	$(call log, [kernel.tests] CC $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $^ -c -o $@
 
-$(BUILDDIR_TESTS)/kernel/%_tests: LDFLAGS += $(LDFLAGS_COMMON)
-$(BUILDDIR_TESTS)/kernel/%_tests: LDFLAGS += $(if $(BUILD_DEBUG),$(LDFLAGS_DEBUG),$(LDFLAGS_RELEASE))
 $(BUILDDIR_TESTS)/kernel/%_tests: $(BUILDDIR_TESTS)/kernel/%_tests.c.o $(BUILDDIR_KERNEL)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
 	$(call log, [kernel.tests] LD $@)
 	@$(LD) $(CPPFLAGS) $^ $(LDFLAGS) -o $@
 
 ###### Dependencies rules
 
-$(BUILDDIR_KERNEL)/%.c.d: CPPFLAGS += $(CPPFLAGS_KERNEL) $(CPPFLAGS_LIBC)
-$(BUILDDIR_KERNEL)/%.c.d: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
-$(BUILDDIR_KERNEL)/%.c.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_KERNEL)/%.c.d: $(CWD)/%.c | prefix_dirs
 	$(call log, [kernel] MD $@)
 	@$(CC) $(CPPFLAGS) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
 
-$(BUILDDIR_KERNEL)/%.asm.d: CPPFLAGS += $(CPPFLAGS_KERNEL) $(CPPFLAGS_LIBC)
-$(BUILDDIR_KERNEL)/%.asm.d: CPPFLAGS += $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE))
-$(BUILDDIR_KERNEL)/%.asm.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)
 $(BUILDDIR_KERNEL)/%.asm.d: $(CWD)/%.asm | prefix_dirs
 	$(call log, [kernel] MD $@)
 	@$(AS) $(CPPFLAGS) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
@@ -124,8 +113,6 @@ $(BUILDDIR_LIBK)/libk.a:
 $(BUILDDIR_DEPS)/unity/unity.o:
 	$(error You need to build unity framework first)
 
-$(BUILDDIR_KERNEL_ARCH)/crtbegin.o $(BUILDDIR_KERNEL_ARCH)/crtend.o: CFLAGS += $(CFLAGS_COMMON) -ffreestanding
-$(BUILDDIR_KERNEL_ARCH)/crtbegin.o $(BUILDDIR_KERNEL_ARCH)/crtend.o: CFLAGS += $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE))
 $(BUILDDIR_KERNEL_ARCH)/crtbegin.o $(BUILDDIR_KERNEL_ARCH)/crtend.o: | prefix_dirs
 	$(call log, [kernel] Copy $(notdir $@) to the build directory)
 	@CRT_O=`$(CC) $(CFLAGS) $(LDFLAGS) -print-file-name=$(@F)` && cp "$$CRT_O" $@
