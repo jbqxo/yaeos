@@ -21,13 +21,17 @@ def parse_args() -> argparse.Namespace:
     a.add_argument("-d", dest="dir", help="Directory that contains cdb entries", default="./build")
     a.add_argument("-p", dest="pattern", help="Cdb entry filename pattern", default="*.json")
     a.add_argument("-c", dest="command_style", help="Build command-styled database", action="store_true")
+    a.add_argument("-C", dest="new_compiler", help="Change compiler", default=None)
     return a.parse_args()
 
 
-def transform_to_cmd(db: dict) -> dict:
+def transform_to_cmd(db: dict):
     db["command"] = db.pop("arguments")
     db["command"] = " ".join(db["command"])
-    return db
+
+
+def patch_compiler(db: dict, new_compiler: str) -> dict:
+    db["arguments"][0] = new_compiler
 
 
 def main():
@@ -36,8 +40,10 @@ def main():
     for entry_path in find_entries(args.dir, args.pattern):
         with open(entry_path, "r") as entry:
             e = json.loads(entry.read().rstrip().rstrip(','))
+            if args.new_compiler is not None:
+                patch_compiler(e, args.new_compiler)
             if args.command_style:
-                e = transform_to_cmd(e)
+                transform_to_cmd(e)
             compilation_db.append(e)
 
     with open(args.output, "w+") as outf:
