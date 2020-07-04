@@ -3,7 +3,7 @@ ROOT := $(realpath $(CWD)/..)
 include $(ROOT)/confmk/common.mk
 .SECONDEXPANSION:
 .SUFFIXES:
-.PHONY: all clean prefix_dirs install-headers
+.PHONY: all clean prefix_dirs install-headers compile_commands_kernel compile_commands_tests
 
 DIR_ARCH := arch/$(TARGET_ARCH)
 BUILDDIR_KERNEL_ARCH := $(BUILDDIR_KERNEL)/$(DIR_ARCH)
@@ -79,6 +79,20 @@ $(BUILDDIR_KERNEL)/%.asm.o: $(CWD)/%.asm | prefix_dirs
 	$(call log, [kernel] AS $@)
 	@$(AS) $(CFLAGS) $(CPPFLAGS) $< -o $@
 
+###### Compilation commands rules
+
+compile_commands_kernel: $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ:.o=.json))
+compile_commands_tests: $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_TESTS_OBJ:.o=.json))
+
+$(BUILDDIR_KERNEL)/%.c.json: $(CWD)/%.c | prefix_dirs
+	$(call log, [kernel] MJ $@)
+	@$(CC) $(CFLAGS) $(CPPFLAGS) -MJ $@ -c $< -o /dev/null
+
+$(BUILDDIR_KERNEL)/kernel/%_tests.c.json: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
+$(BUILDDIR_KERNEL)/kernel/%_tests.c.json: $(CWD)/%_tests.c | dirs_tests
+	$(call log, [kernel.tests] MJ $@)
+	@$(CC) $(CFLAGS) $(CPPFLAGS) -MJ $@ $< -c -o /dev/null
+
 ###### Tests rules
 
 dirs_tests test: FILES_TESTS_OBJ := $(addprefix $(BUILDDIR_TESTS)/kernel/, $(FILES_TESTS_OBJ))
@@ -122,4 +136,5 @@ ifneq ($(MAKECMDGOALS),clean)
     -include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ_ARCH_BEGIN:.o=.d))
     -include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ_ARCH_END:.o=.d))
     -include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ:.o=.d))
+    -include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_TESTS_OBJ:.o=.d))
 endif

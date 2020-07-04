@@ -7,8 +7,7 @@ ARG SOURCE
 # The directory where build files will be located inside a container
 ARG BUILD
 
-RUN pacman --noconfirm -Syu base-devel curl lib32-glibc make python python-pip
-RUN pip install compiledb
+RUN pacman --noconfirm -Syu base-devel curl lib32-glibc make python
 # Required to build GCC
 RUN pacman --noconfirm -Syu gmp libmpc mpfr
 # Required to build the project

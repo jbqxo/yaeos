@@ -1,7 +1,7 @@
 CWD := $(shell pwd)
 ROOT := $(realpath $(CWD)/..)
 include $(ROOT)/confmk/common.mk
-.PHONY: clean dirs_libc dirs_libk dirs_tests all install-headers test test_libc test_libk
+.PHONY: clean dirs_libc dirs_libk dirs_tests all install-headers test test_libc test_libk compile_commands_libk compile_commands_libk_tests
 .SECONDEXPANSION:
 
 DIR_ARCH := $(CWD)/arch/$(TARGET_ARCH)
@@ -89,6 +89,21 @@ $(BUILDDIR_LIBK)/%.c.o: $(CWD)/%.c | dirs_libk
 $(BUILDDIR_LIBK)/%.asm.o: $(CWD)/%.asm | dirs_libk
 	$(call log, [libk] AS $@)
 	@$(AS) $(CPPFLAGS) $(CFLAGS) -D__libk__ $< -o $@
+
+###### Compilation commands rules
+
+compile_commands_libk: $(addprefix $(BUILDDIR_LIBK)/,$(FILES_REL_OBJ:.o=.json))
+
+compile_commands_libk_tests: $(addprefix $(BUILDDIR_TESTS)/libk/,$(FILES_TESTS_OBJ:.o=.json))
+
+$(BUILDDIR_LIBK)/%.c.json: $(CWD)/%.c | dirs_libk
+	$(call log, [libk] MJ $@)
+	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libk__ -MJ $@ -c $< -o /dev/null
+
+$(BUILDDIR_TESTS)/libk/%_tests.c.json: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
+$(BUILDDIR_TESTS)/libk/%_tests.c.json: $(CWD)/%_tests.c | dirs_tests
+	$(call log, [libk.tests] MJ $@)
+	@$(CC) $(CFLAGS) $(CPPFLAGS) -D__libk__ -MJ $@ $^ -c -o /dev/null
 
 ###### Tests rules
 

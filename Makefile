@@ -28,6 +28,13 @@ libc: | build_dir
 	$(call log, [build] make libc)
 	@$(MAKE) -C $(DIR_LIBC)
 
+compile_commands:
+	$(call log, [build] make compile commands entries)
+	@$(MAKE) -C $(DIR_LIBC) compile_commands_libk
+	@$(MAKE) -C $(DIR_KERNEL) compile_commands_kernel
+	@$(MAKE) BUILD_TEST=1 BUILDDIR_BUILD=$(ROOT)/build/test -C $(DIR_LIBC) compile_commands_libk_tests
+	@$(MAKE) BUILD_TEST=1 BUILDDIR_BUILD=$(ROOT)/build/test -C $(DIR_KERNEL) compile_commands_tests
+
 # Add unity headers
 test: export BUILD_TEST = 1
 test: export BUILDDIR_BUILD = $(ROOT)/build/test

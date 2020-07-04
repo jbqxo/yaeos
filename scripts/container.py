@@ -53,20 +53,6 @@ def run_cmd(dclient, dir_root, dir_out, verbose_lvl, image_name, command):
     container.remove()
 
 
-def gen_cc(dclient, dir_root, dir_out, verbose_lvl, image_name):
-    targets_todo = ["clean", "test", "clean", "kernel", "clean", "libc"]
-    for target in targets_todo:
-        run_cmd(
-            dclient,
-            dir_root,
-            dir_out,
-            verbose_lvl,
-            image_name,
-            "compiledb -o {}/compile_commands.json ".format(
-                dir_root) + "make " + target,
-        )
-
-
 def build_argparser():
     targets_str = ", ".join(map(lambda t: t.target, TARGETS))
     cwd = os.getcwd()
@@ -83,7 +69,7 @@ def build_argparser():
         "-b", dest="output", help="Output directory", default=cwd + "/build"
     )
     a.add_argument(
-        "action", help="Action to perform (exec, build_image, gen_compile_commands)"
+        "action", help="Action to perform (exec, build_image, make)"
     )
     a.add_argument("cmd", help="Command to execute.", nargs="*")
     a.add_argument(
@@ -108,6 +94,15 @@ def main():
             image_name=image_name,
             command=" ".join(args.cmd),
         )
+    elif args.action == "make":
+        run_cmd(
+            dclient=dclient,
+            dir_root=args.project_root,
+            dir_out=args.output,
+            verbose_lvl=args.verbose,
+            image_name=image_name,
+            command="make " + " ".join(args.cmd),
+        )
     elif args.action == "build_image":
         build_image(
             dclient=dclient,
@@ -115,14 +110,6 @@ def main():
             dir_out=args.output,
             image_name=image_name,
             target=target,
-        )
-    elif args.action == "gen_compile_commands":
-        gen_cc(
-            dclient=dclient,
-            dir_root=args.project_root,
-            dir_out=args.output,
-            verbose_lvl=args.verbose,
-            image_name=image_name,
         )
     else:
         argsp.print_help()
