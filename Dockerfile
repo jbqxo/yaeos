@@ -16,11 +16,14 @@ RUN pacman --noconfirm -Syu clang grub xorriso mtools
 # Fetch gcc sources and binutils sources.
 RUN curl -O https://ftp.gnu.org/gnu/binutils/binutils-2.34.tar.xz && \
 	curl -O https://ftp.gnu.org/gnu/gcc/gcc-10.1.0/gcc-10.1.0.tar.xz && \
+	curl -O https://ftp.gnu.org/gnu/gdb/gdb-9.2.tar.xz && \
 	mkdir -p /tools/src && \
 	tar -xf binutils-2.34.tar.xz -C /tools/src && \
 	tar -xf gcc-10.1.0.tar.xz -C /tools/src && \
+	tar -xf gdb-9.2.tar.xz -C /tools/src && \
 	rm binutils-2.34.tar.xz && \
-	rm gcc-10.1.0.tar.xz
+	rm gcc-10.1.0.tar.xz && \
+	rm gdb-9.2.tar.xz
 
 ENV PATH="/tools/${TARGET}/bin:$PATH"
 
@@ -49,6 +52,14 @@ RUN /tools/src/gcc-10.1.0/configure \
 	make all-gcc all-target-libgcc && \
 	make install-gcc install-target-libgcc
 
+# Build GDB Server
+RUN mkdir -p /tools/build/gdb
+WORKDIR /tools/build/gdb
+RUN /tools/src/gdb-9.2/gdb/gdbserver/configure \
+	--prefix="/tools/${TARGET}" && \
+	make && \
+	make install
+
 # Cleanup
 RUN rm -rf /tools/build /tools/src
 
@@ -56,4 +67,6 @@ RUN mkdir -p ${SOURCE} ${BUILD}
 VOLUME [ ${SOURCE}, ${BUILD} ]
 
 WORKDIR ${SOURCE}
+# Port for gdbserver
+EXPOSE 1234
 CMD [ "make", "grub-iso" ]
