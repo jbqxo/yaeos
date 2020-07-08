@@ -17,6 +17,9 @@ else
     export BUILD_DEBUG ?= 1
 endif
 
+TARGET_ARCH           ?= i686
+include $(ROOT)/confmk/$(TARGET_ARCH).mk
+
 # Names of the base directories
 DIR_ISODIR ?= isodir
 DIR_KERNEL ?= kernel
@@ -26,7 +29,7 @@ DIR_BOOT   ?= boot
 DIR_DEPS   ?= deps
 
 # Name of the build prefixes
-BUILDDIR_BUILD  ?= $(ROOT)/build
+BUILDDIR_BUILD  ?= $(ROOT)/build/$(TARGET_ARCH)
 BUILDDIR_ISODIR ?= $(BUILDDIR_BUILD)/$(DIR_ISODIR)
 BUILDDIR_KERNEL ?= $(BUILDDIR_BUILD)/$(DIR_KERNEL)
 BUILDDIR_LIBC   ?= $(BUILDDIR_BUILD)/$(DIR_LIBC)
@@ -50,8 +53,6 @@ LDFLAGS_COMMON  := -lgcc
 LDFLAGS_DEBUG   := -fno-lto
 LDFLAGS_RELEASE := -flto
 
-TARGET_ARCH           ?= i686
-include $(ROOT)/confmk/$(TARGET_ARCH).mk
 
 # Compilation toolchain
 ifeq ($(shell uname -s), Darwin)

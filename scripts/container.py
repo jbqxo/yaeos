@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
-from collections import namedtuple
 import os
 import sys
+import signal
 import argparse
 import docker
+from collections import namedtuple
+from dataclasses import dataclass
 
 Target = namedtuple("Target", ["target", "triplet"])
 TARGETS = [
@@ -14,42 +16,64 @@ TARGETS = [
 DEFAULT_TARGET = TARGETS[0]
 
 
-def build_image(dclient, dir_root, dir_out, image_name, target):
+@dataclass
+class Container:
+    image_tag: str
+    ports: dict
+    dirs: dict
+    obj: docker.models.containers.Container = None
+
+
+def sigint_handler(signum, frame):
+    if Container.obj is not None:
+        print("Trying to stop the container...")
+        Container.obj.stop(timeout=3)
+        sys.stdout.buffer.write(Container.obj.logs())
+        Container.obj.remove()
+    sys.exit(0)
+
+
+def build_image(dclient, target):
     build_args = {
-        "SOURCE": dir_root,
-        "BUILD": dir_out,
+        "SOURCE": Container.dirs["root"],
+        "BUILD": Container.dirs["build"],
         "TARGET": target.triplet,
     }
 
     print("Trying to build the image. It will take a while...")
-    _, logs = dclient.images.build(
-        path=dir_root, tag=image_name, buildargs=build_args,)
+    _, logs = dclient.images.build(path=Container.dirs["root"],
+                                   tag=Container.image_tag,
+                                   buildargs=build_args)
     for entry in logs:
         if "stream" in entry:
             for line in entry["stream"].splitlines():
                 print(line)
 
 
-def run_cmd(dclient, dir_root, dir_out, image_name, command):
+def run_cmd(dclient, command):
+    global Container
     volumes = {
-        dir_root: {"bind": dir_root, "mode": "rw"},
-        dir_out: {"bind": dir_out, "mode": "rw"},
+        Container.dirs["root"]: {"bind": Container.dirs["root"],
+                                       "mode": "rw"},
+        Container.dirs["build"]: {"bind": Container.dirs["build"],
+                                        "mode": "rw"}
     }
 
-    container = dclient.containers.run(
-        image=image_name,
+    Container.obj = dclient.containers.create(
+        image=Container.image_tag,
         command=command,
         volumes=volumes,
-        stdout=True,
-        stderr=True,
-        detach=True,
-    )
-    container.wait()
-    sys.stdout.buffer.write(container.logs())
-    container.remove()
+        ports=Container.ports,
+        detach=True)
+    try:
+        Container.obj.start()
+    finally:
+        Container.obj.wait()
+        sys.stdout.buffer.write(Container.obj.logs())
+        Container.obj.remove()
 
 
-def build_argparser():
+def main():
     targets_str = ", ".join(map(lambda t: t.target, TARGETS))
     cwd = os.getcwd()
 
@@ -65,46 +89,52 @@ def build_argparser():
         "-b", dest="output", help="Output directory", default=cwd + "/build"
     )
     a.add_argument(
-        "action", help="Action to perform (exec, build_image, make)"
+        "action", help="Action to perform (exec, build_image, make, gdbserver, tests)"
     )
+    a.add_argument("-d", dest="debug", help="Debug port", default=1234)
     a.add_argument("cmd", help="Command to execute.", nargs="*")
-    return a
 
-
-def main():
-    argsp = build_argparser()
-    args = argsp.parse_args()
+    args = a.parse_args()
     target = [t for t in TARGETS if t.target == args.arch][0]
-    image_name = "yaeos-{}".format(target.triplet)
     dclient = docker.from_env()
 
+    global Container
+    Container = Container(image_tag="yaeos-{}".format(target.triplet),
+                          ports={"1234": ("127.0.0.1", args.debug)},
+                          dirs={"root": args.project_root, "build": args.output})
+
+    signal.signal(signal.SIGINT, sigint_handler)
     if args.action == "exec":
         run_cmd(
             dclient=dclient,
-            dir_root=args.project_root,
-            dir_out=args.output,
-            image_name=image_name,
             command=" ".join(args.cmd),
         )
     elif args.action == "make":
         run_cmd(
             dclient=dclient,
-            dir_root=args.project_root,
-            dir_out=args.output,
-            verbose_lvl=args.verbose,
-            image_name=image_name,
             command="make " + " ".join(args.cmd),
         )
     elif args.action == "build_image":
         build_image(
             dclient=dclient,
-            dir_root=args.project_root,
-            dir_out=args.output,
-            image_name=image_name,
             target=target,
         )
+    elif args.action == "gdbserver":
+        run_cmd(
+            dclient=dclient,
+            command="gdbserver 0.0.0.0:1234 " + " ".join(args.cmd),
+        )
+    elif args.action == "tests":
+        run_cmd(
+            dclient=dclient,
+            command="make tests"
+        )
+        run_cmd(
+            dclient=dclient,
+            command="./scripts/run_tests.py " + " ".join(args.cmd),
+        )
     else:
-        argsp.print_help()
+        a.print_help()
 
 
 main()
