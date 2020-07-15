@@ -6,12 +6,14 @@ ARG TARGET
 ARG SOURCE
 # The directory where build files will be located inside a container
 ARG BUILD
+# The number of jobs for make to run
+ARG JOBS
 
 RUN pacman --noconfirm -Syu base-devel curl lib32-glibc make python
 # Required to build GCC
-RUN pacman --noconfirm -Syu gmp libmpc mpfr
+RUN pacman --noconfirm -S gmp libmpc mpfr
 # Required to build the project
-RUN pacman --noconfirm -Syu clang grub xorriso mtools
+RUN pacman --noconfirm -S clang grub xorriso mtools
 
 # Fetch gcc sources and binutils sources.
 RUN curl -O https://ftp.gnu.org/gnu/binutils/binutils-2.34.tar.xz && \
@@ -36,7 +38,7 @@ RUN /tools/src/binutils-2.34/configure \
 	--with-sysroot \
 	--disable-nls \
 	--disable-werror && \
-	make && \
+	make -j${JOBS} && \
 	make install
 
 # Build GCC cross-compiler.
@@ -49,7 +51,7 @@ RUN /tools/src/gcc-10.1.0/configure \
 	--disable-nls \
 	--enable-languages=c,c++ \
 	--without-headers && \
-	make all-gcc all-target-libgcc && \
+	make -j${JOBS} all-gcc all-target-libgcc && \
 	make install-gcc install-target-libgcc
 
 # Build GDB Server
@@ -57,7 +59,7 @@ RUN mkdir -p /tools/build/gdb
 WORKDIR /tools/build/gdb
 RUN /tools/src/gdb-9.2/gdb/gdbserver/configure \
 	--prefix="/tools/${TARGET}" && \
-	make && \
+	make -j${JOBS} && \
 	make install
 
 # Cleanup

@@ -23,11 +23,12 @@ class Container:
     dirs: dict
 
 
-def build_image(target):
+def build_image(target, jobs=1):
     cmd = ["docker", "build", "-m8g"]
     cmd += ["--build-arg", "SOURCE=" + Container.dirs["root"]]
     cmd += ["--build-arg", "BUILD=" + Container.dirs["build"]]
     cmd += ["--build-arg", "TARGET=" + target.triplet]
+    cmd += ["--build-arg", "JOBS=" + str(jobs)]
     cmd += ["-t", Container.image_tag]
     cmd += [Container.dirs["root"]]
 
@@ -51,6 +52,7 @@ def run_cmd(command):
 def main():
     targets_str = ", ".join(map(lambda t: t.target, TARGETS))
     cwd = os.getcwd()
+    ncpu = os.cpu_count()
 
     a = argparse.ArgumentParser(description="Run isolated build environment")
     a.add_argument(
@@ -68,6 +70,7 @@ def main():
     )
     a.add_argument("-d", dest="debug", help="Debug port", default=1234)
     a.add_argument("cmd", help="Command to execute.", nargs="*")
+    a.add_argument("-j", dest="jobs", help="Number of jobs", default=ncpu)
 
     args = a.parse_args()
     target = [t for t in TARGETS if t.target == args.arch][0]
@@ -88,6 +91,7 @@ def main():
     elif args.action == "build_image":
         build_image(
             target=target,
+            jobs=args.jobs
         )
     elif args.action == "gdbserver":
         run_cmd(
