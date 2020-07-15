@@ -1,6 +1,6 @@
 #include <kernel/mm.h>
 #include <kernel/cppdefs.h>
-#include <arch/platform.h>
+#include <arch_i686/platform.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>

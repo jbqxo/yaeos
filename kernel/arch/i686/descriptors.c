@@ -1,4 +1,4 @@
-#include <arch/descriptors.h>
+#include <arch_i686/descriptors.h>
 
 #include <stdint.h>
 #include <stdbool.h>

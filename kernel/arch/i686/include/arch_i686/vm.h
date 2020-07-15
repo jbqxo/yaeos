@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include <arch/platform.h>
+#include <arch_i686/platform.h>
 
 extern uint32_t boot_paging_pt[] asm("boot_paging_pt");
 extern uint32_t boot_paging_pd[] asm("boot_paging_pd");
@@ -65,7 +65,7 @@ enum VM_DIR_FLAGS {
 static inline void *vm_table_entry_addr(void *table, void *vaddr)
 {
 	// The table index consists of 21:12 bits of an address.
-	const uintptr_t MASK = 0x003FF000u;
+	const uintptr_t MASK = 0x003FF000U;
 	uint32_t index = ((uintptr_t)vaddr & MASK) >> 12;
 	return (void *)((uintptr_t)table + index * 4);
 }
@@ -80,7 +80,7 @@ static inline void *vm_table_entry_addr(void *table, void *vaddr)
 static inline void *vm_dir_entry_addr(void *dir, void *vaddr)
 {
 	// The directory index consists of 31:22 bits of an address.
-	const uintptr_t MASK = 0xFFC00000u;
+	const uintptr_t MASK = 0xFFC00000U;
 	uint32_t index = ((uintptr_t)vaddr & MASK) >> 22;
 	return (void *)((uintptr_t)dir + index * 4);
 }

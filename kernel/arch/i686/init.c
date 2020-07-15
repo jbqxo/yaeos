@@ -1,9 +1,9 @@
 #include <kernel/kernel.h>
 
-#include <arch/vga.h>
-#include <arch/vm.h>
-#include <arch/platform.h>
-#include <arch/descriptors.h>
+#include <arch_i686/vga.h>
+#include <arch_i686/vm.h>
+#include <arch_i686/platform.h>
+#include <arch_i686/descriptors.h>
 
 #include <multiboot.h>
 

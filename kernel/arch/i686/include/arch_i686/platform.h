@@ -1,7 +1,7 @@
 #ifndef _KERNEL_ARCH_I686_PLATFORM_H
 #define _KERNEL_ARCH_I686_PLATFORM_H
 
-#include <arch/vm.h>
+#include <arch_i686/vm.h>
 
 #include <multiboot.h>
 
