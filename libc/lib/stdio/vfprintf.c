@@ -16,6 +16,7 @@ static int put_char(FILE *stream, char c)
 #endif
 
 #ifdef __libk__
+#include <kernel/tty.h>
 typedef tty_descriptor_t output_t;
 
 static int put_char(tty_descriptor_t d, char c)
