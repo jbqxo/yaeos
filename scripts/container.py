@@ -4,7 +4,7 @@ import os
 import sys
 import signal
 import argparse
-import docker
+import subprocess
 from collections import namedtuple
 from dataclasses import dataclass
 
@@ -21,56 +21,31 @@ class Container:
     image_tag: str
     ports: dict
     dirs: dict
-    obj: docker.models.containers.Container = None
 
 
-def sigint_handler(signum, frame):
-    if Container.obj is not None:
-        print("Trying to stop the container...")
-        Container.obj.stop(timeout=3)
-        sys.stdout.buffer.write(Container.obj.logs())
-        Container.obj.remove()
-    sys.exit(0)
+def build_image(target):
+    cmd = ["docker", "build", "-m8g"]
+    cmd += ["--build-arg", "SOURCE=" + Container.dirs["root"]]
+    cmd += ["--build-arg", "BUILD=" + Container.dirs["build"]]
+    cmd += ["--build-arg", "TARGET=" + target.triplet]
+    cmd += ["-t", Container.image_tag]
+    cmd += [Container.dirs["root"]]
+
+    subprocess.run(cmd)
 
 
-def build_image(dclient, target):
-    build_args = {
-        "SOURCE": Container.dirs["root"],
-        "BUILD": Container.dirs["build"],
-        "TARGET": target.triplet,
-    }
+def run_cmd(command):
+    cmd = ["docker", "run"]
+    cmd += ["-it", "--rm"]
+    cmd += ["-v", Container.dirs["root"] + ":" + Container.dirs["root"]]
+    cmd += ["-v", Container.dirs["build"] + ":" + Container.dirs["build"]]
+    for int_port, ext_addr_port in Container.ports.items():
+        cmd += ["-p", ext_addr_port[0] + ":" + str(ext_addr_port[1]) + ":" + str(int_port)]
 
-    print("Trying to build the image. It will take a while...")
-    _, logs = dclient.images.build(path=Container.dirs["root"],
-                                   tag=Container.image_tag,
-                                   buildargs=build_args)
-    for entry in logs:
-        if "stream" in entry:
-            for line in entry["stream"].splitlines():
-                print(line)
+    cmd += [Container.image_tag]
+    cmd += command
 
-
-def run_cmd(dclient, command):
-    global Container
-    volumes = {
-        Container.dirs["root"]: {"bind": Container.dirs["root"],
-                                       "mode": "rw"},
-        Container.dirs["build"]: {"bind": Container.dirs["build"],
-                                        "mode": "rw"}
-    }
-
-    Container.obj = dclient.containers.create(
-        image=Container.image_tag,
-        command=command,
-        volumes=volumes,
-        ports=Container.ports,
-        detach=True)
-    try:
-        Container.obj.start()
-    finally:
-        Container.obj.wait()
-        sys.stdout.buffer.write(Container.obj.logs())
-        Container.obj.remove()
+    subprocess.run(cmd)
 
 
 def main():
@@ -96,42 +71,34 @@ def main():
 
     args = a.parse_args()
     target = [t for t in TARGETS if t.target == args.arch][0]
-    dclient = docker.from_env()
 
     global Container
     Container = Container(image_tag="yaeos-{}".format(target.triplet),
                           ports={"1234": ("127.0.0.1", args.debug)},
                           dirs={"root": args.project_root, "build": args.output})
 
-    signal.signal(signal.SIGINT, sigint_handler)
     if args.action == "exec":
         run_cmd(
-            dclient=dclient,
-            command=" ".join(args.cmd),
+            command=args.cmd,
         )
     elif args.action == "make":
         run_cmd(
-            dclient=dclient,
-            command="make " + " ".join(args.cmd),
+            command=["make"] + args.cmd,
         )
     elif args.action == "build_image":
         build_image(
-            dclient=dclient,
             target=target,
         )
     elif args.action == "gdbserver":
         run_cmd(
-            dclient=dclient,
-            command="gdbserver 0.0.0.0:1234 " + " ".join(args.cmd),
+            command=["gdbserver", "0.0.0.0:1234"] + args.cmd,
         )
     elif args.action == "tests":
         run_cmd(
-            dclient=dclient,
-            command="make tests"
+            command=["make", "tests"],
         )
         run_cmd(
-            dclient=dclient,
-            command="./scripts/run_tests.py " + " ".join(args.cmd),
+            command=["./scripts/run_tests.py"] + args.cmd,
         )
     else:
         a.print_help()
