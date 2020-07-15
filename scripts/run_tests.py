@@ -65,7 +65,7 @@ def run_tests(execs: Iterator[str]) -> Iterator[TestCase]:
 
 
 def present_results(cases: Iterator[TestCase]):
-    for case in sorted(cases, key=lambda k: (k.status.value, k.source_file)):
+    for case in sorted(cases, key=lambda k: (k.status.value, k.exec_path)):
         status = ""
         if case.status == TestCase.Status.IGNORE:
             status = TColors.BLUE + "IGNORE" + TColors.END
