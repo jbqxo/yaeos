@@ -1,10 +1,7 @@
-#pragma once
+#ifndef _KERNEL_ARCH_I686_VGA_H
+#define _KERNEL_ARCH_I686_VGA_H
 
 #include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
@@ -51,6 +48,4 @@ static inline uint16_t vga_char(unsigned char uc, vga_char_color color)
 	return (uint16_t)uc | (uint16_t)(color << 8);
 }
 
-#ifdef __cplusplus
-}
-#endif
+#endif // _KERNEL_ARCH_I686_VGA_H

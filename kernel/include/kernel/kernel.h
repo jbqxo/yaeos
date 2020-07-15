@@ -1,11 +1,6 @@
-#pragma once
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef _KERNEL_KERNEL_H
+#define _KERNEL_KERNEL_H
 
 void kernel_init(void *arch_data);
 
-#ifdef __cplusplus
-}
-#endif
+#endif // _KERNEL_KERNEL_H

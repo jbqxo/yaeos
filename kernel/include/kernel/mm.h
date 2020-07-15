@@ -1,5 +1,5 @@
-#ifndef _MM_H
-#define _MM_H
+#ifndef _KERNEL_MM_H
+#define _KERNEL_MM_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -35,7 +35,8 @@ struct buddy_allocator {
  * @warning Some part of the last memory chunk will be used for allocator's purposes.
  * Therefore it would be good idea to put the largest memory chunk at the end.
  */
-struct buddy_allocator *buddy_init(void **mem_chunks, const size_t *sizes, unsigned count, int flags);
+struct buddy_allocator *buddy_init(void **mem_chunks, const size_t *sizes, unsigned count,
+				   int flags);
 
 /**
  * @brief Allocate specified number of pages.
@@ -57,11 +58,11 @@ void buddy_free(struct buddy_allocator *allocator, void *mem, unsigned pages);
 struct mem_chunk {
 	void *mem;
 	size_t length;
-#define MEM_TYPE_AVAIL           (0x1)
-#define MEM_TYPE_RESERVED        (0x2)
-#define MEM_TYPE_ACPI            (0x3)
-#define MEM_TYPE_HIBER           (0x4)
-#define MEM_TYPE_UNAVAIL         (0x5)
+#define MEM_TYPE_AVAIL (0x1)
+#define MEM_TYPE_RESERVED (0x2)
+#define MEM_TYPE_ACPI (0x3)
+#define MEM_TYPE_HIBER (0x4)
+#define MEM_TYPE_UNAVAIL (0x5)
 	uint8_t type;
 };
 
@@ -98,4 +99,4 @@ int mm_arch_available_chunks(void *platform_info);
 
 void mm_arch_get_chunks(void *platform_info, struct mem_chunk *chunks);
 
-#endif // _MM_H
+#endif // _KERNEL_MM_H

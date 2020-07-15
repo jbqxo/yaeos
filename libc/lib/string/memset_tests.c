@@ -27,8 +27,7 @@ static void memset_simple(void)
 	void *res = memset(dest, val, length);
 	TEST_ASSERT_EQUAL_PTR(dest, res);
 	TEST_ASSERT_EACH_EQUAL_CHAR(val, dest, length);
-	TEST_ASSERT_EACH_EQUAL_CHAR_MESSAGE(GUARDVAL, &dest[length], 32,
-					    "Guard value is ruined");
+	TEST_ASSERT_EACH_EQUAL_CHAR_MESSAGE(GUARDVAL, &dest[length], 32, "Guard value is ruined");
 }
 
 static void memset_empty_str(void)
@@ -40,8 +39,7 @@ static void memset_empty_str(void)
 
 	void *res = memset(dest, 'A', 0);
 	TEST_ASSERT_EQUAL_PTR(dest, res);
-	TEST_ASSERT_EACH_EQUAL_CHAR_MESSAGE(GUARDVAL, dest, 32,
-					    "Guard value is ruined");
+	TEST_ASSERT_EACH_EQUAL_CHAR_MESSAGE(GUARDVAL, dest, 32, "Guard value is ruined");
 }
 
 int main(void)

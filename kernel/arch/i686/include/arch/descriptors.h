@@ -1,11 +1,8 @@
-#pragma once
+#ifndef _KERNEL_ARCH_I686_DESCRIPTORS_H
+#define _KERNEL_ARCH_I686_DESCRIPTORS_H
 
 #include <stdint.h>
 #include <stdbool.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /**
  * struct gdt_entry - the structure contains description of one segment descriptor.
@@ -59,8 +56,7 @@ struct gdt_ptr {
  * @data_offset - offset in the gdt table for data selector.
  * @code_offset - offset in the gdt table for code selector.
  */
-void gdt_set_table(struct gdt_ptr *table, uint16_t data_offset,
-		   uint16_t code_offset);
+void gdt_set_table(struct gdt_ptr *table, uint16_t data_offset, uint16_t code_offset);
 void boot_setup_gdt(void);
 
 enum gate_type {
@@ -130,6 +126,4 @@ extern void irq28(void);
 extern void irq29(void);
 extern void irq30(void);
 
-#ifdef __cplusplus
-}
-#endif
+#endif // _KERNEL_ARCH_I686_DESCRIPTORS_H

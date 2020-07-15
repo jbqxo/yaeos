@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _LIBC_STDIO_H
+#define _LIBC_STDIO_H
 
 #ifdef __libk__
 #include <kernel/tty.h>
@@ -29,3 +30,5 @@ int fprintf(tty_descriptor_t d, const char *restrict format, ...)
 #undef restrict
 }
 #endif
+
+#endif // _LIBC_STDIO_H

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _KERNEL_ARCH_I686_PLATFORM_H
+#define _KERNEL_ARCH_I686_PLATFORM_H
 
 #include <arch/vm.h>
 
@@ -12,3 +13,5 @@
 struct arch_info_i686 {
 	multiboot_info_t *info;
 };
+
+#endif // _KERNEL_ARCH_I686_PLATFORM_H

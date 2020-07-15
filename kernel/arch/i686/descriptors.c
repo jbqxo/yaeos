@@ -65,8 +65,7 @@ void boot_setup_gdt(void)
 	gdt_set_table(&p, data_offset, code_offset);
 }
 
-static void idt_set_gate(struct idt_entry *e, void *offset, uint16_t selector,
-			 enum idt_flag flags)
+static void idt_set_gate(struct idt_entry *e, void *offset, uint16_t selector, enum idt_flag flags)
 {
 	e->offset_low = (uintptr_t)offset & 0xFFFF;
 	e->offset_high = ((uintptr_t)offset >> 0x10) & 0xFFFF;

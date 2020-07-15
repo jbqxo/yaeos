@@ -4,7 +4,6 @@
 #include <arch/vm.h>
 #include <arch/platform.h>
 #include <arch/descriptors.h>
-#include <kernel/arch/mm.h>
 
 #include <multiboot.h>
 
@@ -19,20 +18,20 @@
  * @param level The depth of the frame to patch.
  * @param offset The offset to apply to the addresses in the frame.
  */
-#define PATCH_FRAME(level, offset)                                             \
-	do {                                                                   \
-		uint32_t *frame = __builtin_frame_address(level);              \
-		/* Patch return address */                                     \
-		uint32_t *ra = &frame[1];                                      \
-		*ra += offset;                                                 \
-		/* Patch previous ebp */                                       \
-		uint32_t *bp = &frame[0];                                      \
-		*bp += offset;                                                 \
+#define PATCH_FRAME(level, offset)                                                                 \
+	do {                                                                                       \
+		uint32_t *frame = __builtin_frame_address(level);                                  \
+		/* Patch return address */                                                         \
+		uint32_t *ra = &frame[1];                                                          \
+		*ra += (offset);                                                                   \
+		/* Patch previous ebp */                                                           \
+		uint32_t *bp = &frame[0];                                                          \
+		*bp += (offset);                                                                   \
 	} while (false)
 
 /**
  * @brief Map the pages in the range of addresses to the high memory.
- * 
+ *
  * @param page_dir Page Directory to modify
  * @param flags Flags to apply to every page.
  */
@@ -56,13 +55,10 @@ static void map_kernel(void *page_dir)
 	map_addr_range(page_dir, (void *)LOW(&kernel_text_start[0]),
 		       (void *)LOW(&kernel_text_end[0]), VM_TABLE_FLAG_PRESENT);
 	map_addr_range(page_dir, (void *)LOW(&kernel_rodata_start[0]),
-		       (void *)LOW(&kernel_rodata_end[0]),
-		       VM_TABLE_FLAG_PRESENT);
+		       (void *)LOW(&kernel_rodata_end[0]), VM_TABLE_FLAG_PRESENT);
 	map_addr_range(page_dir, (void *)LOW(&kernel_data_start[0]),
-		       (void *)LOW(&kernel_data_end[0]),
-		       VM_TABLE_FLAG_RW | VM_TABLE_FLAG_PRESENT);
-	map_addr_range(page_dir, (void *)LOW(&kernel_bss_start[0]),
-		       (void *)LOW(&kernel_bss_end[0]),
+		       (void *)LOW(&kernel_data_end[0]), VM_TABLE_FLAG_RW | VM_TABLE_FLAG_PRESENT);
+	map_addr_range(page_dir, (void *)LOW(&kernel_bss_start[0]), (void *)LOW(&kernel_bss_end[0]),
 		       VM_TABLE_FLAG_PRESENT | VM_TABLE_FLAG_RW);
 }
 
@@ -88,8 +84,7 @@ static void setup_boot_paging(void)
 
 	// Identity mapping
 	void *identity = vm_dir_entry_addr(boot_pd, 0x0);
-	vm_set_dir_entry(identity, boot_pt,
-			 VM_DIR_FLAG_PRESENT | VM_DIR_FLAG_RW);
+	vm_set_dir_entry(identity, boot_pt, VM_DIR_FLAG_PRESENT | VM_DIR_FLAG_RW);
 
 	// Map the kernel to higher half of address space
 	void *hh = vm_dir_entry_addr(boot_pd, (void *)KERNEL_VMA);
@@ -113,7 +108,7 @@ static void setup_boot_paging(void)
 
 /**
  * @brief Patch some multiboot information in order to use it from high memory.
- * 
+ *
  * @param info Multiboot info block.
  */
 static void patch_multiboot_info(multiboot_info_t *info)

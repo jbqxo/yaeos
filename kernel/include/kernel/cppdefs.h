@@ -1,5 +1,5 @@
-#ifndef CPPDEFS_H
-#define CPPDEFS_H
+#ifndef _KERNEL_CPPDEFS_H
+#define _KERNEL_CPPDEFS_H
 
 #define __unused                __attribute__((__unused__))
 #define __used                  __attribute__((__used__))
@@ -10,4 +10,4 @@
 #define __likely(exp)           __builtin_expect((exp), 1)
 #define __unlikely(exp)         __builtin_expect((exp), 0)
 
-#endif /* CPPDEFS_H */
+#endif // _KERNEL_CPPDEFS_H

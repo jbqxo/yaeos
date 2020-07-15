@@ -1,12 +1,9 @@
-#pragma once
+#ifndef _KERNEL_ARCH_I686_VM_H
+#define _KERNEL_ARCH_I686_VM_H
 
 #include <stdint.h>
 
 #include <arch/platform.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 extern uint32_t boot_paging_pt[] asm("boot_paging_pt");
 extern uint32_t boot_paging_pd[] asm("boot_paging_pd");
@@ -33,7 +30,7 @@ extern char kernel_bss_end[] asm("_kernel_bss_end");
 #define KERNEL_VMA ((uintptr_t)&kernel_vma[0])
 
 #define HIGH(addr) ((uintptr_t)(KERNEL_VMA + (uintptr_t)(addr)))
-#define LOW(addr) ((uintptr_t)((uintptr_t)(addr) - KERNEL_VMA))
+#define LOW(addr) ((uintptr_t)((uintptr_t)(addr)-KERNEL_VMA))
 
 enum VM_TABLE_FLAGS {
 	VM_TABLE_FLAG_PRESENT = 0x1 << 0,
@@ -106,8 +103,7 @@ static inline void vm_tlb_invlpg(void *addr)
  * @phys_addr: Page address to point to.
  * @flags: PTE flags.
  */
-void vm_set_table_entry(void *table_entry, void *phys_addr,
-			enum VM_TABLE_FLAGS flags);
+void vm_set_table_entry(void *table_entry, void *phys_addr, enum VM_TABLE_FLAGS flags);
 
 /**
  * vm_set_dir_entry() - Set directory entry to point at specified page table.
@@ -115,8 +111,7 @@ void vm_set_table_entry(void *table_entry, void *phys_addr,
  * @table_addr: Page Table to point to.
  * @flags: PDE flags.
  */
-void vm_set_dir_entry(void *dir_entry, void *table_addr,
-		      enum VM_DIR_FLAGS flags);
+void vm_set_dir_entry(void *dir_entry, void *table_addr, enum VM_DIR_FLAGS flags);
 
 /**
  * vm_map() - Map virtual address to physical address.
@@ -128,8 +123,7 @@ void vm_set_dir_entry(void *dir_entry, void *table_addr,
  * The function assumes that the page table is present in page directory.
  * Otherwise, behaviour is undefined.
  */
-void vm_map(void *page_dir, void *virt_addr, void *phys_addr,
-	    enum VM_TABLE_FLAGS flags);
+void vm_map(void *page_dir, void *virt_addr, void *phys_addr, enum VM_TABLE_FLAGS flags);
 
 /**
  * vm_paging_set() - Set given Page Directory as active.
@@ -143,6 +137,4 @@ void vm_paging_set(void *dir);
  */
 void vm_paging_enable(uintptr_t hh_offset);
 
-#ifdef __cplusplus
-}
-#endif
+#endif // _KERNEL_ARCH_I686_VM_H

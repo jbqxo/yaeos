@@ -29,15 +29,15 @@ void tearDown(void)
 {
 }
 
-#define VFPRINTF(expected, format, ...)                                        \
-	do {                                                                   \
-		int s = strlen(expected);                                      \
-		int r = fprintf(0, (format), ##__VA_ARGS__);                   \
-		TEST_ASSERT_EQUAL_HEX8(GUARDVAL, buffer[s]);                   \
-		buffer[s] = '\0';                                              \
-		TEST_ASSERT_EQUAL_STRING((expected), buffer);                  \
-		TEST_ASSERT_EQUAL_INT(s, r);                                   \
-		reset();                                                       \
+#define VFPRINTF(expected, format, ...)                                                            \
+	do {                                                                                       \
+		int s = strlen(expected);                                                          \
+		int r = fprintf(0, (format), ##__VA_ARGS__);                                       \
+		TEST_ASSERT_EQUAL_HEX8(GUARDVAL, buffer[s]);                                       \
+		buffer[s] = '\0';                                                                  \
+		TEST_ASSERT_EQUAL_STRING((expected), buffer);                                      \
+		TEST_ASSERT_EQUAL_INT(s, r);                                                       \
+		reset();                                                                           \
 	} while (0);
 
 #pragma clang diagnostic push

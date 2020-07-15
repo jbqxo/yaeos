@@ -1,3 +1,5 @@
+#ifndef _LIBC_ASSERT_H
+#define _LIBC_ASSERT_H
 #undef assert
 
 #ifdef __cplusplus
@@ -8,7 +10,7 @@ extern "C" {
 #define assert(exp) ((void)0)
 #else
 // TODO(Maxim Lyapin): Well. Right now assertion isn't very good. Make it good.
-#define assert(exp) ((exp) && ((*(int*)0x0 = 0), 1))
+#define assert(exp) ((exp) && ((*(int *)0x0 = 0), 1))
 #endif
 
 // TODO(Maxim Lyapin): Mark as C11 or newer only
@@ -17,3 +19,5 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+
+#endif // _LIBC_ASSERT_H

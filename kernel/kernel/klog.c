@@ -29,11 +29,10 @@ static const char *find_filename(const char *path)
 
 static char lvl_to_char(enum LOG_LEVEL lvl)
 {
-	static char LOOKUP_TABLE[LOG_PANIC + 1] = { [LOG_DEBUG] = 'D',
-						    [LOG_INFO] = 'I',
-						    [LOG_WARN] = 'W',
-						    [LOG_ERR] = 'E',
-						    [LOG_PANIC] = 'P' };
+	static char LOOKUP_TABLE[LOG_PANIC + 1] = {
+		[LOG_DEBUG] = 'D', [LOG_INFO] = 'I',  [LOG_WARN] = 'W',
+		[LOG_ERR] = 'E',   [LOG_PANIC] = 'P',
+	};
 	return LOOKUP_TABLE[lvl];
 }
 

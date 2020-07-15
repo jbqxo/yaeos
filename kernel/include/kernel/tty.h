@@ -1,10 +1,7 @@
-#pragma once
+#ifndef _KERNEL_TTY_H
+#define _KERNEL_TTY_H
 
 #include <stddef.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef void *tty_descriptor_t;
 
@@ -18,6 +15,4 @@ void tty_writeln(tty_descriptor_t desc, const char *data, size_t size);
 void tty_print(tty_descriptor_t desc, const char *str);
 void tty_println(tty_descriptor_t desc, const char *str);
 
-#ifdef __cplusplus
-}
-#endif
+#endif // _KERNEL_TTY_H

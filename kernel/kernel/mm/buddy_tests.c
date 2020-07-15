@@ -80,7 +80,8 @@ static void no_missing_memory(void)
 		expected += sizes[i];
 	}
 
-	TEST_ASSERT_MESSAGE(pages == expected / PLATFORM_PAGE_SIZE, "It seems that some memory has been lost");
+	TEST_ASSERT_MESSAGE(pages == expected / PLATFORM_PAGE_SIZE,
+			    "It seems that some memory has been lost");
 }
 
 static void memory_page_aligned(void)

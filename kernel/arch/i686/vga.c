@@ -11,8 +11,8 @@
 
 static struct vga_state GLOBAL_STATE;
 
-static void write_char(tty_descriptor_t desc, uint8_t c, vga_char_color color,
-		       uint_fast16_t x, uint_fast16_t y)
+static void write_char(tty_descriptor_t desc, uint8_t c, vga_char_color color, uint_fast16_t x,
+		       uint_fast16_t y)
 {
 	struct vga_state *s = desc;
 	const uint_fast16_t index = y * VGA_WIDTH + x;

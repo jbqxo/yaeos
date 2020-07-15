@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _LIBC_CTYPE_H
+#define _LIBC_CTYPE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,3 +50,5 @@ int toupper(int c);
 #ifdef __cplusplus
 }
 #endif
+
+#endif // _LIBC_CTYPE_H

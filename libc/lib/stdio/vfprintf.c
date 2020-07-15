@@ -35,10 +35,10 @@ static void putn(output_t out, const char *str, unsigned n)
 
 enum conv_flags {
 	CF_MINUS = 0x1 << 0,
-	CF_PLUS  = 0x1 << 1,
+	CF_PLUS = 0x1 << 1,
 	CF_SPACE = 0x1 << 2,
-	CF_HASH  = 0x1 << 3,
-	CF_ZERO  = 0x1 << 4
+	CF_HASH = 0x1 << 3,
+	CF_ZERO = 0x1 << 4
 };
 enum conv_specifiers {
 	CS_INT,
@@ -65,9 +65,9 @@ enum conv_length {
 	CL_NONE
 };
 #define WIDTH_EMPTY -2
-#define WIDTH_VAR   -1
-#define PREC_EMPTY  -2
-#define PREC_VAR    -1
+#define WIDTH_VAR -1
+#define PREC_EMPTY -2
+#define PREC_VAR -1
 struct conv_spec {
 	enum conv_flags flags;
 	int width;
@@ -251,22 +251,21 @@ struct argument {
 	bool negative;
 };
 
-static struct argument fetch_arg(struct conv_spec s, va_list *args,
-				 struct argument *dest)
+static struct argument fetch_arg(struct conv_spec s, va_list *args, struct argument *dest)
 {
 	struct argument arg = { 0 };
 	switch (s.spec) {
 	case CS_INT: {
 		intmax_t val = va_arg(*args, intmax_t);
 		switch (s.length) {
-#define CASE_BODY(type)                                                        \
-	do {                                                                   \
-		type v = (type)val;                                            \
-		arg.val.d = v;                                                 \
-		if (v < 0) {                                                   \
-			arg.negative = true;                                   \
-			arg.val.d *= -1;                                       \
-		}                                                              \
+#define CASE_BODY(type)                                                                            \
+	do {                                                                                       \
+		type v = (type)val;                                                                \
+		arg.val.d = v;                                                                     \
+		if (v < 0) {                                                                       \
+			arg.negative = true;                                                       \
+			arg.val.d *= -1;                                                           \
+		}                                                                                  \
 	} while (0)
 		case CL_CHAR: CASE_BODY(char); break;
 		case CL_SHORT: CASE_BODY(short); break;
@@ -309,12 +308,10 @@ struct conv_spec_funcs {
 	int (*length)(struct conv_spec *s, struct argument *a);
 	// Function that returns string to prepend to the value ("0x" for ptr/hex values, for example)
 	// and it's length. Could be NULL.
-	const char *(*prefix)(struct conv_spec *s, struct argument *a,
-			      unsigned *length);
+	const char *(*prefix)(struct conv_spec *s, struct argument *a, unsigned *length);
 };
 
-static int length_for_intnumbase(uintmax_t num, unsigned base,
-				 unsigned max_num_digits)
+static int length_for_intnumbase(uintmax_t num, unsigned base, unsigned max_num_digits)
 {
 	for (int i = max_num_digits - 1; i >= 0; i--) {
 		uintmax_t power = 1;
@@ -475,8 +472,7 @@ static void hex_print(output_t out, struct conv_spec *s, struct argument *a)
 	}
 }
 
-static const char *hex_prefix(struct conv_spec *s, struct argument *a,
-			      unsigned *len)
+static const char *hex_prefix(struct conv_spec *s, struct argument *a, unsigned *len)
 {
 	static const char zx[] = "0x";
 	// Do not count null-terminator.
@@ -548,9 +544,8 @@ static struct conv_spec_funcs cs_funcs_table[] = {
 	[CS_UCHAR] = (struct conv_spec_funcs){ .print = char_print,
 					       .length = char_length,
 					       .prefix = NULL },
-	[CS_UOCTAL] = (struct conv_spec_funcs){ .print = oct_print,
-						.length = oct_length,
-						.prefix = NULL }
+	[CS_UOCTAL] =
+		(struct conv_spec_funcs){ .print = oct_print, .length = oct_length, .prefix = NULL }
 };
 
 /**
@@ -592,8 +587,7 @@ static int print_conv_spec(output_t out, struct conv_spec s, va_list *args)
 	}
 
 	bool flag_present = arg.negative || (s.flags & (CF_PLUS | CF_SPACE));
-	int width_to_fill =
-		s.width - num_len - prefix_len - (flag_present ? 1 : 0);
+	int width_to_fill = s.width - num_len - prefix_len - (flag_present ? 1 : 0);
 
 	// If Width != 0 and the flag '-' was not specified, result must be right-justified
 	if (!(s.flags & CF_MINUS) && s.width != WIDTH_EMPTY) {
