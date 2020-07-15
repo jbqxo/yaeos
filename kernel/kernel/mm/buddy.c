@@ -276,9 +276,8 @@ static void free_buddy(struct chunk *ch, unsigned max_lvl, unsigned lvl, unsigne
 	free_buddys_ancestors(ch, max_lvl, lvl, bit);
 }
 
-void *buddy_alloc(void *allocator, unsigned pages)
+void *buddy_alloc(struct buddy_allocator *a, unsigned pages)
 {
-	struct buddy_allocator *a = allocator;
 	unsigned lvl = log2(pages) - 1;
 	if (lvl >= a->levels) {
 		return (NULL);
@@ -303,9 +302,8 @@ void *buddy_alloc(void *allocator, unsigned pages)
 	return ((void *)((uintptr_t)chunk->mem + (idx << lvl) * PLATFORM_PAGE_SIZE));
 }
 
-void buddy_free(void *allocator, void *mem, unsigned pages)
+void buddy_free(struct buddy_allocator *a, void *mem, unsigned pages)
 {
-	struct buddy_allocator *a = allocator;
 	unsigned lvl;
 	if (pages == 1) {
 		// Edge case.
