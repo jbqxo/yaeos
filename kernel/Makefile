@@ -81,8 +81,10 @@ $(BUILDDIR_KERNEL)/%.asm.o: $(CWD)/%.asm | prefix_dirs
 
 ###### Compilation commands rules
 
-compile_commands_kernel: $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ:.o=.json))
 compile_commands_tests: $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_TESTS_OBJ:.o=.json))
+compile_commands_kernel: $(addprefix $(BUILDDIR_KERNEL)/, \
+    $(filter-out %.asm.json, \
+    $(FILES_OBJ:.o=.json) $(FILES_OBJ_ARCH:.o=.json)))
 
 $(BUILDDIR_KERNEL)/%.c.json: $(CWD)/%.c | prefix_dirs
 	$(info [kernel] MJ $@)
