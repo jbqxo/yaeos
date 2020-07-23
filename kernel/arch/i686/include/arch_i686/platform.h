@@ -1,17 +1,17 @@
 #ifndef _KERNEL_ARCH_I686_PLATFORM_H
 #define _KERNEL_ARCH_I686_PLATFORM_H
 
-#include <arch_i686/vm.h>
+#define STACK_SIZE 16384
+#define PAGE_SIZE 4096
 
+#ifndef __ASSEMBLER__
 #include <multiboot.h>
-
 #include <stdint.h>
-
-#define CONF_STACK_SIZE 16384
-#define PLATFORM_PAGE_SIZE 4096
+#include <stddef.h>
 
 struct arch_info_i686 {
 	multiboot_info_t *info;
 };
 
+#endif // __ASSEMBLER__
 #endif // _KERNEL_ARCH_I686_PLATFORM_H

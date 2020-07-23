@@ -1,9 +1,13 @@
 #include <unity.h>
 #include <kernel/mm.h>
 #include <kernel/cppdefs.h>
-#include <arch_i686/platform.h>
+#include <arch/platform.h>
 #include <stdlib.h>
 #include <string.h>
+
+const size_t PLATFORM_PAGE_SIZE = 4096;
+// TODO: Test BUDDY_LOWMEM too
+const uintptr_t PLATFORM_KERNEL_VMA = 0;
 
 // Allocator uses this symbol inside when it receives BUDDY_LOWMEM flag.
 const char dumb_kernel_vma asm("_kernel_vma");

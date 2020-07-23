@@ -1,3 +1,5 @@
+#include <arch_i686/platform.h>
+
 // Constants for the multiboot header
 #define FLAG_ALIGN   (0x1 << 0)                  // align loaded modules on page boundaries
 #define FLAG_MEMINFO (0x1 << 1)                  // provide memory map
@@ -12,11 +14,8 @@
     .long FLAGS
     .long CHECKSUM
 
-//TODO: Move these constants in a separate header
-#define STACK_SIZE         16384 // 16 KiB
-
 .section .bootstack, "aw", @nobits
-.align 4096
+.align PAGE_SIZE
 .global bootstack_bottom
 bootstack_bottom:
     .skip STACK_SIZE
@@ -25,13 +24,13 @@ bootstack_top:
 
 // Preallocate space used for boot-time paging.
 .section .bss, "aw", @nobits
-.align 4096
+.align PAGE_SIZE
 .global boot_paging_pd
 boot_paging_pd:
-    .skip 4096
+    .skip PAGE_SIZE
 .global boot_paging_pt
 boot_paging_pt:
-    .skip 4096
+    .skip PAGE_SIZE
 
 .section .text
 // The kernel's entry point

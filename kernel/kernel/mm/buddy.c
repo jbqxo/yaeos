@@ -1,6 +1,6 @@
 #include <kernel/mm.h>
 #include <kernel/cppdefs.h>
-#include <arch_i686/platform.h>
+#include <arch/platform.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -62,7 +62,7 @@ static void *alloc_data_mem(struct buddy_allocator *alloc, size_t size)
 	alloc->data_size += size;
 
 	if (alloc->flags & BUDDY_LOWMEM) {
-		pos += KERNEL_VMA;
+		pos += PLATFORM_KERNEL_VMA;
 	}
 
 	return ((void *)pos);
@@ -118,7 +118,7 @@ struct buddy_allocator *buddy_init(void **mem_chunks, const size_t *sizes, unsig
 	// Initialize struct buddy_allocator enough to be able to allocate memory further.
 	uintptr_t data_start_addr = align_addr((uintptr_t)mem_chunks[data_idx], PLATFORM_PAGE_SIZE);
 	struct buddy_allocator *alloc =
-		(void *)((uintptr_t)data_start_addr + ((flags & BUDDY_LOWMEM) ? KERNEL_VMA : 0));
+		(void *)((uintptr_t)data_start_addr + ((flags & BUDDY_LOWMEM) ? PLATFORM_KERNEL_VMA : 0));
 	alloc->data = data_start_addr;
 	// We will reallocate this space again, so there is no need to increate data_size.
 	alloc->data_size = 0;

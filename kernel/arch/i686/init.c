@@ -1,4 +1,5 @@
 #include <kernel/kernel.h>
+#include <arch/platform.h>
 
 #include <arch_i686/vga.h>
 #include <arch_i686/vm.h>
@@ -120,6 +121,10 @@ extern void call_global_ctors(void) asm("_init");
 extern void call_global_dtors(void) asm("_fini");
 
 static struct arch_info_i686 i686_info;
+
+const size_t PLATFORM_PAGE_SIZE = PAGE_SIZE;
+const size_t PLATFORM_STACK_SIZE = STACK_SIZE;
+const uintptr_t PLATFORM_KERNEL_VMA = (uintptr_t)kernel_vma;
 
 void i686_init(multiboot_info_t *info, uint32_t magic)
 {
