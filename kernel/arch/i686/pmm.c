@@ -1,5 +1,6 @@
 #include <arch_i686/vm.h>
-#include <kernel/mm.h>
+#include <arch_i686/platform.h>
+#include <kernel/mm/pmm.h>
 #include <kernel/cppdefs.h>
 #include <kernel/klog.h>
 
@@ -130,8 +131,8 @@ static void count(uintptr_t start __unused, uintptr_t end __unused, uint32_t typ
 
 static void find(uintptr_t start, uintptr_t end, uint32_t type, void *data)
 {
-	struct mem_chunk **chunks = data;
-	struct mem_chunk *chunk = *chunks;
+	struct pmm_chunk **chunks = data;
+	struct pmm_chunk *chunk = *chunks;
 	size_t length = end - start;
 
 	chunk->mem = (void *)start;
@@ -142,7 +143,7 @@ static void find(uintptr_t start, uintptr_t end, uint32_t type, void *data)
 	(*chunks)++;
 }
 
-int mm_arch_available_chunks(void *platform_info)
+int pmm_arch_available_chunks(void *platform_info)
 {
 	int counter = 0;
 	struct availmem_data d = (struct availmem_data){ .fn = count, .fn_data = &counter };
@@ -150,7 +151,7 @@ int mm_arch_available_chunks(void *platform_info)
 	return counter;
 }
 
-void mm_arch_get_chunks(void *platform_info, struct mem_chunk *chunks)
+void pmm_arch_get_chunks(void *platform_info, struct pmm_chunk *chunks)
 {
 	struct availmem_data d = (struct availmem_data){ .fn = find, .fn_data = &chunks };
 	chunks_iter(platform_info, availmem_iter, &d);

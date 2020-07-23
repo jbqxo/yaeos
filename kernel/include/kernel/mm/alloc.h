@@ -1,5 +1,5 @@
-#ifndef _KERNEL_MM_H
-#define _KERNEL_MM_H
+#ifndef _KERNEL_MM_ALLOC_H
+#define _KERNEL_MM_ALLOC_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -55,48 +55,5 @@ void *buddy_alloc(struct buddy_allocator *allocator, unsigned pages);
  */
 void buddy_free(struct buddy_allocator *allocator, void *mem, unsigned pages);
 
-struct mem_chunk {
-	void *mem;
-	size_t length;
-#define MEM_TYPE_AVAIL (0x1)
-#define MEM_TYPE_RESERVED (0x2)
-#define MEM_TYPE_ACPI (0x3)
-#define MEM_TYPE_HIBER (0x4)
-#define MEM_TYPE_UNAVAIL (0x5)
-	uint8_t type;
-};
 
-#define PAGE_FLAG_KERNEL (0x1)
-#define PAGE_FLAG_USER (0x1)
-typedef unsigned pageflag;
-
-struct page {
-	uintptr_t virtual;
-	uintptr_t physical;
-	pageflag flags;
-};
-
-void page_allocator_init(struct buddy_allocator *allocator);
-
-/**
- * @brief Allocate specified number of pages.
- * @param pages Number of required pages.
- * @note Return pointer is page aligned.
- * @return Pointer at the beginning of the allocated space.
- */
-struct page *alloc_pages(unsigned pages, pageflag flags);
-
-/**
- * @brief Free specified memory space.
- * @param mem Pointer to the space to free.
- * @param pages Number of pages that was requested.
- * @note It's important to specify the same number of pages that was received from the allocator.
- * Bad things will happen otherwise.
- */
-void free_pages(struct page *pages, unsigned number);
-
-int mm_arch_available_chunks(void *platform_info);
-
-void mm_arch_get_chunks(void *platform_info, struct mem_chunk *chunks);
-
-#endif // _KERNEL_MM_H
+#endif // _KERNEL_MM_ALLOC_H

@@ -1,5 +1,5 @@
 #include <unity.h>
-#include <kernel/mm.h>
+#include <kernel/mm/alloc.h>
 #include <kernel/cppdefs.h>
 #include <arch/platform.h>
 #include <stdlib.h>

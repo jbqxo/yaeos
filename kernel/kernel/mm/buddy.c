@@ -1,4 +1,4 @@
-#include <kernel/mm.h>
+#include <kernel/mm/alloc.h>
 #include <kernel/cppdefs.h>
 #include <arch/platform.h>
 #include <stddef.h>
