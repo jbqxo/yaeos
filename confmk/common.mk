@@ -17,7 +17,10 @@ else
     export BUILD_DEBUG ?= 1
 endif
 
-TARGET_ARCH           ?= i686
+ifeq ($(TARGET_ARCH),)
+    $(error TARGET_ARCH varialbe must be set)
+endif
+
 include $(ROOT)/confmk/$(TARGET_ARCH).mk
 
 # Names of the base directories

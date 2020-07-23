@@ -1,7 +1,9 @@
 FROM archlinux
 
+# Target arch
+ARG ARCH
 # Target triplet
-ARG TARGET
+ARG TRIPLET
 # The directory where sources will be located inside a container
 ARG SOURCE
 # The directory where build files will be located inside a container
@@ -27,14 +29,14 @@ RUN curl -O https://ftp.gnu.org/gnu/binutils/binutils-2.34.tar.xz && \
 	rm gcc-10.1.0.tar.xz && \
 	rm gdb-9.2.tar.xz
 
-ENV PATH="/tools/${TARGET}/bin:$PATH"
+ENV PATH="/tools/${TRIPLET}/bin:$PATH"
 
 # Build binutils cross-toolchain.
 RUN mkdir -p /tools/build/binutils
 WORKDIR /tools/build/binutils
 RUN /tools/src/binutils-2.34/configure \
-	--target=${TARGET} \
-	--prefix="/tools/${TARGET}" \
+	--target=${TRIPLET} \
+	--prefix="/tools/${TRIPLET}" \
 	--with-sysroot \
 	--disable-nls \
 	--disable-werror && \
@@ -46,8 +48,8 @@ RUN /tools/src/binutils-2.34/configure \
 RUN mkdir -p /tools/build/gcc
 WORKDIR /tools/build/gcc
 RUN /tools/src/gcc-10.1.0/configure \
-	--target=${TARGET} \
-	--prefix="/tools/${TARGET}" \
+	--target=${TRIPLET} \
+	--prefix="/tools/${TRIPLET}" \
 	--disable-nls \
 	--enable-languages=c,c++ \
 	--without-headers && \
@@ -58,7 +60,7 @@ RUN /tools/src/gcc-10.1.0/configure \
 RUN mkdir -p /tools/build/gdb
 WORKDIR /tools/build/gdb
 RUN /tools/src/gdb-9.2/gdb/gdbserver/configure \
-	--prefix="/tools/${TARGET}" && \
+	--prefix="/tools/${TRIPLET}" && \
 	make -j${JOBS} && \
 	make install
 
@@ -71,4 +73,5 @@ VOLUME [ ${SOURCE}, ${BUILD} ]
 WORKDIR ${SOURCE}
 # Port for gdbserver
 EXPOSE 1234
+ENV TARGET_ARCH="${ARCH}"
 CMD [ "make", "grub-iso" ]
