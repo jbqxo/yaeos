@@ -8,7 +8,6 @@ include $(ROOT)/confmk/common.mk
 .SECONDEXPANSION:
 
 DIR_ARCH := $(CWD)/arch/$(TARGET_ARCH)
-include $(DIR_ARCH)/Makefile
 
 CFLAGS += \
     $(CFLAGS_COMMON) \

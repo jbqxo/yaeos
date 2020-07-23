@@ -9,8 +9,7 @@ ifeq ($(TARGET_ARCH), i686)
         AR := ar
     else
         LD := i686-elf-gcc
-        CRTDIR := $(shell $(LD) -print-search-dirs | grep install\: | sed 's/install\://')
-        CC := clang -march=i686 --target=i686-pc-none-elf -B$(CRTDIR)
+        CC := clang -march=i686 --target=i686-pc-none-elf
         AS := i686-elf-gcc -xassembler-with-cpp -c
         AR := i686-elf-ar
         CFLAGS_COMMON += -m32

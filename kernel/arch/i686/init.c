@@ -117,9 +117,6 @@ static void patch_multiboot_info(multiboot_info_t *info)
 	info->mmap_addr = HIGH(info->mmap_addr);
 }
 
-extern void call_global_ctors(void) asm("_init");
-extern void call_global_dtors(void) asm("_fini");
-
 static struct arch_info_i686 i686_info;
 
 const size_t PLATFORM_PAGE_SIZE = PAGE_SIZE;
@@ -139,7 +136,5 @@ void i686_init(multiboot_info_t *info, uint32_t magic)
 	i686_info.info = (void *)HIGH(info);
 	patch_multiboot_info(i686_info.info);
 
-	call_global_ctors();
 	kernel_init(&i686_info);
-	call_global_dtors();
 }

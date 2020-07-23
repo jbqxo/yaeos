@@ -6,8 +6,6 @@ include $(ROOT)/confmk/common.mk
 .PHONY: all clean tests prefix_dirs install-headers compile_commands_kernel compile_commands_tests
 
 DIR_ARCH := arch/$(TARGET_ARCH)
-BUILDDIR_KERNEL_ARCH := $(BUILDDIR_KERNEL)/$(DIR_ARCH)
-include $(DIR_ARCH)/Makefile
 
 CFLAGS += \
     $(CFLAGS_COMMON) -ffreestanding \
@@ -33,7 +31,7 @@ FIND_IGNORE_ARCHS :=\
     $(patsubst %, -not \( -path % -prune \), \
     $(shell $(FIND) * -type d -path 'arch/*' -prune | $(GREP) -v $(TARGET_ARCH)))
 FILES_OBJ :=\
-    $(filter-out $(FILES_TESTS_OBJ) $(FILES_OBJ_ARCH_BEGIN) $(FILES_OBJ_ARCH_END) $(FILES_OBJ_ARCH), \
+    $(filter-out $(FILES_TESTS_OBJ), \
     $(addsuffix .o, \
     $(shell $(FIND) * $(FIND_IGNORE_ARCHS) -name '*.c' -or -name '*.asm')))
 
@@ -49,10 +47,6 @@ install-headers:
 	@$(MKDIRP) $(BUILDDIR_KERNEL)/include/arch
 	@$(CPRP) $(CWD)/arch/$(TARGET_ARCH)/include/. $(BUILDDIR_KERNEL)/include/.
 
-prefix_dirs $(BUILDDIR_KERNEL)/kernel.bin: FILES_OBJ := $(FILES_OBJ_ARCH_BEGIN) \
-    $(FILES_OBJ_ARCH) \
-    $(FILES_OBJ) \
-    $(FILES_OBJ_ARCH_END)
 prefix_dirs $(BUILDDIR_KERNEL)/kernel.bin: FILES_OBJ := $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ))
 
 clean:
@@ -84,7 +78,7 @@ $(BUILDDIR_KERNEL)/%.asm.o: $(CWD)/%.asm | prefix_dirs
 compile_commands_tests: $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_TESTS_OBJ:.o=.json))
 compile_commands_kernel: $(addprefix $(BUILDDIR_KERNEL)/, \
     $(filter-out %.asm.json, \
-    $(FILES_OBJ:.o=.json) $(FILES_OBJ_ARCH:.o=.json)))
+    $(FILES_OBJ:.o=.json)))
 
 $(BUILDDIR_KERNEL)/%.c.json: $(CWD)/%.c | prefix_dirs
 	$(info [kernel] MJ $@)
@@ -133,14 +127,7 @@ $(BUILDDIR_LIBK)/libk.a:
 $(BUILDDIR_DEPS)/unity/unity.o:
 	$(error You need to build unity framework first)
 
-$(BUILDDIR_KERNEL_ARCH)/crtbegin.o $(BUILDDIR_KERNEL_ARCH)/crtend.o: | prefix_dirs
-	$(info [kernel] Copy $(notdir $@) to the build directory)
-	@CRT_O=`$(CC) $(CFLAGS) $(LDFLAGS) -print-file-name=$(@F)` && cp "$$CRT_O" $@
-
 ifneq ($(MAKECMDGOALS),clean)
-    -include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ_ARCH:.o=.d))
-    -include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ_ARCH_BEGIN:.o=.d))
-    -include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ_ARCH_END:.o=.d))
     -include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ:.o=.d))
     -include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_TESTS_OBJ:.o=.d))
 endif
