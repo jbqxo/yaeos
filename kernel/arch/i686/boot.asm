@@ -38,7 +38,7 @@ boot_paging_pt:
 .type _start, @function
 _start:
     movl $bootstack_top, %esp
-    subl $_kernel_vma, %esp
+    subl $__kernel_vma, %esp
     movl %esp, %ebp
 
     pushl %eax
