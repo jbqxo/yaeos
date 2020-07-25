@@ -67,10 +67,10 @@ enum conv_length {
 	CL_LDOUBLE,
 	CL_NONE
 };
-#define WIDTH_EMPTY -2
-#define WIDTH_VAR -1
-#define PREC_EMPTY -2
-#define PREC_VAR -1
+#define WIDTH_EMPTY	(-2)
+#define WIDTH_VAR	(-1)
+#define PREC_EMPTY	(-2)
+#define PREC_VAR	(-1)
 struct conv_spec {
 	enum conv_flags flags;
 	int width;
@@ -84,17 +84,17 @@ static unsigned conv_positive_atoi(const char *s, unsigned len)
 {
 	// The number cannot be negative.
 	// The segment must contain only digits.
-	int res = 0;
+	unsigned res = 0;
 	switch (len) {
-	case 10: res += (s[len - 10] - '0') * 1000000000u;
-	case 9: res += (s[len - 9] - '0') * 100000000u;
-	case 8: res += (s[len - 8] - '0') * 10000000u;
-	case 7: res += (s[len - 7] - '0') * 1000000u;
-	case 6: res += (s[len - 6] - '0') * 100000u;
-	case 5: res += (s[len - 5] - '0') * 10000u;
-	case 4: res += (s[len - 4] - '0') * 1000u;
-	case 3: res += (s[len - 3] - '0') * 100u;
-	case 2: res += (s[len - 2] - '0') * 10u;
+	case 10: res += (s[len - 10] - '0') * 1000000000U;
+	case 9: res += (s[len - 9] - '0') * 100000000U;
+	case 8: res += (s[len - 8] - '0') * 10000000U;
+	case 7: res += (s[len - 7] - '0') * 1000000U;
+	case 6: res += (s[len - 6] - '0') * 100000U;
+	case 5: res += (s[len - 5] - '0') * 10000U;
+	case 4: res += (s[len - 4] - '0') * 1000U;
+	case 3: res += (s[len - 3] - '0') * 100U;
+	case 2: res += (s[len - 2] - '0') * 10U;
 	case 1: res += (s[len - 1] - '0');
 	}
 	return res;
@@ -148,15 +148,16 @@ static struct conv_spec parse_conv_spec(const char **_format)
 		}
 		const char *begin = format;
 		unsigned len = 0;
-		while (begin[len] >= '0' && begin[len] <= '9')
+		while (begin[len] >= '0' && begin[len] <= '9') {
 			len++;
+		}
 		if (len == 0) {
 			// Width was not specified.
 			result.width = WIDTH_EMPTY;
 			goto skip_width;
 		}
 
-		result.width = conv_positive_atoi(begin, len);
+		result.width = (int)conv_positive_atoi(begin, len);
 		format += len;
 
 	skip_width:;
@@ -179,14 +180,15 @@ static struct conv_spec parse_conv_spec(const char **_format)
 
 		const char *begin = format;
 		unsigned len = 0;
-		while (begin[len] >= '0' && begin[len] <= '9')
+		while (begin[len] >= '0' && begin[len] <= '9') {
 			len++;
+		}
 		if (len == 0) {
 			// "If only the period specified, the precision is taken as zero."
 			result.precision = 0;
 			goto skip_precision;
 		}
-		result.precision = conv_positive_atoi(begin, len);
+		result.precision = (int)conv_positive_atoi(begin, len);
 		format += len;
 
 	skip_precision:;
@@ -660,6 +662,7 @@ int vfprintf(OUTSTREAM_DECL /* stream, */ const char *restrict format, va_list a
 	}
 
 failed:
+	va_end(ap);
 	return printed;
 }
 
