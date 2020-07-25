@@ -9,9 +9,9 @@
 static char buffer[256];
 static int pos;
 
-void tty_putchar(tty_descriptor_t d, char c)
+void console_write(const char *msg, size_t length __unused)
 {
-	buffer[pos++] = c;
+	buffer[pos++] = *msg;
 }
 
 static void reset(void)

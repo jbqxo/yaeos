@@ -3,102 +3,123 @@
 #include <ctype.h>
 #include <string.h>
 
-#include <arch_i686/vga.h>
 #include <arch_i686/platform.h>
 #include <arch_i686/vm.h>
 
-#include <kernel/tty.h>
+#include <kernel/console.h>
+#include <kernel/cppdefs.h>
+#include <kernel/elflist.h>
 
-static struct vga_state GLOBAL_STATE;
+#define VGA_WIDTH 80
+#define VGA_HEIGHT 25
+#define VGA_BUFFER_ADDR (0xb8000U)
 
-static void write_char(tty_descriptor_t desc, uint8_t c, vga_char_color color, uint_fast16_t x,
-		       uint_fast16_t y)
+struct {
+	volatile uint16_t *buffer;
+	uint_fast16_t row;
+	uint_fast16_t col;
+	uint8_t color;
+} STATE;
+
+typedef uint8_t vga_char_color;
+
+enum vga_color {
+	VGA_BLACK = 0,
+	VGA_BLUE,
+	VGA_GREEN,
+	VGA_CYAN,
+	VGA_RED,
+	VGA_MAGENTA,
+	VGA_BROWN,
+	VGA_LGRAY,
+	VGA_DGRAY,
+	VGA_LBLUE,
+	VGA_LGREEN,
+	VGA_LCYAN,
+	VGA_LRED,
+	VGA_LMAGENTA,
+	VGA_YELLOW,
+	VGA_WHITE
+};
+
+#define VGA_DEFAULT_FG VGA_WHITE
+#define VGA_DEFAULT_BG VGA_BLACK
+
+static inline vga_char_color vga_mix_color(enum vga_color fg, enum vga_color bg)
 {
-	struct vga_state *s = desc;
-	const uint_fast16_t index = y * VGA_WIDTH + x;
-	s->buffer[index] = vga_char(c, color);
+	return (vga_char_color)(fg | bg << 4);
 }
 
-static void scroll_down(tty_descriptor_t desc)
+static inline uint16_t vga_char(unsigned char uc, vga_char_color color)
 {
-	struct vga_state *s = desc;
+	return (uint16_t)uc | (uint16_t)(color << 8);
+}
+
+static void write_char(uint8_t c, vga_char_color color, uint_fast16_t x, uint_fast16_t y)
+{
+	const uint_fast16_t index = y * VGA_WIDTH + x;
+	STATE.buffer[index] = vga_char(c, color);
+}
+
+static void scroll_down(void)
+{
 	for (uint_fast16_t y = 0; y < VGA_HEIGHT - 1; y++) {
 		for (uint_fast16_t x = 0; x < VGA_WIDTH; x++) {
 			uint_fast16_t dst_i = y * VGA_WIDTH + x;
 			uint_fast16_t src_i = dst_i + VGA_WIDTH;
-			s->buffer[dst_i] = s->buffer[src_i];
+			STATE.buffer[dst_i] = STATE.buffer[src_i];
 		}
 	}
 }
 
-static void break_line(tty_descriptor_t desc)
+static void break_line(void)
 {
-	struct vga_state *s = desc;
-	s->row++;
-	s->col = 0;
+	STATE.row++;
+	STATE.col = 0;
 
-	if (s->row >= VGA_HEIGHT) {
-		scroll_down(s);
-		s->row--;
+	if (STATE.row >= VGA_HEIGHT) {
+		scroll_down();
+		STATE.row--;
 		for (uint_fast16_t x = 0; x < VGA_WIDTH; x++) {
-			write_char(s, ' ', s->color, x, s->row);
+			write_char(' ', STATE.color, x, STATE.row);
 		}
 	}
 }
 
-tty_descriptor_t tty_platform_get_descriptor(void)
+static int vga_init(struct console *c __unused)
 {
-	struct vga_state *s = &GLOBAL_STATE;
-	s->row = 0;
-	s->col = 0;
-	s->color = vga_mix_color(VGA_DEFAULT_FG, VGA_DEFAULT_BG);
-	s->buffer = (uint16_t *)HIGH(VGA_BUFFER_ADDR);
+	STATE.row = 0;
+	STATE.col = 0;
+	STATE.color = vga_mix_color(VGA_DEFAULT_FG, VGA_DEFAULT_BG);
+	STATE.buffer = (uint16_t *)HIGH(VGA_BUFFER_ADDR);
 
 	for (uint_fast16_t y = 0; y < VGA_HEIGHT; y++) {
 		for (uint_fast16_t x = 0; x < VGA_WIDTH; x++) {
-			write_char(s, ' ', s->color, x, y);
+			write_char(' ', STATE.color, x, y);
 		}
 	}
 
-	return s;
+	return CONSRC_OK;
 }
 
-void tty_putchar(tty_descriptor_t desc, char c)
+void vga_write(struct console *c __unused, const char *data, size_t size)
 {
-	struct vga_state *s = desc;
-	if (c == '\n' || s->col == VGA_WIDTH) {
-		break_line(s);
-	}
-
-	if (isprint(c)) {
-		write_char(s, (unsigned char)c, s->color, s->col, s->row);
-		s->col++;
-	}
-}
-
-void tty_write(tty_descriptor_t desc, const char *data, size_t size)
-{
-	struct vga_state *s = desc;
 	for (size_t i = 0; i < size; i++) {
-		tty_putchar(desc, data[i]);
+		if (data[i] == '\n' || STATE.col == VGA_WIDTH) {
+			break_line();
+		}
+
+		if (isprint(data[i])) {
+			write_char((unsigned char)data[i], STATE.color, STATE.col, STATE.row);
+			STATE.col++;
+		}
 	}
 }
 
-void tty_writeln(tty_descriptor_t desc, const char *data, size_t size)
-{
-	struct vga_state *s = desc;
-	tty_write(desc, data, size);
-	break_line(s);
-}
-
-void tty_print(tty_descriptor_t desc, const char *str)
-{
-	size_t s = strlen(str);
-	tty_write(desc, str, s);
-}
-
-void tty_println(tty_descriptor_t desc, const char *str)
-{
-	size_t s = strlen(str);
-	tty_writeln(desc, str, s);
-}
+struct console vga_console = (struct console){
+	.name = "vga_console",
+	.init = vga_init,
+	.write = vga_write,
+	.flags = CONSFLAG_EARLY
+};
+ELFLIST_NEWDATA(consoles, vga_console);

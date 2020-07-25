@@ -2,7 +2,7 @@
 #define _LIBC_STDIO_H
 
 #ifdef __libk__
-#include <kernel/tty.h>
+#include <kernel/console.h>
 #endif
 
 #include <stdarg.h>
@@ -21,9 +21,8 @@ int vfprintf(FILE *restrict stream, const char *restrict format, va_list arg);
 int fprintf(FILE *restrict stream, const char *restrict format, ...)
 	__attribute__((format(printf, 2, 3)));
 #elif __libk__
-int vfprintf(tty_descriptor_t d, const char *restrict format, va_list arg);
-int fprintf(tty_descriptor_t d, const char *restrict format, ...)
-	__attribute__((format(printf, 2, 3)));
+int vfprintf(const char *restrict format, va_list arg);
+int fprintf(const char *restrict format, ...) __attribute__((format(printf, 1, 2)));
 #endif
 
 #ifdef __cplusplus

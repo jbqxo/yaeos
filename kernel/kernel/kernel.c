@@ -1,6 +1,6 @@
 #include <kernel/klog.h>
 #include <kernel/kernel.h>
-#include <kernel/tty.h>
+#include <kernel/console.h>
 #include <kernel/mm/alloc.h>
 #include <kernel/mm/pmm.h>
 #include <kernel/cppdefs.h>
@@ -35,8 +35,7 @@ static void init_allocator(void *platform_info)
 
 void kernel_init(void *platform_info)
 {
-	tty_descriptor_t d = tty_platform_get_descriptor();
-	klog_init(d);
+	console_init();
 	LOGF_I("Platform layer has been initialized\n");
 	init_allocator(platform_info);
 }

@@ -5,14 +5,6 @@
 #include <stdint.h>
 #include <x86intrin.h>
 
-static struct klog_state {
-	tty_descriptor_t descriptor;
-} STATE;
-
-void klog_init(tty_descriptor_t d)
-{
-	STATE.descriptor = d;
-}
 
 static const char *find_filename(const char *path)
 {
@@ -40,11 +32,10 @@ void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, int line,
 		  const char *restrict format, ...)
 {
 	uint64_t cycle = __rdtsc();
-	fprintf(STATE.descriptor, "[%llu:%c] %s:%d | ", cycle, lvl_to_char(lvl),
-		find_filename(path), line);
+	fprintf("[%llu:%c] %s:%d | ", cycle, lvl_to_char(lvl), find_filename(path), line);
 
 	va_list ap;
 	va_start(ap, format);
-	vfprintf(STATE.descriptor, format, ap);
+	vfprintf(format, ap);
 	va_end(ap);
 }

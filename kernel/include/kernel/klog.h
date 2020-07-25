@@ -1,7 +1,7 @@
 #ifndef _KERNEL_KLOG_H
 #define _KERNEL_KLOG_H
 
-#include <kernel/tty.h>
+#include <kernel/console.h>
 #include <stdarg.h>
 
 #define LOGF(level, message, ...)                                                                  \
@@ -21,7 +21,6 @@ enum LOG_LEVEL {
 	LOG_PANIC = 0x4,
 };
 
-void klog_init(tty_descriptor_t descriptor);
 void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, int line,
 		  const char *restrict format, ...) __attribute__((format(printf, 4, 5)));
 

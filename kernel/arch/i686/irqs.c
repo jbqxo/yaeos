@@ -1,6 +1,5 @@
 #include <stdint.h>
 
-#include <kernel/tty.h>
 
 struct registers {
 	uint32_t ds;
