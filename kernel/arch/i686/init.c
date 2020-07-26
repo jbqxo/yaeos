@@ -118,7 +118,7 @@ static void patch_multiboot_info(multiboot_info_t *info)
 	info->mmap_addr = HIGH(info->mmap_addr);
 }
 
-static struct arch_info_i686 i686_info;
+struct arch_info_i686 I686_INFO;
 
 const size_t PLATFORM_PAGE_SIZE = PAGE_SIZE;
 const size_t PLATFORM_STACK_SIZE = CONF_STACK_SIZE;
@@ -134,8 +134,8 @@ void i686_init(multiboot_info_t *info, uint32_t magic)
 	boot_setup_gdt();
 	boot_setup_idt();
 
-	i686_info.info = (void *)HIGH(info);
-	patch_multiboot_info(i686_info.info);
+	I686_INFO.multiboot = (void *)HIGH(info);
+	patch_multiboot_info(I686_INFO.multiboot);
 
-	kernel_init(&i686_info);
+	kernel_init();
 }

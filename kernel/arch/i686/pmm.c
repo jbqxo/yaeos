@@ -22,9 +22,9 @@ static uintptr_t max_addr(void)
 
 typedef void (*chunks_it_fn)(struct multiboot_mmap_entry *c, void *data);
 
-static void chunks_iter(void *_info, chunks_it_fn fn, void *extra_data)
+static void chunks_iter(chunks_it_fn fn, void *extra_data)
 {
-	multiboot_info_t *info = ((struct arch_info_i686 *)_info)->info;
+	multiboot_info_t *info = I686_INFO.multiboot;
 	struct multiboot_mmap_entry *c = (void *)info->mmap_addr;
 
 	// mmap_* variables are not valid. There is nothing we can do.
@@ -143,16 +143,16 @@ static void find(uintptr_t start, uintptr_t end, uint32_t type, void *data)
 	(*chunks)++;
 }
 
-int pmm_arch_available_chunks(void *platform_info)
+int pmm_arch_available_chunks(void)
 {
 	int counter = 0;
 	struct availmem_data d = (struct availmem_data){ .fn = count, .fn_data = &counter };
-	chunks_iter(platform_info, availmem_iter, &d);
+	chunks_iter(availmem_iter, &d);
 	return counter;
 }
 
-void pmm_arch_get_chunks(void *platform_info, struct pmm_chunk *chunks)
+void pmm_arch_get_chunks(struct pmm_chunk *chunks)
 {
 	struct availmem_data d = (struct availmem_data){ .fn = find, .fn_data = &chunks };
-	chunks_iter(platform_info, availmem_iter, &d);
+	chunks_iter(availmem_iter, &d);
 }

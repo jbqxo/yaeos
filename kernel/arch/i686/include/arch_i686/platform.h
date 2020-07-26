@@ -9,8 +9,10 @@
 #include <stddef.h>
 
 struct arch_info_i686 {
-	multiboot_info_t *info;
+	multiboot_info_t *multiboot;
 };
+
+extern struct arch_info_i686 I686_INFO;
 
 #endif // __ASSEMBLER__
 #endif // _KERNEL_ARCH_I686_PLATFORM_H
