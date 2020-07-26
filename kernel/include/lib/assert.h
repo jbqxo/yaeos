@@ -1,10 +1,6 @@
-#ifndef _LIBC_ASSERT_H
-#define _LIBC_ASSERT_H
+#ifndef _LIB_ASSERT_H
+#define _LIB_ASSERT_H
 #undef assert
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #ifdef NDEBUG
 #define assert(exp) ((void)0)
@@ -16,8 +12,4 @@ extern "C" {
 // TODO(Maxim Lyapin): Mark as C11 or newer only
 #define static_assert(exp, str) _Static_assert(exp, str)
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif // _LIBC_ASSERT_H
+#endif // _LIB_ASSERT_H

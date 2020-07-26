@@ -7,43 +7,14 @@
 #include <lib/stdio.h>
 #include <lib/string.h>
 
-#ifdef __libc__
-#define OUTSTREAM_DECL FILE *stream,
-#define OUTSTREAM_VAR stream,
-
-static int put_char(OUTSTREAM_DECL /* stream, */ char c)
-{
-	return 0;
-}
-#endif
-
-#ifdef __libk__
 #include <kernel/console.h>
 
-#define OUTSTREAM_DECL
-#define OUTSTREAM_VAR
+#define CF_MINUS	(0x1 << 0)
+#define CF_PLUS		(0x1 << 1)
+#define CF_SPACE	(0x1 << 2)
+#define CF_HASH		(0x1 << 3)
+#define CF_ZERO		(0x1 << 4)
 
-static int put_char(char c)
-{
-	console_write(&c, 1);
-	return 1;
-}
-#endif
-
-static void putn(OUTSTREAM_DECL /* stream, */ const char *str, unsigned n)
-{
-	for (int i = 0; i < n; i++) {
-		put_char(OUTSTREAM_VAR /* stream, */ str[i]);
-	}
-}
-
-enum conv_flags {
-	CF_MINUS = 0x1 << 0,
-	CF_PLUS = 0x1 << 1,
-	CF_SPACE = 0x1 << 2,
-	CF_HASH = 0x1 << 3,
-	CF_ZERO = 0x1 << 4
-};
 enum conv_specifiers {
 	CS_INT,
 	CS_UOCTAL,
@@ -57,6 +28,7 @@ enum conv_specifiers {
 	CS_PERCENTAGE,
 	CS_INVALID
 };
+
 enum conv_length {
 	CL_CHAR,
 	CL_SHORT,
@@ -73,7 +45,7 @@ enum conv_length {
 #define PREC_EMPTY	(-2)
 #define PREC_VAR	(-1)
 struct conv_spec {
-	enum conv_flags flags;
+	int flags;
 	int width;
 	int precision;
 	enum conv_length length;
@@ -309,7 +281,7 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args, struct argum
 
 struct conv_spec_funcs {
 	// Print the format specifier.
-	void (*print)(OUTSTREAM_DECL /* stream, */ struct conv_spec *s, struct argument *a);
+	void (*print)(fprintf_fn f, struct conv_spec *s, struct argument *a);
 	// Calculate the length of the result of print function.
 	int (*length)(struct conv_spec *s, struct argument *a);
 	// Function that returns string to prepend to the value ("0x" for ptr/hex values, for example)
@@ -350,7 +322,7 @@ static int oct_length(struct conv_spec *s, struct argument *a)
 	return length;
 }
 
-static void oct_print(OUTSTREAM_DECL /* stream, */ struct conv_spec *s, struct argument *a)
+static void oct_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 {
 	char buffer[22];
 	int buffer_size = sizeof(buffer) / sizeof(*buffer);
@@ -371,14 +343,11 @@ static void oct_print(OUTSTREAM_DECL /* stream, */ struct conv_spec *s, struct a
 		int already_printed = buffer_size - buffer_i;
 		s->precision -= already_printed;
 		for (int i = 0; i < s->precision; i++) {
-			put_char(OUTSTREAM_VAR /* stream, */ '0');
+			f("0", 1);
 		}
 	}
 
-	while (buffer_i < buffer_size) {
-		put_char(OUTSTREAM_VAR /* stream, */ buffer[buffer_i]);
-		buffer_i++;
-	}
+	f(&buffer[buffer_i], buffer_size - buffer_i);
 }
 
 static int dec_length(struct conv_spec *s, struct argument *a)
@@ -400,7 +369,7 @@ static int dec_length(struct conv_spec *s, struct argument *a)
 	return length;
 }
 
-static void dec_print(OUTSTREAM_DECL /* stream, */ struct conv_spec *s, struct argument *a)
+static void dec_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 {
 	char buffer[20];
 	int buffer_size = sizeof(buffer) / sizeof(*buffer);
@@ -421,14 +390,11 @@ static void dec_print(OUTSTREAM_DECL /* stream, */ struct conv_spec *s, struct a
 		int already_printed = buffer_size - buffer_i;
 		s->precision -= already_printed;
 		for (int i = 0; i < s->precision; i++) {
-			put_char(OUTSTREAM_VAR /* stream, */ '0');
+			f("0", 1);
 		}
 	}
 
-	while (buffer_i < buffer_size) {
-		put_char(OUTSTREAM_VAR /* stream, */ buffer[buffer_i]);
-		buffer_i++;
-	}
+	f(&buffer[buffer_i], buffer_size - buffer_i);
 }
 
 static int hex_length(struct conv_spec *s, struct argument *a)
@@ -441,7 +407,7 @@ static int hex_length(struct conv_spec *s, struct argument *a)
 	return length_for_intnumbase(a->val.d, 16, 16);
 }
 
-static void hex_print(OUTSTREAM_DECL /* stream, */ struct conv_spec *s, struct argument *a)
+static void hex_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 {
 	char buffer[16];
 	int buffer_size = sizeof(buffer) / sizeof(*buffer);
@@ -472,10 +438,7 @@ static void hex_print(OUTSTREAM_DECL /* stream, */ struct conv_spec *s, struct a
 		}
 	} while ((a->val.d /= 16) != 0 && buffer_i > 0);
 
-	while (buffer_i < buffer_size) {
-		put_char(OUTSTREAM_VAR /* stream, */ buffer[buffer_i]);
-		buffer_i++;
-	}
+	f(&buffer[buffer_i], buffer_size - buffer_i);
 }
 
 static const char *hex_prefix(struct conv_spec *s, struct argument *a, unsigned *len)
@@ -507,15 +470,13 @@ static int str_length(struct conv_spec *s, struct argument *a)
 	return l;
 }
 
-static void str_print(OUTSTREAM_DECL /* stream, */ struct conv_spec *s, struct argument *a)
+static void str_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 {
 	const char *str = a->val.str;
 	// TODO: Find a way to reuse the result.
 	int len = str_length(s, a);
 
-	for (int i = 0; i < len; i++) {
-		put_char(OUTSTREAM_VAR /* stream, */ str[i]);
-	}
+	f(str, len);
 }
 
 static int char_length(struct conv_spec *s, struct argument *a)
@@ -523,9 +484,9 @@ static int char_length(struct conv_spec *s, struct argument *a)
 	return 1;
 }
 
-static void char_print(OUTSTREAM_DECL /* stream, */ struct conv_spec *s, struct argument *a)
+static void char_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 {
-	put_char(OUTSTREAM_VAR /* stream, */ a->val.d);
+	f((char*)&a->val.d, 1);
 }
 
 static struct conv_spec_funcs cs_funcs_table[] = {
@@ -559,17 +520,17 @@ static struct conv_spec_funcs cs_funcs_table[] = {
  * 
  * @return int Number of written characters.
  */
-static int put_flags(OUTSTREAM_DECL /* stream, */ struct conv_spec s, struct argument arg)
+static int put_flags(fprintf_fn f, struct conv_spec s, struct argument arg)
 {
 	int printed = 0;
 	if (arg.negative) {
-		put_char(OUTSTREAM_VAR /* stream, */ '-');
+		f("-", 1);
 		printed++;
 	} else if (s.flags & CF_PLUS) {
-		put_char(OUTSTREAM_VAR /* stream, */ '+');
+		f("+", 1);
 		printed++;
 	} else if (s.flags & CF_SPACE) {
-		put_char(OUTSTREAM_VAR /* stream, */ ' ');
+		f(" ", 1);
 		printed++;
 	}
 	return printed;
@@ -580,7 +541,7 @@ static int put_flags(OUTSTREAM_DECL /* stream, */ struct conv_spec s, struct arg
  *
  * @return int Number of written characters.
  */
-static int print_conv_spec(OUTSTREAM_DECL /* stream, */ struct conv_spec s, va_list *args)
+static int print_conv_spec(fprintf_fn f, struct conv_spec s, va_list *args)
 {
 	struct argument arg = fetch_arg(s, args, &arg);
 	int num_len = cs_funcs_table[s.spec].length(&s, &arg);
@@ -598,31 +559,35 @@ static int print_conv_spec(OUTSTREAM_DECL /* stream, */ struct conv_spec s, va_l
 	// If Width != 0 and the flag '-' was not specified, result must be right-justified
 	if (!(s.flags & CF_MINUS) && s.width != WIDTH_EMPTY) {
 		if (s.flags & CF_ZERO) {
-			putn(OUTSTREAM_VAR /* stream, */ prefix, prefix_len);
-			printed += prefix_len;
-			printed += put_flags(OUTSTREAM_VAR /* stream, */ s, arg);
+			if (prefix != NULL) {
+				f(prefix, prefix_len);
+				printed += prefix_len;
+			}
+			printed += put_flags(f, s, arg);
 		}
 		while (width_to_fill > 0) {
 			// remained_width could be < 0, so decrement in the loop
 			char c = s.flags & CF_ZERO ? '0' : ' ';
-			put_char(OUTSTREAM_VAR /* stream, */ c);
+			f(&c, 1);
 			printed++;
 			width_to_fill--;
 		}
 	}
 	if (!(s.flags & CF_ZERO)) {
-		putn(OUTSTREAM_VAR /* stream, */ prefix, prefix_len);
-		printed += prefix_len;
-		printed += put_flags(OUTSTREAM_VAR /* stream, */ s, arg);
+		if (prefix != NULL) {
+			f(prefix, prefix_len);
+			printed += prefix_len;
+		}
+		printed += put_flags(f, s, arg);
 	}
-	cs_funcs_table[s.spec].print(OUTSTREAM_VAR /* stream, */ &s, &arg);
+	cs_funcs_table[s.spec].print(f, &s, &arg);
 	printed += num_len;
 
 	// If Width != 0 and the flag '-' was specified, result must be left-justified
 	if (s.flags & CF_MINUS && s.width != WIDTH_EMPTY) {
 		while (width_to_fill > 0) {
 			// remained_width could be < 0, so decrement in the loop
-			put_char(OUTSTREAM_VAR /* stream, */ ' ');
+			f(" ", 1);
 			printed++;
 			width_to_fill--;
 		}
@@ -630,7 +595,7 @@ static int print_conv_spec(OUTSTREAM_DECL /* stream, */ struct conv_spec s, va_l
 	return printed;
 }
 
-int vfprintf(OUTSTREAM_DECL /* stream, */ const char *restrict format, va_list args)
+int vfprintf(fprintf_fn f, const char *restrict format, va_list args)
 {
 	va_list ap;
 	va_copy(ap, args);
@@ -643,16 +608,16 @@ int vfprintf(OUTSTREAM_DECL /* stream, */ const char *restrict format, va_list a
 			struct conv_spec s = parse_conv_spec(&new_pos);
 			// TODO: Refactor
 			if (s.spec == CS_PERCENTAGE) {
-				put_char(OUTSTREAM_VAR /* stream, */ format[i]);
+				f(&format[i], 1);
 				i += 2;
 				printed += 1;
 				continue;
 			}
-			printed += print_conv_spec(OUTSTREAM_VAR /* stream, */ s, &ap);
+			printed += print_conv_spec(f, s, &ap);
 			i = new_pos - format;
 		} else {
 			int res;
-			res = put_char(OUTSTREAM_VAR /* stream, */ format[i]);
+			res = f(&format[i], 1);
 			if (res < 0) {
 				printed = res;
 				goto failed;
@@ -667,11 +632,11 @@ failed:
 	return printed;
 }
 
-int fprintf(OUTSTREAM_DECL /* stream, */ const char *restrict format, ...)
+int fprintf(fprintf_fn f, const char *restrict format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	int i = vfprintf(OUTSTREAM_VAR /* stream, */ format, args);
+	int i = vfprintf(f, format, args);
 	va_end(args);
 	return i;
 }

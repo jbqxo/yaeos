@@ -1,17 +1,18 @@
-#include <lib/stdio.h>
-#include <string.h>
 #include <unity.h>
+#include <string.h>
+#include <stdio.h>
 
 #define GUARDVAL 0xAAu
 
-// Kernel space testing
-#ifdef __libk__
 static char buffer[256];
 static int pos;
 
-void console_write(const char *msg, size_t length)
+int console_write(const char *msg, size_t length)
 {
-	buffer[pos++] = *msg;
+	for (int i = 0; i < length; i++) {
+		buffer[pos++] = msg[i];
+	}
+	return length;
 }
 
 static void reset(void)
@@ -32,7 +33,7 @@ void tearDown(void)
 #define VFPRINTF(expected, format, ...)                                                            \
 	do {                                                                                       \
 		int s = strlen(expected);                                                          \
-		int r = fprintf(0, (format), ##__VA_ARGS__);                                       \
+		int r = fprintf(console_write, (format), ##__VA_ARGS__);                           \
 		TEST_ASSERT_EQUAL_HEX8(GUARDVAL, buffer[s]);                                       \
 		buffer[s] = '\0';                                                                  \
 		TEST_ASSERT_EQUAL_STRING((expected), buffer);                                      \
@@ -43,6 +44,7 @@ void tearDown(void)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wformat"
 #pragma clang diagnostic ignored "-Wint-conversion"
+#pragma clang diagnostic ignored "-Wincompatible-pointer-types"
 
 static void simple(void)
 {
@@ -207,21 +209,3 @@ int main(void)
 	return UNITY_END();
 }
 #pragma clang diagnostic pop
-#endif //__libk__
-
-// TODO: Implement unit tests for user-space libc
-#ifdef __libc__
-void setUp(void)
-{
-}
-
-void tearDown(void)
-{
-}
-
-int main(void)
-{
-	UNITY_BEGIN();
-	return UNITY_END();
-}
-#endif // __libc__

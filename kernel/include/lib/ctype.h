@@ -1,9 +1,6 @@
-#ifndef _LIBC_CTYPE_H
-#define _LIBC_CTYPE_H
+#ifndef _LIB_CTYPE_H
+#define _LIB_CTYPE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 // Tests for any character for which isalpha or isdigit is true.
 int isalnum(int c);
