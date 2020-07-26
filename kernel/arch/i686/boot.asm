@@ -1,4 +1,5 @@
 #include <arch_i686/platform.h>
+#include <kernel/config.h>
 
 // Constants for the multiboot header
 #define FLAG_ALIGN   (0x1 << 0)                  // align loaded modules on page boundaries
@@ -18,7 +19,7 @@
 .align PAGE_SIZE
 .global bootstack_bottom
 bootstack_bottom:
-    .skip STACK_SIZE
+    .skip CONF_STACK_SIZE
 .global bootstack_top
 bootstack_top:
 

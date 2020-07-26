@@ -4,6 +4,7 @@
 #include <kernel/mm/alloc.h>
 #include <kernel/mm/pmm.h>
 #include <kernel/cppdefs.h>
+#include <kernel/config.h>
 #include <string.h>
 
 static void init_allocator(void *platform_info)

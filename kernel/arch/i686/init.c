@@ -1,4 +1,5 @@
 #include <kernel/kernel.h>
+#include <kernel/config.h>
 #include <arch/platform.h>
 
 #include <arch_i686/vga.h>
@@ -120,7 +121,7 @@ static void patch_multiboot_info(multiboot_info_t *info)
 static struct arch_info_i686 i686_info;
 
 const size_t PLATFORM_PAGE_SIZE = PAGE_SIZE;
-const size_t PLATFORM_STACK_SIZE = STACK_SIZE;
+const size_t PLATFORM_STACK_SIZE = CONF_STACK_SIZE;
 const uintptr_t PLATFORM_KERNEL_VMA = (uintptr_t)kernel_vma;
 
 void i686_init(multiboot_info_t *info, uint32_t magic)
