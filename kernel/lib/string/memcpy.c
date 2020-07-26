@@ -1,4 +1,4 @@
-#include <string.h>
+#include <lib/string.h>
 
 void *memcpy(void *restrict _dest, const void *restrict _src, size_t n)
 {

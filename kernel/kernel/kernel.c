@@ -4,7 +4,6 @@
 #include <kernel/console.h>
 #include <kernel/cppdefs.h>
 #include <kernel/config.h>
-#include <string.h>
 
 
 void kernel_init()

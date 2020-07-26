@@ -1,9 +1,9 @@
 #include <arch_i686/descriptors.h>
+#include <lib/string.h>
 
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <string.h>
 
 static struct gdt_structure {
 	struct gdt_entry null_descriptor;

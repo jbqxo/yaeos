@@ -1,11 +1,10 @@
 #include <stdint.h>
 #include <stddef.h>
-#include <ctype.h>
-#include <string.h>
 
+#include <lib/ctype.h>
+#include <lib/string.h>
 #include <arch_i686/platform.h>
 #include <arch_i686/vm.h>
-
 #include <kernel/console.h>
 #include <kernel/cppdefs.h>
 #include <kernel/elflist.h>

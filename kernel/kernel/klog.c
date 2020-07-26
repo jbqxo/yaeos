@@ -1,10 +1,10 @@
 #include <kernel/klog.h>
 
 #include <stdarg.h>
-#include <stdio.h>
 #include <stdint.h>
 #include <x86intrin.h>
 
+#include <lib/stdio.h>
 
 static const char *find_filename(const char *path)
 {

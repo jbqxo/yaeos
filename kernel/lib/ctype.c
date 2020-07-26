@@ -1,4 +1,4 @@
-#include <ctype.h>
+#include <lib/ctype.h>
 #include <stdbool.h>
 #include <stddef.h>
 

@@ -1,10 +1,11 @@
 #include <stddef.h>
-#include <stdio.h>
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdbool.h>
-#include <string.h>
 #include <limits.h>
+
+#include <lib/stdio.h>
+#include <lib/string.h>
 
 #ifdef __libc__
 #define OUTSTREAM_DECL FILE *stream,

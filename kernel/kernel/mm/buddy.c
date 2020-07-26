@@ -2,9 +2,10 @@
 #include <kernel/cppdefs.h>
 #include <kernel/klog.h>
 #include <arch/platform.h>
+#include <lib/string.h>
+
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 #include <stdbool.h>
 
 struct chunk {

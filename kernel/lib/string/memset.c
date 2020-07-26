@@ -1,4 +1,4 @@
-#include <string.h>
+#include <lib/string.h>
 #include <stdint.h>
 
 void *memset(void *_data, int val, size_t len)

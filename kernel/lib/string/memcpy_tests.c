@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <unity.h>
-#include <string.h>
 #include <stddef.h>
+#include <lib/string.h>
 
 #define GUARDVAL 0xAAu
 

@@ -1,17 +1,16 @@
 #include <kernel/kernel.h>
 #include <kernel/config.h>
 #include <arch/platform.h>
-
 #include <arch_i686/vm.h>
 #include <arch_i686/platform.h>
 #include <arch_i686/descriptors.h>
+#include <lib/string.h>
 
 #include <multiboot.h>
 
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <string.h>
 
 // TODO: Maybe add some "smart" recursive macrosses to patch the stack automatically?
 /**
