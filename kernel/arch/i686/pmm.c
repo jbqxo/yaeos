@@ -1,6 +1,6 @@
 #include <arch_i686/vm.h>
 #include <arch_i686/platform.h>
-#include <kernel/mm/pmm.h>
+#include <arch/mm/pmm.h>
 #include <kernel/cppdefs.h>
 #include <kernel/klog.h>
 

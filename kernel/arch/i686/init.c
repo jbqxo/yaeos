@@ -2,7 +2,6 @@
 #include <kernel/config.h>
 #include <arch/platform.h>
 
-#include <arch_i686/vga.h>
 #include <arch_i686/vm.h>
 #include <arch_i686/platform.h>
 #include <arch_i686/descriptors.h>

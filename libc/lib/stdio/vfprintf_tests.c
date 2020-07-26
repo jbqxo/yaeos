@@ -9,7 +9,7 @@
 static char buffer[256];
 static int pos;
 
-void console_write(const char *msg, size_t length __unused)
+void console_write(const char *msg, size_t length)
 {
 	buffer[pos++] = *msg;
 }
