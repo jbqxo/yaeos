@@ -1,5 +1,6 @@
 #include <kernel/mm/alloc.h>
 #include <kernel/cppdefs.h>
+#include <kernel/klog.h>
 #include <arch/platform.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -17,7 +18,6 @@ struct chunk {
 
 /**
  * @brief Perform division and round the result up.
- *
  */
 static unsigned div_roundup(unsigned dividend, unsigned divisor)
 {
@@ -25,45 +25,35 @@ static unsigned div_roundup(unsigned dividend, unsigned divisor)
 }
 
 /**
- * @brief Take the base 2 logarithm of x and round the result up.
+ * @brief Take the base 2 logarithm of x and round the result down.
  */
-static unsigned log2(unsigned x)
+static unsigned log2_down(unsigned x)
 {
-	if (x == 1) {
-		// As we are rounding results to the upper bound,
-		// 1 requires special handling.
-		return 1;
+	unsigned tmp = 0;
+	while (x >>= 1) {
+		tmp++;
 	}
-	unsigned b = 0;
-	unsigned tmp = x;
-	while (tmp >>= 1) {
-		b++;
-	}
-	// Round the results to the upper bound.
-	return (x == 0x1 << b ? b : b + 1);
+	return tmp;
 }
 
 /**
  * @brief Return the nearest address that is bigger than the address and fit the alignment.
  */
-static uintptr_t align_addr(uintptr_t addr, uintptr_t alignment)
+static uintptr_t align_at(uintptr_t addr, uintptr_t alignment)
 {
 	return (addr + alignment - 1) & -alignment;
 }
 
-static void *alloc_data_mem(struct buddy_allocator *alloc, size_t size)
+static void *intern_alloc(struct buddy_allocator *alloc, size_t size)
 {
-	uintptr_t pos = alloc->data + alloc->data_size;
+	uintptr_t pos = alloc->internp + alloc->intern_sz;
 
 	// Assert chunk space.
-	if (__unlikely(pos + size > alloc->data_limit)) {
+	if (__unlikely(pos + size > alloc->internp_lim)) {
+		// TODO: Panic!
 		return (NULL);
 	}
-	alloc->data_size += size;
-
-	if (alloc->flags & BUDDY_LOWMEM) {
-		pos += PLATFORM_KERNEL_VMA;
-	}
+	alloc->intern_sz += size;
 
 	return ((void *)pos);
 }
@@ -71,21 +61,21 @@ static void *alloc_data_mem(struct buddy_allocator *alloc, size_t size)
 static bool get_bit(struct chunk *ch, unsigned lvl, unsigned pos)
 {
 	unsigned bitpos_mask = BITMAP_SET_SIZE * 8 - 1;
-	unsigned bitmap_idx = (pos & ~bitpos_mask) >> log2(BITMAP_SET_SIZE * 8);
+	unsigned bitmap_idx = (pos & ~bitpos_mask) >> log2_down(BITMAP_SET_SIZE * 8);
 	return ch->bitmaps[lvl][bitmap_idx] & (1 << (pos & bitpos_mask));
 }
 
 static void free_bit(struct chunk *ch, unsigned lvl, unsigned pos)
 {
 	unsigned bitpos_mask = BITMAP_SET_SIZE * 8 - 1;
-	unsigned bitmap_idx = (pos & ~bitpos_mask) >> log2(BITMAP_SET_SIZE * 8);
+	unsigned bitmap_idx = (pos & ~bitpos_mask) >> log2_down(BITMAP_SET_SIZE * 8);
 	ch->bitmaps[lvl][bitmap_idx] |= (1 << (pos & bitpos_mask));
 }
 
 static void occupy_bit(struct chunk *ch, unsigned lvl, unsigned pos)
 {
 	unsigned bitpos_mask = BITMAP_SET_SIZE * 8 - 1;
-	unsigned bitmap_idx = (pos & ~bitpos_mask) >> log2(BITMAP_SET_SIZE * 8);
+	unsigned bitmap_idx = (pos & ~bitpos_mask) >> log2_down(BITMAP_SET_SIZE * 8);
 	ch->bitmaps[lvl][bitmap_idx] &= ~(1 << (pos & bitpos_mask));
 }
 
@@ -98,62 +88,29 @@ static unsigned max_index(size_t chunk_size, unsigned lvl)
 	return (chunk_size / PLATFORM_PAGE_SIZE) >> lvl;
 }
 
-static unsigned max_lvl(const size_t *sizes, size_t regions)
+static struct chunk *init_chunks(struct buddy_allocator *alloc, void **mem_chunks,
+				 const size_t *sizes, unsigned chnum)
 {
-	unsigned max = 0;
-	for (int i = 0; i < regions; i++) {
-		unsigned region_max = log2(sizes[i] / PLATFORM_PAGE_SIZE);
-		if (max < region_max) {
-			max = region_max;
-		}
-	}
-	return max;
-}
+	struct chunk *chunks = intern_alloc(alloc, chnum * sizeof(*chunks));
+	unsigned levels = alloc->max_lvl + 1;
 
-struct buddy_allocator *buddy_init(void **mem_chunks, const size_t *sizes, unsigned count,
-				   int flags)
-{
-	unsigned data_idx = count - 1;
-
-	// Initialize struct buddy_allocator enough to be able to allocate memory further.
-	uintptr_t data_start_addr = align_addr((uintptr_t)mem_chunks[data_idx], PLATFORM_PAGE_SIZE);
-	struct buddy_allocator *alloc =
-		(void *)((uintptr_t)data_start_addr + ((flags & BUDDY_LOWMEM) ? PLATFORM_KERNEL_VMA : 0));
-	alloc->data = data_start_addr;
-	// We will reallocate this space again, so there is no need to increate data_size.
-	alloc->data_size = 0;
-	alloc->data_limit = (uintptr_t)mem_chunks[data_idx] + sizes[data_idx];
-	alloc->flags = flags;
-
-	// Reallocate the same space again.
-	// There may be additional checks and such in the allocation function.
-	alloc = alloc_data_mem(alloc, sizeof(*alloc));
-
-	alloc->levels = max_lvl(sizes, count);
-	alloc->chunks_count = count;
-
-	// Preallocate space for chunks bookkeeping.
-	struct chunk *chunks = alloc_data_mem(alloc, count * sizeof(*chunks));
-	alloc->chunks = chunks;
-
-	for (int c = 0; c < count; c++) {
-		uintptr_t aligned_mem = align_addr((uintptr_t)mem_chunks[c], PLATFORM_PAGE_SIZE);
-		chunks[c].mem = (void *)aligned_mem;
-		chunks[c].size = sizes[c] - (aligned_mem - (uintptr_t)mem_chunks[c]);
-		chunks[c].bitmaps =
-			alloc_data_mem(alloc, sizeof(*chunks[c].bitmaps) * alloc->levels);
+	for (int c = 0; c < chnum; c++) {
+		uintptr_t aligned = align_at((uintptr_t)mem_chunks[c], PLATFORM_PAGE_SIZE);
+		chunks[c].mem = (void *)aligned;
+		chunks[c].size = sizes[c] - (aligned - (uintptr_t)mem_chunks[c]);
+		chunks[c].bitmaps = intern_alloc(alloc, sizeof(*chunks[c].bitmaps) * levels);
 	}
 
 	// Initialize bitmaps for every chunk.
-	for (int lvl = 0; lvl < alloc->levels; lvl++) {
-		for (int ch = 0; ch < count; ch++) {
-			size_t space = div_roundup(max_index(chunks[ch].size, lvl), 8);
+	for (int lvl = 0; lvl < levels; lvl++) {
+		for (int ch = 0; ch < chnum; ch++) {
 			// Round the required space to prevent overlapping.
+			size_t space = div_roundup(max_index(chunks[ch].size, lvl), 8);
 			size_t pad = 0;
 			if (space % BITMAP_SET_SIZE) {
 				pad = BITMAP_SET_SIZE - (space % BITMAP_SET_SIZE);
 			}
-			chunks[ch].bitmaps[lvl] = alloc_data_mem(alloc, space + pad);
+			chunks[ch].bitmaps[lvl] = intern_alloc(alloc, space + pad);
 
 			// Mark all pages as FREE.
 			memset(chunks[ch].bitmaps[lvl], 0xFF, space);
@@ -163,20 +120,26 @@ struct buddy_allocator *buddy_init(void **mem_chunks, const size_t *sizes, unsig
 		}
 	}
 
-	// Adjust the last block.
-	/* Actually, right now we may(!) lose a bit of memory,
-	 * because we have initialized chunk's bitmap with a larger size in mind. It's not critical,
-	 * but it would be nice to fix it.
-	 * TODO: Fix the error with data allocation.
-	 */
-	chunks[data_idx].mem = (void *)align_addr(alloc->data, PLATFORM_PAGE_SIZE);
-	chunks[data_idx].size = sizes[data_idx] - alloc->data_size;
+	return (chunks);
+}
 
-	// We may freely use any space remaining in front of data_idx's new address.
-	alloc->data_limit = (uintptr_t)chunks[data_idx].mem - 1;
-
-	return (alloc);
-#undef ASSERT_CHUNK_SPACE
+void buddy_init(struct buddy_allocator *alloc, void **mem_chunks, const size_t *sizes,
+		unsigned chnum, void *intern_data, size_t intern_len)
+{
+	alloc->internp = (uintptr_t)intern_data;
+	alloc->intern_sz = 0;
+	alloc->internp_lim = (uintptr_t)intern_data + intern_len;
+	{
+		alloc->max_lvl = 0;
+		for (int i = 0; i < chnum; i++) {
+			unsigned region_max = log2_down(sizes[i] / PLATFORM_PAGE_SIZE);
+			if (alloc->max_lvl < region_max) {
+				alloc->max_lvl = region_max;
+			}
+		}
+	}
+	alloc->chunks_num = chnum;
+	alloc->chunks = init_chunks(alloc, mem_chunks, sizes, chnum);
 }
 
 /**
@@ -242,7 +205,7 @@ static void occupy_buddy(struct chunk *ch, unsigned max_lvl, unsigned lvl, unsig
 
 static void free_buddys_ancestors(struct chunk *ch, unsigned max_lvl, unsigned lvl, unsigned bit)
 {
-	while (lvl < max_lvl) {
+	while (lvl <= max_lvl) {
 		lvl++;
 		bit >>= 1;
 		bool children_free =
@@ -276,19 +239,18 @@ static void free_buddy(struct chunk *ch, unsigned max_lvl, unsigned lvl, unsigne
 	free_buddys_ancestors(ch, max_lvl, lvl, bit);
 }
 
-void *buddy_alloc(struct buddy_allocator *a, unsigned pages)
+void *buddy_alloc(struct buddy_allocator *a, unsigned order)
 {
-	unsigned lvl = log2(pages) - 1;
-	if (lvl >= a->levels) {
+	if (order > a->max_lvl) {
 		return (NULL);
 	}
 
 	// Find bit index of a free buddy
 	struct chunk *chunk;
 	int idx = -1;
-	for (unsigned ch = 0; ch < a->chunks_count; ch++) {
+	for (unsigned ch = 0; ch < a->chunks_num; ch++) {
 		chunk = &a->chunks[ch];
-		idx = find_free(chunk, lvl);
+		idx = find_free(chunk, order);
 		if (idx != -1) {
 			break;
 		}
@@ -298,23 +260,15 @@ void *buddy_alloc(struct buddy_allocator *a, unsigned pages)
 		return (NULL);
 	}
 
-	occupy_buddy(chunk, a->levels - 1, lvl, idx);
-	return ((void *)((uintptr_t)chunk->mem + (idx << lvl) * PLATFORM_PAGE_SIZE));
+	occupy_buddy(chunk, a->max_lvl, order, idx);
+	return ((void *)((uintptr_t)chunk->mem + (idx << order) * PLATFORM_PAGE_SIZE));
 }
 
-void buddy_free(struct buddy_allocator *a, void *mem, unsigned pages)
+void buddy_free(struct buddy_allocator *a, void *mem, unsigned order)
 {
-	unsigned lvl;
-	if (pages == 1) {
-		// Edge case.
-		lvl = 0;
-	} else {
-		lvl = log2(pages);
-	}
-
 	// Find buddy's chunk.
 	struct chunk *chunk = NULL;
-	for (unsigned c = 0; c < a->chunks_count; c++) {
+	for (unsigned c = 0; c < a->chunks_num; c++) {
 		struct chunk *ch = &a->chunks[c];
 		void *block_start = ch->mem;
 		void *block_end = (void *)((uintptr_t)ch->mem + ch->size);
@@ -332,8 +286,8 @@ void buddy_free(struct buddy_allocator *a, void *mem, unsigned pages)
 	unsigned index;
 	{
 		uintptr_t offset = (uintptr_t)mem - (uintptr_t)chunk->mem;
-		index = (offset / PLATFORM_PAGE_SIZE) >> lvl;
+		index = (offset / PLATFORM_PAGE_SIZE) >> order;
 	}
 
-	free_buddy(chunk, a->levels, lvl, index);
+	free_buddy(chunk, a->max_lvl, order, index);
 }
