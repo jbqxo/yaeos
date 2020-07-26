@@ -3,7 +3,7 @@ ROOT := $(realpath $(CWD)/..)
 include $(ROOT)/confmk/common.mk
 .SECONDEXPANSION:
 .SUFFIXES:
-.PHONY: all clean tests prefix_dirs install-headers compile_commands_kernel compile_commands_tests
+.PHONY: all clean tests prefix_dirs install-headers compile_commands
 
 DIR_ARCH := arch/$(TARGET_ARCH)
 
@@ -14,8 +14,7 @@ CFLAGS += \
 CPPFLAGS += \
     $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE)) \
     -I$(CWD)/include -I$(CWD)/arch/$(TARGET_ARCH)/include \
-    -I$(ROOT)/$(DIR_LIBC)/include -I$(ROOT)/$(DIR_LIBC)/arch/$(TARGET_ARCH)/include \
-    -I$(ROOT)/$(DIR_DEPS) \
+    -I$(ROOT)/$(DIR_DEPS) -I$(ROOT)/$(DIR_DEPS)/unity/src \
     -D__libk__
 
 LDFLAGS += \
@@ -52,8 +51,6 @@ prefix_dirs $(BUILDDIR_KERNEL)/kernel.bin: FILES_OBJ := $(addprefix $(BUILDDIR_K
 clean:
 	$(info [kernel] Removing kernel prefix directory)
 	@$(RMRF) $(BUILDDIR_KERNEL)
-	$(info [kernel] Removing tests prefix directory)
-	@$(RMRF) $(BUILDDIR_TESTS)
 
 prefix_dirs:
 	@$(MKDIRP) $(dir $(FILES_OBJ))
@@ -61,9 +58,9 @@ prefix_dirs:
 ###### Kernel rules
 
 $(BUILDDIR_KERNEL)/kernel.bin: LDFLAGS += -nostdlib
-$(BUILDDIR_KERNEL)/kernel.bin: $$(FILES_OBJ) $(DIR_ARCH)/linker.ld $(BUILDDIR_LIBK)/libk.a
+$(BUILDDIR_KERNEL)/kernel.bin: $$(FILES_OBJ) $(DIR_ARCH)/linker.ld
 	$(info [kernel] LD $@)
-	@$(LD) -Wl,-T,$(DIR_ARCH)/linker.ld $(FILES_OBJ) $(BUILDDIR_LIBK)/libk.a $(LDFLAGS) -o $@
+	@$(LD) -Wl,-T,$(DIR_ARCH)/linker.ld $(FILES_OBJ) $(LDFLAGS) -o $@
 
 $(BUILDDIR_KERNEL)/%.c.o: $(CWD)/%.c | prefix_dirs
 	$(info [kernel] CC $@)
@@ -75,8 +72,7 @@ $(BUILDDIR_KERNEL)/%.asm.o: $(CWD)/%.asm | prefix_dirs
 
 ###### Compilation commands rules
 
-compile_commands_tests: $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_TESTS_OBJ:.o=.json))
-compile_commands_kernel: $(addprefix $(BUILDDIR_KERNEL)/, \
+compile_commands: $(addprefix $(BUILDDIR_KERNEL)/, \
     $(filter-out %.asm.json, \
     $(FILES_OBJ:.o=.json)))
 
@@ -84,25 +80,15 @@ $(BUILDDIR_KERNEL)/%.c.json: $(CWD)/%.c | prefix_dirs
 	$(info [kernel] MJ $@)
 	@$(CC) $(CFLAGS) $(CPPFLAGS) -MJ $@ -c $< -o /dev/null
 
-$(BUILDDIR_KERNEL)/kernel/%_tests.c.json: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
-$(BUILDDIR_KERNEL)/kernel/%_tests.c.json: $(CWD)/%_tests.c | dirs_tests
-	$(info [kernel.tests] MJ $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) -MJ $@ $< -c -o /dev/null
-
 ###### Tests rules
 
-dirs_tests tests: FILES_TESTS_OBJ := $(addprefix $(BUILDDIR_TESTS)/kernel/, $(FILES_TESTS_OBJ))
+dirs_tests tests: FILES_TESTS_OBJ := $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_TESTS_OBJ))
 dirs_tests:
 	@$(MKDIRP) $(dir $(FILES_TESTS_OBJ))
 
 tests: $$(patsubst %.c.o,%, $$(FILES_TESTS_OBJ)) | dirs_tests
 
-$(BUILDDIR_TESTS)/kernel/%_tests.c.o: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
-$(BUILDDIR_TESTS)/kernel/%_tests.c.o: $(CWD)/%_tests.c | dirs_tests
-	$(info [kernel.tests] CC $@)
-	@$(CC) $(CFLAGS) $(CPPFLAGS) $< -c -o $@
-
-$(BUILDDIR_TESTS)/kernel/%_tests: $(BUILDDIR_TESTS)/kernel/%_tests.c.o $(BUILDDIR_KERNEL)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
+$(BUILDDIR_KERNEL)/%_tests: $(BUILDDIR_KERNEL)/%_tests.c.o $(BUILDDIR_KERNEL)/%.c.o $(BUILDDIR_DEPS)/unity/unity.o | dirs_tests
 	$(info [kernel.tests] LD $@)
 	@$(LD) $(CPPFLAGS) $^ $(LDFLAGS) -o $@
 
@@ -115,14 +101,6 @@ $(BUILDDIR_KERNEL)/%.c.d: $(CWD)/%.c | prefix_dirs
 $(BUILDDIR_KERNEL)/%.asm.d: $(CWD)/%.asm | prefix_dirs
 	$(info [kernel] MD $@)
 	@$(AS) $(CPPFLAGS) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
-
-$(BUILDDIR_TESTS)/kernel/%_tests.c.d: CPPFLAGS += -I$(ROOT)/$(DIR_DEPS)/unity/src
-$(BUILDDIR_TESTS)/kernel/%_tests.c.d: $(CWD)/%_tests.c | dirs_tests
-	$(info [kernel.tests] MD $@)
-	@$(CC) $(CPPFLAGS) -MM -MG -MT $(@:.d=.o) -MF $@ $< -o /dev/null
-
-$(BUILDDIR_LIBK)/libk.a:
-	$(error You need to build libk first)
 
 $(BUILDDIR_DEPS)/unity/unity.o:
 	$(error You need to build unity framework first)

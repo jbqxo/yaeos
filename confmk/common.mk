@@ -5,12 +5,6 @@ endif
 # Build Status
 # We need to export it in order to save the status for embedded(?) make calls.
 
-ifeq ($(findstring test,$(MAKECMDGOALS)),)
-    export BUILD_TEST ?=
-else
-    export BUILD_TEST ?= 1
-endif
-
 ifeq ($(findstring 1,$(NDEBUG)),1)
     export BUILD_DEBUG ?=
 else
@@ -56,20 +50,13 @@ LDFLAGS_COMMON  := -lgcc
 LDFLAGS_DEBUG   := -fno-lto
 LDFLAGS_RELEASE := -flto
 
-
-# Compilation toolchain
-ifeq ($(shell uname -s), Darwin)
-    MAKE := gmake --no-print-directory
-else
-    MAKE := make --no-print-directory
-endif
-
 # Compiler diagnostics
 # All of these diagnostics there for a reason right?
 CFLAGS_COMMON += -Wall
 CFLAGS_COMMON += -Wno-unused-command-line-argument
 
 # Basic commands
+MAKE   := make --no-print-directory
 MKDIRP := mkdir -p
 RMRF   := rm -rf
 CPRP   := cp -R -p

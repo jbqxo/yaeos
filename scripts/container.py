@@ -100,7 +100,7 @@ def main():
         )
     elif args.action == "tests":
         run_cmd(
-            command=["make", "tests"],
+            command=["make", "TARGET_ARCH=tests", "tests"],
         )
         run_cmd(
             command=["./scripts/run_tests.py"] + args.cmd,

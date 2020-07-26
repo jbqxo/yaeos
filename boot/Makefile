@@ -10,7 +10,7 @@ GRUB := grub-mkrescue
 
 .PHONY: isodir_tree clean headers
 
-$(BUILDDIR_BUILD)/grub.iso: $(KERNEL_BIN) $(GRUB_CFG) headers
+$(BUILDDIR_BUILD)/grub.iso: $(KERNEL_BIN) $(GRUB_CFG)
 	$(info [boot] Generating grub image)
 	@$(GRUB) -o $@ $(BUILDDIR_ISODIR)
 
@@ -21,12 +21,6 @@ $(KERNEL_BIN): $(BUILDDIR_KERNEL)/kernel.bin | isodir_tree
 $(GRUB_CFG): $(CWD)/grub.cfg | isodir_tree
 	$(info [boot] Copying grub.cfg into isodir/boot/grub)
 	@$(CPRP) $(CWD)/grub.cfg $(GRUB_CFG)
-
-headers: $(BUILDDIR_KERNEL)/include $(BUILDDIR_LIBC)/include
-	$(info [boot] Copying kernel and libc headers into isodir/usr/include)
-	@$(MKDIRP) $(DIR_USR)/include
-	@$(CPRP) $(BUILDDIR_LIBC)/include/. $(DIR_USR)/include/.
-	@$(CPRP) $(BUILDDIR_KERNEL)/include/. $(DIR_USR)/include/.
 
 isodir_tree:
 	$(info [boot] Creating iso dir tree)
