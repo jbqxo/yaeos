@@ -38,7 +38,6 @@ void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, int line,
 		  const char *restrict format, ...)
 {
 	uint64_t cycle = __rdtsc();
-	fprintf("[%llu:%c] %s:%d | ", cycle, lvl_to_char(lvl), find_filename(path), line);
 	fprintf(write, "[%llu:%c] %s:%d | ", cycle, lvl_to_char(lvl), find_filename(path), line);
 
 	va_list ap;

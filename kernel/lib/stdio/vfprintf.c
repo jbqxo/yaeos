@@ -74,9 +74,9 @@ static unsigned conv_positive_atoi(const char *s, unsigned len)
 }
 #endif // __i686__
 
-static struct conv_spec parse_conv_spec(const char **_format)
+static struct conv_spec parse_conv_spec(const char *_format, int *spec_len)
 {
-	const char *format = *_format;
+	const char *format = _format;
 	struct conv_spec result = { 0 };
 	// The first symbol must be '%'.
 	format++;
@@ -217,8 +217,8 @@ static struct conv_spec parse_conv_spec(const char **_format)
 		format++;
 	}
 
-	*_format = format;
-	return result;
+	*spec_len = format - _format;
+	return (result);
 }
 
 struct argument {
@@ -543,6 +543,11 @@ static int put_flags(fprintf_fn f, struct conv_spec s, struct argument arg)
  */
 static int print_conv_spec(fprintf_fn f, struct conv_spec s, va_list *args)
 {
+	if (s.spec == CS_PERCENTAGE) {
+		f("%%", 2);
+		return 1;
+	}
+
 	struct argument arg = fetch_arg(s, args, &arg);
 	int num_len = cs_funcs_table[s.spec].length(&s, &arg);
 	int printed = 0;
@@ -599,35 +604,29 @@ int vfprintf(fprintf_fn f, const char *restrict format, va_list args)
 {
 	va_list ap;
 	va_copy(ap, args);
-
 	int printed = 0;
-	int i = 0;
-	while (format[i] != '\0') {
-		if (format[i] == '%') {
-			const char *new_pos = &format[i];
-			struct conv_spec s = parse_conv_spec(&new_pos);
-			// TODO: Refactor
-			if (s.spec == CS_PERCENTAGE) {
-				f(&format[i], 1);
-				i += 2;
-				printed += 1;
-				continue;
-			}
-			printed += print_conv_spec(f, s, &ap);
-			i = new_pos - format;
-		} else {
-			int res;
-			res = f(&format[i], 1);
-			if (res < 0) {
-				printed = res;
-				goto failed;
-			}
-			printed += res;
-			i++;
-		}
-	}
 
-failed:
+	while (*format != '\0') {
+		if (*format == '%') {
+			int spec_len = 0;
+			struct conv_spec s = parse_conv_spec(format, &spec_len);
+			printed += print_conv_spec(f, s, &ap);
+			format += spec_len;
+			continue;
+		}
+
+		const char *cspec = strchr(format, '%');
+		size_t toprint;
+		if (cspec) {
+			toprint = cspec - format;
+		} else {
+			toprint = strlen(format);
+		}
+
+		f(format, toprint);
+		printed += toprint;
+		format += toprint;
+	}
 	va_end(ap);
 	return printed;
 }

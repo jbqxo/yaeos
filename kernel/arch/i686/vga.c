@@ -101,16 +101,30 @@ static int vga_init(struct console *c __unused)
 	return CONSRC_OK;
 }
 
-void vga_write(struct console *c __unused, const char *data, size_t size)
+static int min(int x, int y)
 {
-	for (size_t i = 0; i < size; i++) {
-		if (data[i] == '\n' || STATE.col == VGA_WIDTH) {
-			break_line();
-		}
+	return (x < y ? x : y);
+}
 
-		if (isprint(data[i])) {
-			write_char((unsigned char)data[i], STATE.color, STATE.col, STATE.row);
+void vga_write(struct console *c __unused, const char *restrict data, size_t size)
+{
+	while (size > 0) {
+		const char *nl_pos = strchr(data, '\n');
+		size_t w = min(size, VGA_WIDTH - STATE.col);
+		if (nl_pos) {
+			w = min(w, nl_pos - data);
+		}
+		for (size_t i = 0; i < w; i++, data++) {
+			write_char(*data, STATE.color, STATE.col, STATE.row);
 			STATE.col++;
+		}
+		size -= w;
+		if (size != 0) {
+			if (*data == '\n') {
+				data++;
+				size--;
+			}
+			break_line();
 		}
 	}
 }
