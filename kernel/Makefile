@@ -74,7 +74,7 @@ $(BUILDDIR_KERNEL)/%.asm.o: $(CWD)/%.asm | prefix_dirs
 
 compile_commands: $(addprefix $(BUILDDIR_KERNEL)/, \
     $(filter-out %.asm.json, \
-    $(FILES_OBJ:.o=.json)))
+    $(FILES_OBJ:.o=.json) $(FILES_TESTS_OBJ:.o=.json)))
 
 $(BUILDDIR_KERNEL)/%.c.json: $(CWD)/%.c | prefix_dirs
 	$(info [kernel] MJ $@)
