@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-const size_t PLATFORM_PAGE_SIZE = 4096;
-
 static char ALLOC_DATA[16 << 20];
 
 static unsigned mylog2(unsigned x)

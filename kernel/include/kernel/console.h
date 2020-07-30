@@ -10,6 +10,7 @@ struct console {
 #define CONSRC_NOTREADY (-1)
 	const char *name;
 	void (*write)(struct console *,const char *msg, size_t len);
+	void (*clear)(struct console *);
 	int (*init)(struct console *);
 #define CONSFLAG_EARLY (0x1)
 	unsigned flags;
@@ -19,5 +20,6 @@ struct console {
 
 void console_init(void);
 void console_write(const char *msg, size_t len);
+void console_clear(void);
 
 #endif // _KERNEL_CONSOLE_H

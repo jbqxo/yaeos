@@ -8,6 +8,7 @@
 #include <lib/string.h>
 
 #include <kernel/console.h>
+#include <kernel/cppdefs.h>
 
 #define CF_MINUS	(0x1 << 0)
 #define CF_PLUS		(0x1 << 1)

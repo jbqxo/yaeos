@@ -1,11 +1,8 @@
 #ifndef _KERNEL_ARCH_PLATFORM_H
 #define _KERNEL_ARCH_PLATFORM_H
 
-#include <stdint.h>
-#include <stddef.h>
-
-extern const size_t PLATFORM_STACK_SIZE;
-extern const size_t PLATFORM_PAGE_SIZE;
-extern const uintptr_t PLATFORM_KERNEL_VMA;
+#ifdef __i686__
+#include <arch_i686/platform.h>
+#endif // __i686__
 
 #endif // _KERNEL_ARCH_PLATFORM_H

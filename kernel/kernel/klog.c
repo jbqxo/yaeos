@@ -34,11 +34,12 @@ static char lvl_to_char(enum LOG_LEVEL lvl)
 	return LOOKUP_TABLE[lvl];
 }
 
-void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, int line,
-		  const char *restrict format, ...)
+void klog_logf_at(enum LOG_LEVEL lvl, const char *path, const char *func,
+		  const char *line, const char *format, ...)
 {
 	uint64_t cycle = __rdtsc();
-	fprintf(write, "[%llu:%c] %s:%d | ", cycle, lvl_to_char(lvl), find_filename(path), line);
+	fprintf(write, "[%llu:%c] %s:%s:%s | ", cycle, lvl_to_char(lvl), find_filename(path), func,
+		line);
 
 	va_list ap;
 	va_start(ap, format);

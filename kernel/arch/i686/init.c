@@ -1,9 +1,12 @@
 #include <kernel/kernel.h>
 #include <kernel/config.h>
+#include <kernel/cppdefs.h>
 #include <arch/platform.h>
 #include <arch_i686/vm.h>
 #include <arch_i686/platform.h>
 #include <arch_i686/descriptors.h>
+#include <arch_i686/intr.h>
+#include <arch_i686/exceptions.h>
 #include <lib/string.h>
 
 #include <multiboot.h>
@@ -77,7 +80,7 @@ static void map_platform(void *page_dir)
 /**
  * @brief Setup paging to actualy boot the kernel.
  */
-static void setup_boot_paging(void)
+static __noinline void setup_boot_paging(void)
 {
 	void *boot_pt = (void *)LOW(&boot_paging_pt[0]);
 	void *boot_pd = (void *)LOW(&boot_paging_pd[0]);
@@ -118,10 +121,6 @@ static void patch_multiboot_info(multiboot_info_t *info)
 
 struct arch_info_i686 I686_INFO;
 
-const size_t PLATFORM_PAGE_SIZE = PAGE_SIZE;
-const size_t PLATFORM_STACK_SIZE = CONF_STACK_SIZE;
-const uintptr_t PLATFORM_KERNEL_VMA = (uintptr_t)kernel_vma;
-
 void i686_init(multiboot_info_t *info, uint32_t magic)
 {
 	if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
@@ -131,6 +130,8 @@ void i686_init(multiboot_info_t *info, uint32_t magic)
 	setup_boot_paging();
 	boot_setup_gdt();
 	boot_setup_idt();
+	intr_i686_init();
+	i686_setup_exception_handlers();
 
 	I686_INFO.multiboot = (void *)HIGH(info);
 	patch_multiboot_info(I686_INFO.multiboot);

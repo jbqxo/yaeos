@@ -16,7 +16,7 @@
     .long CHECKSUM
 
 .section .bootstack, "aw", @nobits
-.align PAGE_SIZE
+.align PLATFORM_PAGE_SIZE
 .global bootstack_bottom
 bootstack_bottom:
     .skip CONF_STACK_SIZE
@@ -25,13 +25,13 @@ bootstack_top:
 
 // Preallocate space used for boot-time paging.
 .section .bss, "aw", @nobits
-.align PAGE_SIZE
+.align PLATFORM_PAGE_SIZE
 .global boot_paging_pd
 boot_paging_pd:
-    .skip PAGE_SIZE
+    .skip PLATFORM_PAGE_SIZE
 .global boot_paging_pt
 boot_paging_pt:
-    .skip PAGE_SIZE
+    .skip PLATFORM_PAGE_SIZE
 
 .section .text
 // The kernel's entry point
@@ -40,6 +40,8 @@ boot_paging_pt:
 _start:
     movl $bootstack_top, %esp
     subl $__kernel_vma, %esp
+    // Set return address to 0 to be able to stop here while gathering backtrace.
+    pushl $0x0
     movl %esp, %ebp
 
     pushl %eax

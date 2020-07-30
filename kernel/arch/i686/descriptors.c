@@ -1,9 +1,56 @@
 #include <arch_i686/descriptors.h>
 #include <lib/string.h>
+#include <kernel/cppdefs.h>
 
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+
+/**
+ * struct gdt_entry - the structure contains description of one segment descriptor.
+ * @limit_low: the lowest part of the segment limit.
+ * @base_low: the lowest part of the segment base address.
+ * @accessed: the cpu sets the field to true when the segment is accessed.
+ * @writable: whether to allow write access.
+ * @direction_conforming: direction when code=false, conforming bit otherwise.
+ * @code: whether the segment contains code or data.
+ * @code_or_data: whether the segment descriptor is for a system management.
+ * @privelege: contains the ring level.
+ * @present: whether the segment is present in memory.
+ * @limit_high: the highest part of the segment limit.
+ * @available: you can store your vast arrays of information here.
+ * @must_be_false: reserved for IA-32e. On IA-32 must be always 0.
+ * @size: represents different size flags. See Intel's Vol. 3A: 3-11
+ * @granularity: determines granularity of the limit field. If set to 1 the limit is in 4KiB blocks.
+ * @base_high: the highest part of the segment base address.
+ */
+struct gdt_entry {
+	uint16_t limit_low : 16;
+	uint32_t base_low : 24;
+	bool accessed : 1;
+	bool writable : 1;
+	bool direction_conforming : 1;
+	bool code : 1;
+	bool code_or_data : 1;
+	uint8_t privelege : 2;
+	bool present : 1;
+	uint16_t limit_high : 4;
+	bool available : 1;
+	bool must_be_false : 1;
+	bool size : 1;
+	bool granularity : 1;
+	uint8_t base_high : 8;
+} __attribute__((packed));
+
+/**
+ * struct gdt_ptr - the structure specifies the address and the size of the gdt.
+ * @limit: limit of the table.
+ * @base: the address of the table.
+ */
+struct gdt_ptr {
+	uint16_t limit;
+	uint32_t base;
+} __attribute__((packed));
 
 static struct gdt_structure {
 	struct gdt_entry null_descriptor;
@@ -11,10 +58,53 @@ static struct gdt_structure {
 	struct gdt_entry data_descriptor;
 } __attribute__((packed, aligned(8))) GDT;
 
+struct idt_entry {
+	uint16_t offset_low;
+	uint16_t seg_selector;
+	uint8_t must_be_0;
+	enum gate_type type : 4;
+	enum idt_flag flags : 4;
+	uint16_t offset_high;
+} __attribute__((packed));
+
+struct idt_ptr {
+	uint16_t limit;
+	uint32_t base;
+} __attribute__((packed));
+
 static struct idt_structure {
-	struct idt_entry cpu_gates[32];
-	struct idt_entry system_gates[256 - 32];
+	struct idt_entry gates[256];
 } __attribute__((packed, aligned(8))) IDT;
+
+static void gdt_set_table(struct gdt_ptr *table, uint16_t data_offset, uint16_t code_offset)
+{
+	// Load GDT
+	asm volatile("lgdt (%[table])" : : [table] "r"(table));
+
+	// Set Data segment
+	asm volatile("movw %[data_sel], %%ds \n\t\
+		      movw %[data_sel], %%ss \n\t\
+		      movw %[data_sel], %%es \n\t\
+		      movw %[data_sel], %%fs \n\t\
+		      movw %[data_sel], %%gs \n\t"
+		     :
+		     : [data_sel] "r"(data_offset));
+
+	// Set Code segment
+	asm volatile goto("pushl %[code_sel] \n\t\
+			   pushl $%l1 \n\t\
+			   lret"
+			  :
+			  : [code_sel] "g"(code_offset)
+			  :
+			  : end);
+end:;
+}
+
+static void idt_set_table(struct idt_ptr *table)
+{
+	asm volatile("lidt (%[table])" : : [table] "r"(table));
+}
 
 /**
  * boot_setup_gdt() - setup system's gdt with flat memory model.
@@ -65,55 +155,23 @@ void boot_setup_gdt(void)
 	gdt_set_table(&p, data_offset, code_offset);
 }
 
-static void idt_set_gate(struct idt_entry *e, void *offset, uint16_t selector, enum idt_flag flags)
+void idt_set_gatedesc(uint8_t gate_num, void *offset, enum idt_flag flags, enum gate_type gt)
 {
+	// Selector is not going to change, as we use flat memory model.
+	uint16_t selector = offsetof(struct gdt_structure, code_descriptor);
+	struct idt_entry *e = &IDT.gates[gate_num];
 	e->offset_low = (uintptr_t)offset & 0xFFFF;
 	e->offset_high = ((uintptr_t)offset >> 0x10) & 0xFFFF;
 
 	e->seg_selector = selector;
 	e->must_be_0 = 0;
 	e->flags = flags;
-	e->type = GATE_TYPE_INTERRUPT_32;
+	e->type = gt;
 }
 
 void boot_setup_idt(void)
 {
 	memset(&IDT, 0, sizeof(IDT));
-	enum idt_flag flags = IDT_FLAG_PRESENT | IDT_FLAG_RING_0;
-	uint16_t selector = offsetof(struct gdt_structure, code_descriptor);
-
-	idt_set_gate(&IDT.cpu_gates[0], (void *)irq0, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[1], (void *)irq1, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[2], (void *)irq2, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[3], (void *)irq3, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[4], (void *)irq4, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[5], (void *)irq5, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[6], (void *)irq6, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[7], (void *)irq7, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[8], (void *)irq8, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[9], (void *)irq9, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[10], (void *)irq10, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[11], (void *)irq11, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[12], (void *)irq12, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[13], (void *)irq13, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[14], (void *)irq14, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[15], (void *)irq15, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[16], (void *)irq16, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[17], (void *)irq17, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[18], (void *)irq18, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[19], (void *)irq19, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[20], (void *)irq20, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[21], (void *)irq21, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[22], (void *)irq22, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[23], (void *)irq23, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[24], (void *)irq24, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[25], (void *)irq25, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[26], (void *)irq26, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[27], (void *)irq27, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[28], (void *)irq28, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[29], (void *)irq29, selector, flags);
-	idt_set_gate(&IDT.cpu_gates[30], (void *)irq30, selector, flags);
-
 	struct idt_ptr p = { .limit = sizeof(IDT) - 1, .base = (uint32_t)&IDT };
 	idt_set_table(&p);
 }

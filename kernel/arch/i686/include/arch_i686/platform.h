@@ -1,7 +1,8 @@
 #ifndef _KERNEL_ARCH_I686_PLATFORM_H
 #define _KERNEL_ARCH_I686_PLATFORM_H
 
-#define PAGE_SIZE 4096
+#define PLATFORM_PAGE_SIZE (4096)
+#define PLATFORM_REGISTERS_COUNT (20)
 
 #ifndef __ASSEMBLER__
 #include <multiboot.h>

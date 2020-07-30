@@ -129,10 +129,16 @@ void vga_write(struct console *c __unused, const char *restrict data, size_t siz
 	}
 }
 
+void vga_clear(struct console *c __unused)
+{
+	vga_init(c);
+}
+
 struct console vga_console = (struct console){
 	.name = "vga_console",
 	.init = vga_init,
 	.write = vga_write,
+	.clear = vga_clear,
 	.flags = CONSFLAG_EARLY
 };
 ELFLIST_NEWDATA(consoles, vga_console);

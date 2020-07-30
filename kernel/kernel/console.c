@@ -25,6 +25,16 @@ void console_init(void) {
 	}
 }
 
+void console_clear()
+{
+	struct console *c;
+	SLIST_FOREACH(LIST_HEAD, c) {
+		if (c->clear != (void*)0) {
+			c->clear(c);
+		}
+	}
+}
+
 void console_write(const char *msg, size_t len) {
 	struct console *c;
 	SLIST_FOREACH(LIST_HEAD, c) {
