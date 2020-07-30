@@ -12,7 +12,7 @@
 		valuetype values[(length)];                                                        \
 	}
 
-#define KVSTATIC_LEN(kvvar) (sizeof((kvvar)->keys) / sizeof(*((kvvar)->keys)))
+#define KVSTATIC_CAP(kvvar) (sizeof((kvvar)->keys) / sizeof(*((kvvar)->keys)))
 
 #define KVSTATIC_INIT(kvvar, val_init)                                                             \
 	do {                                                                                       \
@@ -28,7 +28,7 @@
 
 #define KVSTATIC_FOREACH0(kvvar, ivar, itkey, itval)                                               \
 	for ((ivar) = 0, (itkey) = (kvvar)->keys[(ivar)], (itval) = (kvvar)->values[(ivar)];       \
-	     (ivar) < KVSTATIC_LEN(kvvar);                                                         \
+	     (ivar) < KVSTATIC_CAP(kvvar);                                                         \
 	     (ivar) += 1, (itkey) = (kvvar)->keys[(ivar)], (itval) = (kvvar)->values[(ivar)])
 
 #define KVSTATIC_GETIDX(kvvar, key, dest)                                                          \
@@ -65,7 +65,7 @@
 	do {                                                                                       \
 		int __idx;                                                                         \
 		KVSTATIC_GETIDX(kvvar, key, __idx);                                                \
-		if (__idx >= 0 && __idx < KVSTATIC_LEN(kvvar)) {                                   \
+		if (__idx >= 0 && __idx < KVSTATIC_CAP(kvvar)) {                                   \
 			(kvvar)->keys[__idx] = (void *)0;                                          \
 		}                                                                                  \
 	} while (0)
@@ -74,7 +74,7 @@
 	do {                                                                                       \
 		int __idx;                                                                         \
 		KVSTATIC_GETIDX(kvvar, key, __idx);                                                \
-		if (__idx >= 0 && __idx < KVSTATIC_LEN(kvvar)) {                                   \
+		if (__idx >= 0 && __idx < KVSTATIC_CAP(kvvar)) {                                   \
 			(dest) = (kvvar)->values[__idx];                                           \
 		} else {                                                                           \
 			(dest) = (failvalue);                                                      \
@@ -84,5 +84,17 @@
 #define KVSTATIC_FOREACH(kvvar, ivar, itkey, itval)                                                \
 	KVSTATIC_FOREACH0(kvvar, ivar, itkey, itval)                                               \
 	if ((itkey) != (void *)0)
+
+#define KVSTATIC_LEN(kvvar, dest)                                                                  \
+	do {                                                                                       \
+		int __i;                                                                           \
+		char *__k;                                                                         \
+		typeof((kvvar)->values[0]) __v;                                                    \
+		(dest) = 0;                                                                        \
+		KVSTATIC_FOREACH(kvvar, __i, __k, __v)                                             \
+		{                                                                                  \
+			(dest)++;                                                                  \
+		}                                                                                  \
+	} while (0)
 
 #endif // _KERNEL_DS_KVSTORE_H

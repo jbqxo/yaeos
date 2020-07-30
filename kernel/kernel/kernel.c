@@ -19,20 +19,24 @@ __noreturn void kernel_panic(struct kernel_panic_info *info)
 	fprintf(conwrite, "Whoopsie. The kernel is on fire... Bye.\n");
 	fprintf(conwrite, "Cause: %s\n", info->description);
 	if (info->location != (void*)0) {
-		fprintf(conwrite, "Culprit: %s\n", info->location);
+		fprintf(conwrite, "Location: %s\n", info->location);
 	}
 
 
 	{
-		fprintf(conwrite, "Registers:");
-		int i;
-		char *key;
-		size_t reg;
-		KVSTATIC_FOREACH(&info->regs, i, key, reg) {
-			if (i % 4 == 0) {
-				conwrite("\n", 1);
+		int regs_len;
+		KVSTATIC_LEN(&info->regs, regs_len);
+		if (regs_len > 0) {
+			fprintf(conwrite, "Registers:");
+			int i;
+			char *key;
+			size_t reg;
+			KVSTATIC_FOREACH(&info->regs, i, key, reg) {
+				if (i % 4 == 0) {
+					conwrite("\n", 1);
+				}
+				fprintf(conwrite, "%s: %08X ", key, reg);
 			}
-			fprintf(conwrite, "%s: %08X ", key, reg);
 		}
 	}
 	while (1);

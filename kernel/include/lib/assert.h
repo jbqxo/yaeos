@@ -2,14 +2,23 @@
 #define _LIB_ASSERT_H
 #undef assert
 
+#include <kernel/kernel.h>
+#include <kernel/cppdefs.h>
+
 #ifdef NDEBUG
 #define assert(exp) ((void)0)
 #else
-// TODO(Maxim Lyapin): Well. Right now assertion isn't very good. Make it good.
-#define assert(exp) ((exp) && ((*(int *)0x0 = 0), 1))
+#define assert(exp)                                                                                \
+	do {                                                                                       \
+		if (__unlikely(!(exp))) {                                                          \
+			struct kernel_panic_info __info = { 0 };                                   \
+			__info.description = "Assertion failed: " TO_SSTR_MACRO(exp);              \
+			__info.location = __FILE__ ":" TO_SSTR_MACRO(__LINE__);                    \
+			kernel_panic(&__info);                                                     \
+		}                                                                                  \
+	} while (0)
 #endif
 
-// TODO(Maxim Lyapin): Mark as C11 or newer only
 #define static_assert(exp, str) _Static_assert(exp, str)
 
 #endif // _LIB_ASSERT_H
