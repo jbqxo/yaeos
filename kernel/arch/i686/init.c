@@ -130,7 +130,7 @@ void i686_init(multiboot_info_t *info, uint32_t magic)
 	setup_boot_paging();
 	boot_setup_gdt();
 	boot_setup_idt();
-	intr_i686_init();
+	intr_init();
 	i686_setup_exception_handlers();
 
 	I686_INFO.multiboot = (void *)HIGH(info);

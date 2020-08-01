@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+#define IRQ_MASTER_OFFSET (32)
+#define IRQ_SLAVE_OFFSET (IRQ_MASTER_OFFSET + 8)
+
 struct intr_ctx {
 	uint32_t ds;
 
@@ -25,33 +28,32 @@ struct intr_ctx {
 	uint32_t ss;
 };
 
-enum intr_cpu {
-	INTR_CPU_DIV_ERR      = 0x0,
-	INTR_CPU_DEBUG        = 0x1,
-	INTR_CPU_NMI          = 0x2,
-	INTR_CPU_INT3         = 0x3,
-	INTR_CPU_INTO         = 0x4,
-	INTR_CPU_BOUND        = 0x5,
-	INTR_CPU_INV_OP       = 0x6,
-	INTR_CPU_NOMATH       = 0x7,
-	INTR_CPU_DFAULT       = 0x8,
-	INTR_CPU_INV_TSS      = 0xA,
-	INTR_CPU_SEG_NP       = 0xB,
-	INTR_CPU_SEG_SS       = 0xC,
-	INTR_CPU_GP           = 0xD,
-	INTR_CPU_PAGEFAULT    = 0xE,
-	INTR_CPU_MATHFP_FAULT = 0x10,
-	INTR_CPU_ALIGN_CH     = 0x11,
-	INTR_CPU_HW_CH        = 0x12,
-	INTR_CPU_SIMD_EXC     = 0x13,
-	INTR_CPU_VIRT_EXC     = 0x14,
-	INTR_CPU_CTRL_EXC     = 0x15,
- };
+#define INTR_CPU_DIV_ERR        (0x0)
+#define INTR_CPU_DEBUG          (0x1)
+#define INTR_CPU_NMI            (0x2)
+#define INTR_CPU_INT3           (0x3)
+#define INTR_CPU_INTO           (0x4)
+#define INTR_CPU_BOUND          (0x5)
+#define INTR_CPU_INV_OP         (0x6)
+#define INTR_CPU_NOMATH         (0x7)
+#define INTR_CPU_DFAULT         (0x8)
+#define INTR_CPU_INV_TSS        (0xA)
+#define INTR_CPU_SEG_NP         (0xB)
+#define INTR_CPU_SEG_SS         (0xC)
+#define INTR_CPU_GP             (0xD)
+#define INTR_CPU_PAGEFAULT      (0xE)
+#define INTR_CPU_MATHFP_FAULT   (0x10)
+#define INTR_CPU_ALIGN_CH       (0x11)
+#define INTR_CPU_HW_CH          (0x12)
+#define INTR_CPU_SIMD_EXC       (0x13)
+#define INTR_CPU_VIRT_EXC       (0x14)
+#define INTR_CPU_CTRL_EXC       (0x15)
 
 typedef void (*intr_handler_fn)(struct intr_ctx *);
 
-void intr_i686_init(void);
-void intr_i686_set_default(intr_handler_fn defaulth);
-void intr_i686_set_exception_h(enum intr_cpu, intr_handler_fn);
+void intr_init(void);
+void intr_handler_cpu_default(intr_handler_fn defaulth);
+void intr_handler_cpu(uint8_t int_no, intr_handler_fn);
+void intr_handler_pic(uint8_t int_no, intr_handler_fn);
 
 #endif // _KERNEL_ARCH_I686_INTR_H

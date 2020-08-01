@@ -82,5 +82,5 @@ static void default_handler(struct intr_ctx *ctx)
 
 void i686_setup_exception_handlers(void)
 {
-	intr_i686_set_default(default_handler);
+	intr_handler_cpu_default(default_handler);
 }

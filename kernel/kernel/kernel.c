@@ -4,6 +4,7 @@
 #include <kernel/console.h>
 #include <kernel/cppdefs.h>
 #include <kernel/config.h>
+#include <arch/platform.h>
 #include <lib/stdio.h>
 #include <kernel/ds/kvstore.h>
 
@@ -39,7 +40,7 @@ __noreturn void kernel_panic(struct kernel_panic_info *info)
 			}
 		}
 	}
-	while (1);
+	halt(false);
 }
 
 void kernel_init()
