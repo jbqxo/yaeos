@@ -3,3 +3,5 @@ CC := clang
 LD := gcc
 AS := gcc -xassembler-with-cpp -c
 AR := ar
+
+ARCH := i686
