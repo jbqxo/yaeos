@@ -48,17 +48,22 @@
 
 #define KVSTATIC_ADD(kvvar, newkey, newvalue)                                                      \
 	do {                                                                                       \
+		int __freeidx = -1;                                                                \
 		int __i;                                                                           \
 		char *__k;                                                                         \
 		typeof((kvvar)->values[0]) __v;                                                    \
 		KVSTATIC_FOREACH0(kvvar, __i, __k, __v)                                            \
 		{                                                                                  \
 			if (__k == (void *)0) {                                                    \
+				__freeidx = __i;                                                   \
 				break;                                                             \
 			}                                                                          \
 		}                                                                                  \
-		(kvvar)->keys[__i] = (newkey);                                                     \
-		(kvvar)->values[__i] = (newvalue);                                                 \
+		if (__freeidx == -1) {                                                             \
+			break;                                                                     \
+		}                                                                                  \
+		(kvvar)->keys[__freeidx] = (newkey);                                               \
+		(kvvar)->values[__freeidx] = (newvalue);                                           \
 	} while (0)
 
 #define KVSTATIC_DEL(kvvar, key)                                                                   \
