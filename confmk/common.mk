@@ -2,6 +2,8 @@ ifeq ($(ROOT),)
     $(error The ROOT variable must be set)
 endif
 
+include $(ROOT)/confmk/functions.mk
+
 # Build Status
 # We need to export it in order to save the status for embedded(?) make calls.
 
@@ -63,6 +65,8 @@ CPRP   := cp -R -p
 FIND   := find
 COMPILEDB := compiledb
 GREP   := grep
+SED    := sed
+TR     := tr
 
 # Do not remove intermediate files
 .SECONDARY:
