@@ -1,5 +1,5 @@
-#ifndef _KERNEL_MM_ALLOC_H
-#define _KERNEL_MM_ALLOC_H
+#ifndef _KERNEL_MM_BUDDY_H
+#define _KERNEL_MM_BUDDY_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -28,8 +28,8 @@ struct buddy_allocator {
  * @param intern_data Pointer to a block of memory where the allocator's data can be stored.
  * @param intern_len Length of the memory for the allocator's data.
  */
-void buddy_init(struct buddy_allocator *alloc, void **mem_chunks, const size_t *sizes, unsigned chnum,
-				   void *intern_data, size_t intern_len);
+void buddy_init(struct buddy_allocator *alloc, void **mem_chunks, const size_t *sizes,
+		unsigned chnum, void *intern_data, size_t intern_len);
 
 /**
  * @brief Allocate specified number of pages.
@@ -48,5 +48,4 @@ void *buddy_alloc(struct buddy_allocator *allocator, unsigned order);
  */
 void buddy_free(struct buddy_allocator *allocator, void *mem, unsigned order);
 
-
-#endif // _KERNEL_MM_ALLOC_H
+#endif // _KERNEL_MM_BUDDY_H

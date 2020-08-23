@@ -2,6 +2,7 @@
 #include <arch_i686/platform.h>
 #include <arch/mm/pmm.h>
 #include <kernel/cppdefs.h>
+#include <kernel/utils.h>
 #include <kernel/klog.h>
 
 #include <multiboot.h>
@@ -136,7 +137,6 @@ static void find(uintptr_t start, uintptr_t end, uint32_t type, void *data)
 	size_t length = end - start;
 
 	chunk->mem = (void *)start;
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
 	// ... if we can address some part of the chunk, cut remainders out.
 	chunk->length = MIN(length, max_addr() - start);
 	chunk->type = type;

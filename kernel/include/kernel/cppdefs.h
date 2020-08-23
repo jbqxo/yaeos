@@ -1,6 +1,8 @@
 #ifndef _KERNEL_CPPDEFS_H
 #define _KERNEL_CPPDEFS_H
 
+#include <stdint.h>
+
 #define __unused                __attribute__((__unused__))
 #define __used                  __attribute__((__used__))
 #define __dead_code             __attribute__((__noreturn__))
@@ -16,5 +18,15 @@
 
 #define TO_SSTR(X) #X
 #define TO_SSTR_MACRO(X) TO_SSTR(X)
+
+union uiptr {
+	void *p;
+	uintptr_t i;
+};
+
+#define UIPTR(x)                                                                                   \
+	(_Generic((x),                                                                             \
+		 void *: (union uiptr){ .p = (void*)(x) },                                         \
+		 uintptr_t: (union uiptr){ .i = (uintptr_t)(x) }))
 
 #endif // _KERNEL_CPPDEFS_H
