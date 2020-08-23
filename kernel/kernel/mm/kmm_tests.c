@@ -144,6 +144,7 @@ static void no_leaks(void)
 	}
 
 	size_t repeated_alloc = 0;
+	TEST_MESSAGE("Allocating all available memory...");
 	while ((new = kmm_cache_alloc(c))) {
 		memset(new, TESTVAL, sizeof(*new));
 		(*ptrs)[repeated_alloc] = new;
@@ -167,23 +168,207 @@ static void no_leaks(void)
 static void memory_aligned(void)
 {
 	typedef uint32_t elem_t;
-	const size_t required_align = 32;
+	const size_t required_alignment = 32;
 	const size_t testset_len = 5;
 
-	elem_t *(*ptrs)[testset_len] = malloc(sizeof(*ptrs));
+	elem_t *ptrs[testset_len] = { 0 };
 
 	struct kmm_cache *cache =
-		kmm_cache_create("test_cache", sizeof(elem_t), required_align, 0, NULL, NULL);
+		kmm_cache_create("test_cache", sizeof(elem_t), required_alignment, 0, NULL, NULL);
+	TEST_ASSERT(cache);
+	for (int i = 0; i < testset_len; i++) {
+		ptrs[i] = kmm_cache_alloc(cache);
+		TEST_ASSERT_EQUAL_INT_MESSAGE(0, UIPTR((void *)ptrs[i]).i % required_alignment,
+					      "Alignment request hasn't been honored");
+	}
+	for (int i = 0; i < testset_len; i++) {
+		kmm_cache_free(cache, ptrs[i]);
+	}
+	kmm_cache_destroy(cache);
+}
+
+static const unsigned ctor_dtor__ctor_foo = 0xFE;
+static const unsigned ctor_dtor__ctor_bar = 0xEF;
+static const unsigned ctor_dtor__dtor_foo = 0xAB;
+static const unsigned ctor_dtor__dtor_bar = 0xBA;
+struct ctor_dtor__type {
+	unsigned foo;
+	unsigned bar;
+	void *pfoo;
+};
+
+static void ctor_dtor__ctor(void *mem)
+{
+	struct ctor_dtor__type *obj = mem;
+	obj->foo = ctor_dtor__ctor_foo;
+	obj->bar = ctor_dtor__ctor_bar;
+	obj->pfoo = mem;
+}
+
+static void ctor_dtor__dtor(void *mem)
+{
+	struct ctor_dtor__type *obj = mem;
+	obj->foo = ctor_dtor__dtor_foo;
+	obj->bar = ctor_dtor__dtor_bar;
+	obj->pfoo = NULL;
 }
 
 static void ctor_and_dtor(void)
-{}
+{
+	struct ctor_dtor__type *obj;
+	struct kmm_cache *cache = kmm_cache_create("test_cache", sizeof(*obj), 0, 0,
+						   ctor_dtor__ctor, ctor_dtor__dtor);
+	TEST_ASSERT(cache);
+
+	obj = kmm_cache_alloc(cache);
+	TEST_ASSERT(obj);
+
+	TEST_ASSERT_EQUAL_INT_MESSAGE(ctor_dtor__ctor_foo, obj->foo,
+				      "'foo' field hasn't been initialized");
+	TEST_ASSERT_EQUAL_INT_MESSAGE(ctor_dtor__ctor_bar, obj->bar,
+				      "'bar' field hasn't been initialized");
+	TEST_ASSERT_EQUAL_PTR_MESSAGE(obj, obj->pfoo, "'pfoo' field hasn't been initialized");
+
+	kmm_cache_free(cache, obj);
+
+	TEST_ASSERT_EQUAL_INT_MESSAGE(ctor_dtor__dtor_foo, obj->foo,
+				      "'foo' field hasn't been deinitialized");
+	TEST_ASSERT_EQUAL_INT_MESSAGE(ctor_dtor__dtor_bar, obj->bar,
+				      "'bar' field hasn't been deinitialized");
+	TEST_ASSERT_EQUAL_PTR_MESSAGE(NULL, obj->pfoo, "'pfoo' field hasn't been deinitialized");
+	kmm_cache_destroy(cache);
+}
 
 static void reclaiming(void)
-{}
+{
+	typedef uint32_t elem_t;
+
+	elem_t *(*ptrs)[VMM_MEM_LIMIT / sizeof(elem_t)] = malloc(sizeof(*ptrs));
+	size_t allocated = 0;
+
+	struct kmm_cache *first_cache =
+		kmm_cache_create("first_cache", sizeof(elem_t), 0, 0, NULL, NULL);
+	TEST_ASSERT(first_cache);
+	struct kmm_cache *second_cache =
+		kmm_cache_create("second_cache", sizeof(elem_t), 0, 0, NULL, NULL);
+	TEST_ASSERT(second_cache);
+
+	TEST_MESSAGE("Allocating all available memory...");
+	elem_t *new;
+	while ((new = kmm_cache_alloc(first_cache))) {
+		(*ptrs)[allocated] = new;
+		allocated++;
+	}
+	TEST_ASSERT_MESSAGE(allocated > 0, "Couldn't allocate single small object");
+
+	TEST_ASSERT_MESSAGE(
+		kmm_cache_alloc(second_cache) == NULL,
+		"Somehow we managed to allocate memory while it's supposed to be occupied");
+
+	for (int i = 0; i < allocated; i++) {
+		elem_t *m = (*ptrs)[i];
+		kmm_cache_free(first_cache, m);
+	}
+
+	size_t repeated_alloc = 0;
+	TEST_MESSAGE("Allocating all available memory...");
+	while ((new = kmm_cache_alloc(second_cache))) {
+		(*ptrs)[repeated_alloc] = new;
+		repeated_alloc++;
+	}
+
+	TEST_ASSERT_EQUAL_INT_MESSAGE(
+		allocated, repeated_alloc,
+		"It seems we weren't able to reclaim memory from the first cache");
+
+	for (int i = 0; i < repeated_alloc; i++) {
+		elem_t *m = (*ptrs)[i];
+		kmm_cache_free(second_cache, m);
+	}
+
+	kmm_cache_destroy(first_cache);
+	kmm_cache_destroy(second_cache);
+	free(ptrs);
+}
 
 static void cache_coloring(void)
-{}
+{
+	typedef char elem_t[37];
+	const size_t cacheline_len = 64;
+	int colour_hits[cacheline_len] = { 0 };
+
+	size_t allocated = 0;
+	elem_t *(*ptrs)[VMM_MEM_LIMIT / sizeof(elem_t)] = malloc(sizeof(*ptrs));
+
+	struct kmm_cache *cache = kmm_cache_create("test_cache", sizeof(elem_t), 0, 0, NULL, NULL);
+
+	TEST_MESSAGE("Allocating all available memory...");
+	elem_t *new;
+	while ((new = kmm_cache_alloc(cache))) {
+		size_t cacheline_offset = UIPTR((void *)new).i % 64;
+		colour_hits[cacheline_offset]++;
+
+		(*ptrs)[allocated] = new;
+		allocated++;
+	}
+
+	TEST_MESSAGE("Cache colour hits (colour, times): ");
+	int colours = 0;
+	for (int colour = 0; colour < cacheline_len; colour++) {
+		size_t hits = colour_hits[colour];
+		if (hits > 0) {
+			TEST_PRINTF("(%d, %d) ", colour, hits);
+			colours++;
+		}
+	}
+	TEST_ASSERT_GREATER_THAN_INT_MESSAGE(
+		1, colours, "We have pretty monotonic cache. Though this test isn't very robust");
+
+	for (int i = 0; i < allocated; i++) {
+		elem_t *m = (*ptrs)[i];
+		kmm_cache_free(cache, m);
+	}
+
+	kmm_cache_destroy(cache);
+	free(ptrs);
+}
+
+static void static_reserves(void)
+{
+	typedef uint32_t elem_t;
+
+	elem_t *(*ptrs)[VMM_MEM_LIMIT / sizeof(elem_t)] = malloc(sizeof(*ptrs));
+	size_t allocated = 0;
+
+	struct kmm_cache *first_cache =
+		kmm_cache_create("first_cache", sizeof(elem_t), 0, 0, NULL, NULL);
+	TEST_ASSERT(first_cache);
+	struct kmm_cache *second_cache =
+		kmm_cache_create("second_cache", sizeof(elem_t), 0, KMM_CACHE_STATIC, NULL, NULL);
+	TEST_ASSERT(second_cache);
+
+	TEST_MESSAGE("Allocating all available memory...");
+	elem_t *new;
+	while ((new = kmm_cache_alloc(first_cache))) {
+		(*ptrs)[allocated] = new;
+		allocated++;
+	}
+	// Allocate reserved static.
+	elem_t *obj = kmm_cache_alloc(second_cache);
+	TEST_ASSERT_MESSAGE(
+		obj,
+		"Couldn't allocate memory from the second_cache");
+
+	kmm_cache_free(second_cache, obj);
+	for (int i = 0; i < allocated; i++) {
+		elem_t *m = (*ptrs)[i];
+		kmm_cache_free(first_cache, m);
+	}
+
+	kmm_cache_destroy(first_cache);
+	kmm_cache_destroy(second_cache);
+	free(ptrs);
+}
 
 int main(void)
 {
@@ -191,6 +376,11 @@ int main(void)
 	RUN_TEST(small_allocations);
 	RUN_TEST(large_allocations);
 	RUN_TEST(no_leaks);
+	RUN_TEST(memory_aligned);
+	RUN_TEST(ctor_and_dtor);
+	RUN_TEST(reclaiming);
+	RUN_TEST(cache_coloring);
+	RUN_TEST(static_reserves);
 	UNITY_END();
 	return (0);
 }

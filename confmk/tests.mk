@@ -1,5 +1,5 @@
 # TODO: Tests coverage
-CPPFLAGS += -D__i686__
+CPPFLAGS += -D__i686__ -DUNITY_INCLUDE_PRINT_FORMATTED
 
 CC := clang
 LD := clang
