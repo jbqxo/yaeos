@@ -45,7 +45,7 @@ void pmm_init(struct pmm_allocator *allocators, size_t alloc_length)
 	assert(CACHES.pages);
 
 	for (int i = 0; i < alloc_length; i++) {
-		struct pmm_allocator *a = kmm_cache_alloc(CACHES.allocators, 0);
+		struct pmm_allocator *a = kmm_cache_alloc(CACHES.allocators);
 		copy_alloc(&allocators[i], a);
 		if (a->restrict_flags & PMM_RESTRICT_DMA) {
 			SLIST_INSERT_HEAD(&ZONES.dma, a, allocators);
@@ -74,7 +74,7 @@ static struct pmm_page *try_allocate_from_zone(struct zone_allocators zlist)
 		return (NULL);
 	}
 
-	struct pmm_page *page = kmm_cache_alloc(CACHES.pages, 0);
+	struct pmm_page *page = kmm_cache_alloc(CACHES.pages);
 	page->paddr = allocres.paddr;
 	page->alloc = allocator;
 
