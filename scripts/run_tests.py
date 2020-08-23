@@ -113,9 +113,17 @@ def present_unit_results(cases_it):
         if case.message is not None:
             message = case.message
 
+        path = ""
+        if case.source_file is not None and len(case.source_file) > 0:
+            path = case.source_file
+        else:
+            path = case.exec_path
+
+        path = path.replace(os.getcwd() + "/", "")
+
         print("{0}\t{1}\t{2}\t{3}".format(
             status.ljust(columns_len[0]),
-            ":".join([case.exec_path, str(case.line)]).ljust(columns_len[1]),
+            ":".join([path, str(case.line)]).ljust(columns_len[1]),
             case.name.ljust(columns_len[2]),
             message))
 
