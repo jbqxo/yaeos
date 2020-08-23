@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 #include <kernel/timer.h>
 #include <kernel/cppdefs.h>
 #include <kernel/elflist.h>
@@ -9,7 +11,7 @@
 #define PIT_CMD (0x43)
 #define PIT_TCOUNT (0x30)
 
-static callback_fn CALLBACK = (void *)0;
+static callback_fn CALLBACK = NULL;
 
 static void callback(struct intr_ctx *c __unused)
 {
@@ -47,7 +49,7 @@ void pit_inter_after(unsigned ms)
 struct int_timer pit_timer = (struct int_timer){
 	.name = "pit",
 	.init = pit_init,
-	.deinit = (void *)0,
+	.deinit = NULL,
 	.inter_after = pit_inter_after,
 };
 ELFLIST_NEWDATA(timers, pit_timer);
