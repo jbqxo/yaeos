@@ -32,7 +32,7 @@ static struct kernel_panic_info prepare_panic_info(struct intr_ctx *ctx, const c
 		.description = DESCRIPTION_BUFFER,
 		.location = NULL,
 	};
-	KVSTATIC_INIT(&info.regs, 0);
+	KVSTATIC_INIT(&info.regs, "", 0, strcmp);
 
 	KVSTATIC_ADD(&info.regs, "EDI", ctx->edi);
 	KVSTATIC_ADD(&info.regs, "ESI", ctx->esi);

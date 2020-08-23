@@ -10,7 +10,7 @@ struct kernel_panic_info {
 	char *description;
 	char *location;
 
-	KVSTATIC_DECLARE(size_t, PLATFORM_REGISTERS_COUNT) regs;
+	KVSTATIC_DECLARE(const char*, size_t, PLATFORM_REGISTERS_COUNT, strcmp) regs;
 };
 
 void kernel_panic(struct kernel_panic_info *);
