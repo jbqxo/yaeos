@@ -1,39 +1,108 @@
-#include <arch/mm/pmm.h>
-#include <kernel/config.h>
 #include <kernel/cppdefs.h>
 #include <kernel/klog.h>
 #include <kernel/mm/pmm.h>
-#include <kernel/mm/alloc.h>
-
+#include <kernel/mm/kmm.h>
 #include <kernel/ds/slist.h>
+#include <lib/assert.h>
 
-static char ALLOCS_DATA[CONF_BUDDY_BITMAP_SIZE] __section(".bss");
-static struct buddy_allocator GLOBAL_ALLOC;
+#include <stdbool.h>
 
-void pmm_init(void)
+SLIST_HEAD(zone_allocators, struct pmm_allocator);
+
+static struct {
+	struct zone_allocators normal;
+	struct zone_allocators dma;
+} ZONES;
+
+static struct {
+	struct kmm_cache *allocators;
+	struct kmm_cache *pages;
+} CACHES;
+
+static void copy_alloc(struct pmm_allocator *src, struct pmm_allocator *restrict dest)
 {
-	int chunks_count = pmm_arch_available_chunks();
-	struct pmm_chunk *chunks = __builtin_alloca(chunks_count * sizeof(*chunks));
-	pmm_arch_get_chunks(chunks);
+	assert(src);
+	assert(dest);
+	assert(src != dest);
 
-	void **ch_array = __builtin_alloca(chunks_count * sizeof(*ch_array));
-	size_t *sizes_array = __builtin_alloca(chunks_count * sizeof(*sizes_array));
+	dest->name = src->name;
+	dest->restrict_flags = src->restrict_flags;
+	dest->page_alloc = src->page_alloc;
+	dest->page_free = src->page_free;
+}
 
-	for (int i = 0; i < chunks_count; i++) {
-		LOGF_I("Memory: %p; Length: %#zX\n", chunks[i].mem, chunks[i].length);
-		ch_array[i] = chunks[i].mem;
-		sizes_array[i] = chunks[i].length;
+void pmm_init(struct pmm_allocator *allocators, size_t alloc_length)
+{
+	assert(allocators);
+
+	CACHES.allocators = kmm_cache_create("pmm_allocators_cache", sizeof(struct pmm_allocator),
+					     0, 0, NULL, NULL);
+	CACHES.pages =
+		kmm_cache_create("pmm_pages_cache", sizeof(struct pmm_page), 0, 0, NULL, NULL);
+	assert(CACHES.allocators);
+	assert(CACHES.pages);
+
+	for (int i = 0; i < alloc_length; i++) {
+		struct pmm_allocator *a = kmm_cache_alloc(CACHES.allocators, 0);
+		copy_alloc(&allocators[i], a);
+		if (a->restrict_flags & PMM_RESTRICT_DMA) {
+			SLIST_INSERT_HEAD(&ZONES.dma, a, allocators);
+		} else {
+			SLIST_INSERT_HEAD(&ZONES.normal, a, allocators);
+		}
+	}
+}
+
+static struct pmm_page *try_allocate_from_zone(struct zone_allocators zlist)
+{
+	struct pmm_alloc_resutl allocres;
+
+	struct pmm_allocator *allocator;
+	SLIST_FOREACH(allocator, &zlist, allocators)
+	{
+		if (__unlikely(allocator->page_alloc == NULL)) {
+			continue;
+		}
+
+		allocres = allocator->page_alloc(allocator);
+		if (allocres.success) {
+			break;
+		}
+	}
+	if (!allocres.success) {
+		return (NULL);
 	}
 
-	buddy_init(&GLOBAL_ALLOC, ch_array, sizes_array, chunks_count, &ALLOCS_DATA, sizeof(ALLOCS_DATA));
+	struct pmm_page *page = kmm_cache_alloc(CACHES.pages, 0);
+	page->paddr = allocres.paddr;
+	page->alloc = allocator;
+
+	return (page);
 }
 
-pmm_pages_t pmm_alloc(unsigned order)
+struct pmm_page *pmm_alloc_page(int flags)
 {
-	return ((pmm_pages_t){ .paddr = buddy_alloc(&GLOBAL_ALLOC, order), .order = order });
+	// TODO: Multiple pages allocation.
+	bool requested_dma = flags & PMM_FLAG_DMA;
+
+	if (!requested_dma) {
+		struct pmm_page *p = try_allocate_from_zone(ZONES.normal);
+		if (__likely(p != NULL)) {
+			return (p);
+		}
+		LOGF_W("Out of zone::normal physical memory. Trying DMA.");
+	}
+
+	struct pmm_page *p = try_allocate_from_zone(ZONES.dma);
+	return (p);
 }
 
-void pmm_free(pmm_pages_t p)
+void pmm_free(struct pmm_page *p)
 {
-	buddy_free(&GLOBAL_ALLOC, p.paddr, p.order);
+	assert(p);
+	assert(p->alloc);
+
+	if (__likely(p->alloc->page_free != NULL)) {
+		p->alloc->page_free(p->alloc->data, p->paddr);
+	}
 }
