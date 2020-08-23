@@ -15,7 +15,7 @@ RUN pacman --noconfirm -Syu base-devel curl lib32-glibc make python
 # Required to build GCC
 RUN pacman --noconfirm -S gmp libmpc mpfr
 # Required to build the project
-RUN pacman --noconfirm -S clang grub xorriso mtools
+RUN pacman --noconfirm -S clang llvm grub xorriso mtools
 
 # Fetch gcc sources and binutils sources.
 RUN curl -O https://ftp.gnu.org/gnu/binutils/binutils-2.34.tar.xz && \
@@ -74,4 +74,4 @@ WORKDIR ${SOURCE}
 # Port for gdbserver
 EXPOSE 1234
 ENV TARGET_ARCH="${ARCH}"
-CMD [ "make", "grub-iso" ]
+CMD "sh"
