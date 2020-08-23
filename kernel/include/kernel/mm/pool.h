@@ -1,10 +1,10 @@
 #ifndef _KERNEL_MM_POOL_H
 #define _KERNEL_MM_POOL_H
 
-#include <stddef.h>
+#include "kernel/cppdefs.h"
+#include "kernel/ds/slist.h"
 
-#include <kernel/ds/slist.h>
-#include <kernel/cppdefs.h>
+#include <stddef.h>
 
 struct mem_pool {
 	SLIST_HEAD(, union node) list;

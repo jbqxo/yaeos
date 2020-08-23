@@ -1,9 +1,11 @@
-#include <kernel/cppdefs.h>
-#include <kernel/klog.h>
-#include <kernel/mm/pmm.h>
-#include <kernel/mm/kmm.h>
-#include <kernel/ds/slist.h>
-#include <lib/assert.h>
+#include "kernel/mm/pmm.h"
+
+#include "kernel/cppdefs.h"
+#include "kernel/ds/slist.h"
+#include "kernel/klog.h"
+#include "kernel/mm/kmm.h"
+
+#include "lib/assert.h"
 
 #include <stdbool.h>
 
@@ -58,8 +60,7 @@ static struct pmm_page *try_allocate_from_zone(struct zone_allocators zlist)
 	struct pmm_alloc_resutl allocres;
 
 	struct pmm_allocator *allocator;
-	SLIST_FOREACH(allocator, &zlist, allocators)
-	{
+	SLIST_FOREACH (allocator, &zlist, allocators) {
 		if (__unlikely(allocator->page_alloc == NULL)) {
 			continue;
 		}

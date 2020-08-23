@@ -1,14 +1,13 @@
-#include <unity.h>
+#include "kernel/ds/cbuffer.h"
+
 #include <stdbool.h>
-#include <kernel/ds/cbuffer.h>
+#include <unity.h>
 
 void setUp(void)
-{
-}
+{}
 
 void tearDown(void)
-{
-}
+{}
 
 static void can_store_single_element(void)
 {
@@ -25,7 +24,7 @@ static void can_store_single_element(void)
 
 static void can_store_multiple_elements(void)
 {
-	static int testarr[] = {255, 62, 92, 4112, 1245, 2315, 54336, -1, -2000};
+	static int testarr[] = { 255, 62, 92, 4112, 1245, 2315, 54336, -1, -2000 };
 	static const size_t testarr_sz = sizeof(testarr) / sizeof(testarr[0]);
 
 	CBUFFER_DECLARE(typeof(testarr[0]), testarr_sz) buffer;
@@ -44,7 +43,7 @@ static void can_store_multiple_elements(void)
 
 static void can_handle_multiple_read_writes(void)
 {
-	static int testarr[] = {255, 62, 92, 4112, 1245, 2315, 54336, -1, -2000};
+	static int testarr[] = { 255, 62, 92, 4112, 1245, 2315, 54336, -1, -2000 };
 	static const size_t testarr_sz = sizeof(testarr) / sizeof(testarr[0]);
 
 	CBUFFER_DECLARE(typeof(testarr[0]), testarr_sz) buffer;
@@ -60,13 +59,13 @@ static void can_handle_multiple_read_writes(void)
 		TEST_ASSERT_EQUAL_INT(testarr[i], retval);
 	}
 
-	static int newelems[] = {788, 799};
+	static int newelems[] = { 788, 799 };
 	for (int i = 0; i < 2; i++) {
 		bool success = CBUFFER_PUSH(&buffer, newelems[i]);
 		TEST_ASSERT(success);
 	}
 
-	static int newexpect[] = {92, 4112, 1245, 2315, 54336, -1, -2000, 788, 799};
+	static int newexpect[] = { 92, 4112, 1245, 2315, 54336, -1, -2000, 788, 799 };
 	for (int i = 0; i < testarr_sz; i++) {
 		int retval;
 		CBUFFER_POP(&buffer, retval, 0);
@@ -76,7 +75,7 @@ static void can_handle_multiple_read_writes(void)
 
 static void cant_overflow(void)
 {
-	static int testarr[] = {255, 62, 92, 4112, 1245, 2315, 54336, -1, -2000};
+	static int testarr[] = { 255, 62, 92, 4112, 1245, 2315, 54336, -1, -2000 };
 	static const size_t testarr_sz = sizeof(testarr) / sizeof(testarr[0]);
 
 	CBUFFER_DECLARE(typeof(testarr[0]), testarr_sz - 2) buffer;
@@ -128,5 +127,6 @@ int main(void)
 	RUN_TEST(can_handle_multiple_read_writes);
 	RUN_TEST(cant_overflow);
 	RUN_TEST(return_default_on_fail);
-	return (UNITY_END());
+	UNITY_END();
+	return (0);
 }

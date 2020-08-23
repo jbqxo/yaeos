@@ -10,8 +10,8 @@
  * Don't quote this comment on the part of space and speed efficiency.
  */
 struct buddy_allocator {
-	uintptr_t internp; /**< Address of allocator's control information. Page aligned. */
-	size_t intern_sz; /**< Length of the allocator's control information. */
+	uintptr_t internp;     /**< Address of allocator's control information. Page aligned. */
+	size_t intern_sz;      /**< Length of the allocator's control information. */
 	uintptr_t internp_lim; /**< Last address that we can use for our purposes. */
 
 	struct chunk *chunks; /**< Pointer at the memory chunks' structures. */

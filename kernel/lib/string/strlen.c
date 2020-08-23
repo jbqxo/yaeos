@@ -1,4 +1,5 @@
-#include <lib/string.h>
+#include "lib/string.h"
+
 #include <stddef.h>
 
 size_t strlen(const char *str)
@@ -7,5 +8,5 @@ size_t strlen(const char *str)
 	while (str[i] != 0) {
 		i++;
 	}
-	return i;
+	return (i);
 }

@@ -1,7 +1,7 @@
 #ifndef _KERNEL_UTILS_H
 #define _KERNEL_UTILS_H
 
-#include <kernel/cppdefs.h>
+#include "kernel/cppdefs.h"
 
 /**
  * @brief Return the nearest address that is bigger than the address and fit the alignment.

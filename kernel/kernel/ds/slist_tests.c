@@ -1,6 +1,7 @@
-#include <kernel/ds/slist.h>
-#include <unity.h>
+#include "kernel/ds/slist.h"
+
 #include <stddef.h>
+#include <unity.h>
 
 struct node {
 	int val;
@@ -15,8 +16,7 @@ void setUp(void)
 }
 
 void tearDown(void)
-{
-}
+{}
 
 static void single_element_insertion_head(void)
 {
@@ -40,7 +40,7 @@ static void single_element_insertion_middle(void)
 
 	struct node *itern;
 	int i = 0;
-	SLIST_FOREACH(itern, &HEAD, list) {
+	SLIST_FOREACH (itern, &HEAD, list) {
 		TEST_ASSERT(itern->val == testobjs[i].val);
 		TEST_ASSERT(itern == &testobjs[i]);
 		i++;
@@ -64,7 +64,7 @@ static void single_element_removal_head(void)
 	SLIST_REMOVE_HEAD(&HEAD, list);
 	struct node *itern = NULL;
 	int i = 1;
-	SLIST_FOREACH(itern, &HEAD, list) {
+	SLIST_FOREACH (itern, &HEAD, list) {
 		TEST_ASSERT(testobjs[i].val == itern->val);
 		TEST_ASSERT(&testobjs[i] == itern);
 		i++;
@@ -111,7 +111,7 @@ static void single_element_removal(void)
 	SLIST_REMOVE(&HEAD, &testobjs[2], list);
 	struct node *itern = NULL;
 	int i = 0;
-	SLIST_FOREACH(itern, &HEAD, list) {
+	SLIST_FOREACH (itern, &HEAD, list) {
 		TEST_ASSERT(i < 2);
 		TEST_ASSERT(testobjs[i].val == itern->val);
 		TEST_ASSERT(&testobjs[i] == itern);
@@ -122,7 +122,7 @@ static void single_element_removal(void)
 static void survive_empty_list_traversal(void)
 {
 	struct node *itern = NULL;
-	SLIST_FOREACH(itern, &HEAD, list) {
+	SLIST_FOREACH (itern, &HEAD, list) {
 		TEST_FAIL();
 	}
 }

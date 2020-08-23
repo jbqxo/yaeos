@@ -1,13 +1,13 @@
-#include <kernel/mm/vmm.h>
-#include <kernel/kernel.h>
-#include <kernel/cppdefs.h>
-#include <kernel/klog.h>
+#include "kernel/cppdefs.h"
+#include "kernel/kernel.h"
+#include "kernel/klog.h"
+#include "kernel/mm/vmm.h"
 
+#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unity.h>
-#include <assert.h>
 
 __weak void *vmm_alloc_pages(size_t count, int flags)
 {
@@ -21,7 +21,7 @@ __weak void vmm_free_pages_at(void *address)
 }
 
 __weak void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, const char *restrict func,
-		  const char *restrict line, const char *restrict format, ...)
+			 const char *restrict line, const char *restrict format, ...)
 {
 	char *message = malloc(4096 * sizeof(*message));
 	char *buffer = malloc(2048 * sizeof(*buffer));
@@ -33,7 +33,8 @@ __weak void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, const ch
 	vsnprintf(buffer, 2048, format, ap);
 	va_end(ap);
 
-	snprintf(message, 4096, "LOG: Level: %c. Function: %s:%s. Message: %s", lvl_to_char(lvl), func, line, buffer);
+	snprintf(message, 4096, "LOG: Level: %c. Function: %s:%s. Message: %s", lvl_to_char(lvl),
+		 func, line, buffer);
 	TEST_MESSAGE(message);
 
 	free(message);
@@ -51,4 +52,3 @@ __weak void kernel_panic(struct kernel_panic_info *info)
 	TEST_MESSAGE(location_buffer);
 	TEST_FAIL();
 }
-

@@ -1,20 +1,20 @@
-#include <stddef.h>
-#include <stdint.h>
+#include "kernel/console.h"
+#include "kernel/cppdefs.h"
+
+#include "lib/stdio.h"
+#include "lib/string.h"
+
+#include <limits.h>
 #include <stdarg.h>
 #include <stdbool.h>
-#include <limits.h>
+#include <stddef.h>
+#include <stdint.h>
 
-#include <lib/stdio.h>
-#include <lib/string.h>
-
-#include <kernel/console.h>
-#include <kernel/cppdefs.h>
-
-#define CF_MINUS	(0x1 << 0)
-#define CF_PLUS		(0x1 << 1)
-#define CF_SPACE	(0x1 << 2)
-#define CF_HASH		(0x1 << 3)
-#define CF_ZERO		(0x1 << 4)
+#define CF_MINUS (0x1 << 0)
+#define CF_PLUS  (0x1 << 1)
+#define CF_SPACE (0x1 << 2)
+#define CF_HASH  (0x1 << 3)
+#define CF_ZERO  (0x1 << 4)
 
 enum conv_specifiers {
 	CS_INT,
@@ -41,10 +41,10 @@ enum conv_length {
 	CL_LDOUBLE,
 	CL_NONE
 };
-#define WIDTH_EMPTY	(-2)
-#define WIDTH_VAR	(-1)
-#define PREC_EMPTY	(-2)
-#define PREC_VAR	(-1)
+#define WIDTH_EMPTY (-2)
+#define WIDTH_VAR   (-1)
+#define PREC_EMPTY  (-2)
+#define PREC_VAR    (-1)
 struct conv_spec {
 	int flags;
 	int width;
@@ -71,7 +71,7 @@ static unsigned conv_positive_atoi(const char *s, unsigned len)
 	case 2: res += (s[len - 2] - '0') * 10U;
 	case 1: res += (s[len - 1] - '0');
 	}
-	return res;
+	return (res);
 }
 #endif // __i686__
 
@@ -230,21 +230,21 @@ struct argument {
 	bool negative;
 };
 
-static struct argument fetch_arg(struct conv_spec s, va_list *args, struct argument *dest)
+static struct argument fetch_arg(struct conv_spec s, va_list *args)
 {
 	struct argument arg = { 0 };
 	switch (s.spec) {
 	case CS_INT: {
 		intmax_t val = va_arg(*args, intmax_t);
 		switch (s.length) {
-#define CASE_BODY(type)                                                                            \
-	do {                                                                                       \
-		type v = (type)val;                                                                \
-		arg.val.d = v;                                                                     \
-		if (v < 0) {                                                                       \
-			arg.negative = true;                                                       \
-			arg.val.d *= -1;                                                           \
-		}                                                                                  \
+#define CASE_BODY(type)                      \
+	do {                                 \
+		type v = (type)val;          \
+		arg.val.d = v;               \
+		if (v < 0) {                 \
+			arg.negative = true; \
+			arg.val.d *= -1;     \
+		}                            \
 	} while (0)
 		case CL_CHAR: CASE_BODY(char); break;
 		case CL_SHORT: CASE_BODY(short); break;
@@ -277,7 +277,7 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args, struct argum
 	case CS_STR: arg.val.str = va_arg(*args, char *); break;
 	case CS_UCHAR: arg.val.d = va_arg(*args, int); break;
 	}
-	return arg;
+	return (arg);
 }
 
 struct conv_spec_funcs {
@@ -298,10 +298,10 @@ static int length_for_intnumbase(uintmax_t num, unsigned base, unsigned max_num_
 			power *= base;
 		}
 		if (num >= power) {
-			return i + 1;
+			return (i + 1);
 		}
 	}
-	return 1;
+	return (1);
 }
 
 static int oct_length(struct conv_spec *s, struct argument *a)
@@ -309,18 +309,18 @@ static int oct_length(struct conv_spec *s, struct argument *a)
 	// Special case:
 	// The result of converting a zero value with a precision of zero is no characters.
 	if (s->precision == 0 && a->val.d == 0) {
-		return 0;
+		return (0);
 	}
 
 	int length = length_for_intnumbase(a->val.d, 8, 22);
 
 	if (s->precision != PREC_EMPTY) {
 		if (s->precision >= length) {
-			return s->precision;
+			return (s->precision);
 		}
 	}
 
-	return length;
+	return (length);
 }
 
 static void oct_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
@@ -356,18 +356,18 @@ static int dec_length(struct conv_spec *s, struct argument *a)
 	// Special case:
 	// The result of converting a zero value with a precision of zero is no characters.
 	if (s->precision == 0 && a->val.d == 0) {
-		return 0;
+		return (0);
 	}
 
 	int length = length_for_intnumbase(a->val.d, 10, 20);
 
 	if (s->precision != PREC_EMPTY) {
 		if (s->precision >= length) {
-			return s->precision;
+			return (s->precision);
 		}
 	}
 
-	return length;
+	return (length);
 }
 
 static void dec_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
@@ -402,10 +402,10 @@ static int hex_length(struct conv_spec *s, struct argument *a)
 {
 	if (s->spec == CS_UHEX || s->spec == CS_UHEX_BIG) {
 		if (s->precision == 0 && a->val.d == 0) {
-			return 0;
+			return (0);
 		}
 	}
-	return length_for_intnumbase(a->val.d, 16, 16);
+	return (length_for_intnumbase(a->val.d, 16, 16));
 }
 
 static void hex_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
@@ -450,25 +450,25 @@ static const char *hex_prefix(struct conv_spec *s, struct argument *a, unsigned 
 
 	if (s->spec == CS_PTR) {
 		*len = zx_len;
-		return zx;
+		return (zx);
 	}
 
 	if (s->flags & (CF_HASH)) {
 		*len = zx_len;
-		return zx;
+		return (zx);
 	}
 
 	*len = 0;
-	return "";
+	return ("");
 }
 
 static int str_length(struct conv_spec *s, struct argument *a)
 {
 	int l = strlen(a->val.str);
 	if (s->precision != PREC_EMPTY && s->precision < l) {
-		return s->precision;
+		return (s->precision);
 	}
-	return l;
+	return (l);
 }
 
 static void str_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
@@ -482,12 +482,12 @@ static void str_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 
 static int char_length(struct conv_spec *s, struct argument *a)
 {
-	return 1;
+	return (1);
 }
 
 static void char_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 {
-	f((char*)&a->val.d, 1);
+	f((char *)&a->val.d, 1);
 }
 
 static struct conv_spec_funcs cs_funcs_table[] = {
@@ -534,7 +534,7 @@ static int put_flags(fprintf_fn f, struct conv_spec s, struct argument arg)
 		f(" ", 1);
 		printed++;
 	}
-	return printed;
+	return (printed);
 }
 
 /**
@@ -546,10 +546,10 @@ static int print_conv_spec(fprintf_fn f, struct conv_spec s, va_list *args)
 {
 	if (s.spec == CS_PERCENTAGE) {
 		f("%%", 2);
-		return 1;
+		return (1);
 	}
 
-	struct argument arg = fetch_arg(s, args, &arg);
+	struct argument arg = fetch_arg(s, args);
 	int num_len = cs_funcs_table[s.spec].length(&s, &arg);
 	int printed = 0;
 
@@ -598,7 +598,7 @@ static int print_conv_spec(fprintf_fn f, struct conv_spec s, va_list *args)
 			width_to_fill--;
 		}
 	}
-	return printed;
+	return (printed);
 }
 
 int vfprintf(fprintf_fn f, const char *restrict format, va_list args)
@@ -629,7 +629,7 @@ int vfprintf(fprintf_fn f, const char *restrict format, va_list args)
 		format += toprint;
 	}
 	va_end(ap);
-	return printed;
+	return (printed);
 }
 
 int fprintf(fprintf_fn f, const char *restrict format, ...)
@@ -638,5 +638,5 @@ int fprintf(fprintf_fn f, const char *restrict format, ...)
 	va_start(args, format);
 	int i = vfprintf(f, format, args);
 	va_end(args);
-	return i;
+	return (i);
 }

@@ -12,7 +12,7 @@ int console_write(const char *msg, size_t length)
 	for (int i = 0; i < length; i++) {
 		buffer[pos++] = msg[i];
 	}
-	return length;
+	return (length);
 }
 
 static void reset(void)
@@ -206,6 +206,7 @@ int main(void)
 	RUN_TEST(conv_uhex);
 	RUN_TEST(conv_uoctal);
 
-	return UNITY_END();
+	UNITY_END();
+	return (0);
 }
 #pragma clang diagnostic pop

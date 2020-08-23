@@ -1,15 +1,17 @@
-#include <kernel/console.h>
-#include <kernel/elflist.h>
-#include <kernel/ds/slist.h>
+#include "kernel/console.h"
+
+#include "kernel/ds/slist.h"
+#include "kernel/elflist.h"
 
 ELFLIST_EXTERN(struct console, consoles);
 
 static SLIST_HEAD(, struct console) ACTIVE_CONSOLES;
 
-void console_init(void) {
+void console_init(void)
+{
 	struct console **c;
 	SLIST_INIT(&ACTIVE_CONSOLES);
-	ELFLIST_FOREACH(consoles, c) {
+	ELFLIST_FOREACH (consoles, c) {
 		if ((*c)->init != NULL) {
 			int rc = (*c)->init(*c);
 			if (rc != CONSRC_OK) {
@@ -23,16 +25,17 @@ void console_init(void) {
 void console_clear()
 {
 	struct console *c;
-	SLIST_FOREACH(c, &ACTIVE_CONSOLES, active_consoles) {
+	SLIST_FOREACH (c, &ACTIVE_CONSOLES, active_consoles) {
 		if (c->clear != NULL) {
 			c->clear(c);
 		}
 	}
 }
 
-void console_write(const char *msg, size_t len) {
+void console_write(const char *msg, size_t len)
+{
 	struct console *c;
-	SLIST_FOREACH(c, &ACTIVE_CONSOLES, active_consoles) {
+	SLIST_FOREACH (c, &ACTIVE_CONSOLES, active_consoles) {
 		if (c->write != NULL) {
 			c->write(c, msg, len);
 		}

@@ -1,4 +1,5 @@
-#include <arch_i686/vm.h>
+#include "arch_i686/vm.h"
+
 #include <stdint.h>
 
 void vm_set_table_entry(void *table_entry, void *phys_addr, enum VM_TABLE_FLAGS flags)

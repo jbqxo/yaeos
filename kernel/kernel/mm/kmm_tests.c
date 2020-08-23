@@ -1,16 +1,19 @@
 // UNITY_TEST DEPENDS ON: kernel/kernel/mm/pool.c
 // UNITY_TEST DEPENDS ON: kernel/tests_utils.c
 
-#include <kernel/cppdefs.h>
-#include <arch/platform.h>
-#include <kernel/mm/kmm.h>
+#include "kernel/mm/kmm.h"
 
+#include "arch/platform.h"
+
+#include "kernel/config.h"
+#include "kernel/cppdefs.h"
+
+#include <assert.h>
+#include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unity.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <assert.h>
 
 #define TESTVAL (0xAB)
 
@@ -24,8 +27,7 @@ void setUp(void)
 }
 
 void tearDown(void)
-{
-}
+{}
 
 void *vmm_alloc_pages(size_t count, int flags __unused)
 {
@@ -175,16 +177,13 @@ static void memory_aligned(void)
 }
 
 static void ctor_and_dtor(void)
-{
-}
+{}
 
 static void reclaiming(void)
-{
-}
+{}
 
 static void cache_coloring(void)
-{
-}
+{}
 
 int main(void)
 {
@@ -193,5 +192,5 @@ int main(void)
 	RUN_TEST(large_allocations);
 	RUN_TEST(no_leaks);
 	UNITY_END();
-	return 0;
+	return (0);
 }

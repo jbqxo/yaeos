@@ -1,9 +1,9 @@
 #ifndef _KERNEL_ARCH_I686_VM_H
 #define _KERNEL_ARCH_I686_VM_H
 
-#include <stdint.h>
+#include "arch_i686/platform.h"
 
-#include <arch_i686/platform.h>
+#include <stdint.h>
 
 extern uint32_t boot_paging_pt[] asm("boot_paging_pt");
 extern uint32_t boot_paging_pd[] asm("boot_paging_pd");
@@ -30,7 +30,7 @@ extern char kernel_bss_end[] asm("__kernel_bss_end");
 #define KERNEL_VMA ((uintptr_t)&kernel_vma[0])
 
 #define HIGH(addr) ((uintptr_t)(KERNEL_VMA + (uintptr_t)(addr)))
-#define LOW(addr) ((uintptr_t)((uintptr_t)(addr)-KERNEL_VMA))
+#define LOW(addr)  ((uintptr_t)((uintptr_t)(addr)-KERNEL_VMA))
 
 enum VM_TABLE_FLAGS {
 	VM_TABLE_FLAG_PRESENT = 0x1 << 0,

@@ -1,9 +1,9 @@
-#include <arch_i686/vm.h>
-#include <arch_i686/platform.h>
-#include <arch/mm/pmm.h>
-#include <kernel/cppdefs.h>
-#include <kernel/utils.h>
-#include <kernel/klog.h>
+#include "arch_i686/vm.h"
+#include "arch_i686/platform.h"
+#include "arch/mm/pmm.h"
+#include "kernel/cppdefs.h"
+#include "kernel/utils.h"
+#include "kernel/klog.h"
 
 #include <multiboot.h>
 
@@ -148,7 +148,7 @@ int pmm_arch_available_chunks(void)
 	int counter = 0;
 	struct availmem_data d = (struct availmem_data){ .fn = count, .fn_data = &counter };
 	chunks_iter(availmem_iter, &d);
-	return counter;
+	return (counter);
 }
 
 void pmm_arch_get_chunks(struct pmm_chunk *chunks)

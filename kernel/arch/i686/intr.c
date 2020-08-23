@@ -1,9 +1,13 @@
+#include "arch_i686/intr.h"
+
+#include "arch_i686/descriptors.h"
+#include "arch_i686/io.h"
+
+#include "kernel/klog.h"
+
+#include "lib/assert.h"
+
 #include <stdint.h>
-#include <kernel/klog.h>
-#include <arch_i686/intr.h>
-#include <arch_i686/descriptors.h>
-#include <arch_i686/io.h>
-#include <lib/assert.h>
 
 static intr_handler_fn HANDLERS[0x100] = { NULL };
 static intr_handler_fn DEFAULT_HANDLER = NULL;
@@ -12,23 +16,23 @@ static intr_handler_fn DEFAULT_HANDLER = NULL;
 
 // See: https://pdos.csail.mit.edu/6.828/2010/readings/hardware/8259A.pdf
 
-#define MASTER_PIC      (uint8_t)(0x20)
-#define MASTER_CMD      (uint8_t)MASTER_PIC
-#define MASTER_DATA     (uint8_t)(MASTER_CMD + 1)
+#define MASTER_PIC  (uint8_t)(0x20)
+#define MASTER_CMD  (uint8_t) MASTER_PIC
+#define MASTER_DATA (uint8_t)(MASTER_CMD + 1)
 
-#define SLAVE_PIC       (uint8_t)(0xA0)
-#define SLAVE_CMD       (uint8_t)SLAVE_PIC
-#define SLAVE_DATA      (uint8_t)(SLAVE_PIC + 1)
+#define SLAVE_PIC  (uint8_t)(0xA0)
+#define SLAVE_CMD  (uint8_t) SLAVE_PIC
+#define SLAVE_DATA (uint8_t)(SLAVE_PIC + 1)
 
-#define ICW1_INIT       (uint8_t)(0x1 << 4)
-#define ICW1_LTIM       (uint8_t)(0x1 << 3)
-#define ICW1_ADI        (uint8_t)(0x1 << 2)
-#define ICW1_SNGL       (uint8_t)(0x1 << 1)
-#define ICW1_IC4        (uint8_t)(0x1 << 0)
+#define ICW1_INIT (uint8_t)(0x1 << 4)
+#define ICW1_LTIM (uint8_t)(0x1 << 3)
+#define ICW1_ADI  (uint8_t)(0x1 << 2)
+#define ICW1_SNGL (uint8_t)(0x1 << 1)
+#define ICW1_IC4  (uint8_t)(0x1 << 0)
 
-#define ICW4_8086       (uint8_t)(0x1)
+#define ICW4_8086 (uint8_t)(0x1)
 
-#define OCW2_EOI        (uint8_t)(0x1 << 5)
+#define OCW2_EOI (uint8_t)(0x1 << 5)
 
 static void pic_remap(uint8_t master_offset, uint8_t slave_offset)
 {
@@ -101,14 +105,14 @@ void isr_handler(struct intr_ctx ctx)
 
 void intr_handler_cpu_default(intr_handler_fn f)
 {
-	assert(DEFAULT_HANDLER == (void*)0);
+	assert(DEFAULT_HANDLER == NULL);
 	DEFAULT_HANDLER = f;
 }
 
 void intr_handler_cpu(uint8_t int_no, intr_handler_fn f)
 {
 	assert(int_no < 0x16);
-	assert(HANDLERS[int_no] == (void*)0);
+	assert(HANDLERS[int_no] == NULL);
 	HANDLERS[int_no] = f;
 }
 
@@ -122,16 +126,15 @@ void intr_handler_pic(uint8_t int_no, intr_handler_fn f)
 	if (int_no > 0x7) {
 		isr_no = IRQ_SLAVE_OFFSET + int_no - 0x8;
 	}
-	assert(HANDLERS[isr_no] == (void*)0);
+	assert(HANDLERS[isr_no] == NULL);
 	HANDLERS[isr_no] = f;
 }
-
 
 void intr_init(void)
 {
 	enum idt_flag flags = IDT_FLAG_PRESENT | IDT_FLAG_RING_0;
-#define SET_ISR(num, type)                                                                         \
-	extern void isr##num(void);                                                                \
+#define SET_ISR(num, type)          \
+	extern void isr##num(void); \
 	idt_set_gatedesc((num), isr##num, flags, GATE_TYPE_##type##_32)
 
 	SET_ISR(0, TRAP);
@@ -156,8 +159,8 @@ void intr_init(void)
 	SET_ISR(20, TRAP);
 	SET_ISR(21, TRAP);
 
-#define SET_IRQ(num)                                                                               \
-	extern void irq##num(void);                                                                \
+#define SET_IRQ(num)                \
+	extern void irq##num(void); \
 	idt_set_gatedesc(IRQ_MASTER_OFFSET + (num), irq##num, flags, GATE_TYPE_INTER_32)
 
 	SET_IRQ(0);

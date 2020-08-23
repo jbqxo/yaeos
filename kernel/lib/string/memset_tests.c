@@ -1,19 +1,16 @@
-#include <unity.h>
-#include <stdbool.h>
-#include <unity.h>
-#include <stddef.h>
+#include "lib/string.h"
 
-#include <lib/string.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <unity.h>
 
 #define GUARDVAL 0xAAu
 
 void setUp(void)
-{
-}
+{}
 
 void tearDown(void)
-{
-}
+{}
 
 static void memset_simple(void)
 {
@@ -48,5 +45,6 @@ int main(void)
 	UNITY_BEGIN();
 	RUN_TEST(memset_simple);
 	RUN_TEST(memset_empty_str);
-	return UNITY_END();
+	UNITY_END();
+	return (0);
 }

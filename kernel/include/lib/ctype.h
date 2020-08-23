@@ -1,7 +1,6 @@
 #ifndef _LIB_CTYPE_H
 #define _LIB_CTYPE_H
 
-
 // Tests for any character for which isalpha or isdigit is true.
 int isalnum(int c);
 
@@ -43,9 +42,5 @@ int tolower(int c);
 
 // Converts a lowercase letter to a corresponding uppercase letter.
 int toupper(int c);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // _LIBC_CTYPE_H

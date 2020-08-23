@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #define IRQ_MASTER_OFFSET (32)
-#define IRQ_SLAVE_OFFSET (IRQ_MASTER_OFFSET + 8)
+#define IRQ_SLAVE_OFFSET  (IRQ_MASTER_OFFSET + 8)
 
 struct intr_ctx {
 	uint32_t ds;
@@ -28,26 +28,26 @@ struct intr_ctx {
 	uint32_t ss;
 };
 
-#define INTR_CPU_DIV_ERR        (0x0)
-#define INTR_CPU_DEBUG          (0x1)
-#define INTR_CPU_NMI            (0x2)
-#define INTR_CPU_INT3           (0x3)
-#define INTR_CPU_INTO           (0x4)
-#define INTR_CPU_BOUND          (0x5)
-#define INTR_CPU_INV_OP         (0x6)
-#define INTR_CPU_NOMATH         (0x7)
-#define INTR_CPU_DFAULT         (0x8)
-#define INTR_CPU_INV_TSS        (0xA)
-#define INTR_CPU_SEG_NP         (0xB)
-#define INTR_CPU_SEG_SS         (0xC)
-#define INTR_CPU_GP             (0xD)
-#define INTR_CPU_PAGEFAULT      (0xE)
-#define INTR_CPU_MATHFP_FAULT   (0x10)
-#define INTR_CPU_ALIGN_CH       (0x11)
-#define INTR_CPU_HW_CH          (0x12)
-#define INTR_CPU_SIMD_EXC       (0x13)
-#define INTR_CPU_VIRT_EXC       (0x14)
-#define INTR_CPU_CTRL_EXC       (0x15)
+#define INTR_CPU_DIV_ERR      (0x0)
+#define INTR_CPU_DEBUG        (0x1)
+#define INTR_CPU_NMI          (0x2)
+#define INTR_CPU_INT3         (0x3)
+#define INTR_CPU_INTO         (0x4)
+#define INTR_CPU_BOUND        (0x5)
+#define INTR_CPU_INV_OP       (0x6)
+#define INTR_CPU_NOMATH       (0x7)
+#define INTR_CPU_DFAULT       (0x8)
+#define INTR_CPU_INV_TSS      (0xA)
+#define INTR_CPU_SEG_NP       (0xB)
+#define INTR_CPU_SEG_SS       (0xC)
+#define INTR_CPU_GP           (0xD)
+#define INTR_CPU_PAGEFAULT    (0xE)
+#define INTR_CPU_MATHFP_FAULT (0x10)
+#define INTR_CPU_ALIGN_CH     (0x11)
+#define INTR_CPU_HW_CH        (0x12)
+#define INTR_CPU_SIMD_EXC     (0x13)
+#define INTR_CPU_VIRT_EXC     (0x14)
+#define INTR_CPU_CTRL_EXC     (0x15)
 
 typedef void (*intr_handler_fn)(struct intr_ctx *);
 

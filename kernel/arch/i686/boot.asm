@@ -1,5 +1,5 @@
-#include <arch_i686/platform.h>
-#include <kernel/config.h>
+#include "arch_i686/platform.h"
+#include "kernel/config.h"
 
 // Constants for the multiboot header
 #define FLAG_ALIGN   (0x1 << 0)                  // align loaded modules on page boundaries

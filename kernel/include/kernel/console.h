@@ -1,15 +1,16 @@
 #ifndef _KERNEL_CONSOLE_H
 #define _KERNEL_CONSOLE_H
 
-#include <stddef.h>
+#include "kernel/ds/slist.h"
+
 #include <stdbool.h>
-#include <kernel/ds/slist.h>
+#include <stddef.h>
 
 struct console {
-#define CONSRC_OK (0)
+#define CONSRC_OK       (0)
 #define CONSRC_NOTREADY (-1)
 	const char *name;
-	void (*write)(struct console *,const char *msg, size_t len);
+	void (*write)(struct console *, const char *msg, size_t len);
 	void (*clear)(struct console *);
 	int (*init)(struct console *);
 #define CONSFLAG_EARLY (0x1)

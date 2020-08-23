@@ -1,21 +1,22 @@
-#include <arch/platform.h>
-#include <kernel/ds/slist.h>
-#include <kernel/mm/kmm.h>
-#include <kernel/mm/vmm.h>
+#include "kernel/mm/kmm.h"
 
-#include <kernel/cppdefs.h>
-#include <kernel/utils.h>
-#include <kernel/klog.h>
-#include <kernel/config.h>
+#include "arch/platform.h"
 
-#include <kernel/mm/pool.h>
-#include <lib/assert.h>
-#include <lib/string.h>
+#include "kernel/config.h"
+#include "kernel/cppdefs.h"
+#include "kernel/ds/slist.h"
+#include "kernel/klog.h"
+#include "kernel/mm/pool.h"
+#include "kernel/mm/vmm.h"
+#include "kernel/utils.h"
 
-#include <stddef.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include "lib/assert.h"
+#include "lib/string.h"
+
 #include <stdalign.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 static char STATIC_STORAGE[CONF_STATIC_SLAB_PAGES * PLATFORM_PAGE_SIZE];
 static struct mem_pool STATIC_PAGE_POOL;
@@ -29,12 +30,12 @@ struct bufctl_large {
 	void *memory;
 };
 
-#define BUFMEM(X, CACHE)                                                                           \
-	(_Generic((X),							                           \
-		  struct bufctl_large *: UIPTR(((struct bufctl_large *)((void *)(X)))->memory),	   \
-		  struct bufctl_small *: UIPTR(UIPTR((void *)(X)).i - (CACHE)->size),              \
-		  union bufctl *: (CACHE)->flags & KMM_CACHE_LARGE ?                               \
-			    UIPTR(((struct bufctl_large *)((void *)(X)))->memory) :                \
+#define BUFMEM(X, CACHE)                                                                         \
+	(_Generic((X), struct bufctl_large *                                                     \
+		  : UIPTR(((struct bufctl_large *)((void *)(X)))->memory), struct bufctl_small * \
+		  : UIPTR(UIPTR((void *)(X)).i - (CACHE)->size), union bufctl *                  \
+		  : (CACHE)->flags & KMM_CACHE_LARGE ?                                           \
+			    UIPTR(((struct bufctl_large *)((void *)(X)))->memory) :              \
 			    UIPTR(UIPTR((void *)((void *)(X))).i - (CACHE)->size)))
 
 union bufctl {
@@ -89,8 +90,7 @@ static void slab_destroy(struct kmm_slab *slab, struct kmm_cache *cache)
 
 	if (cache->flags & KMM_CACHE_LARGE) {
 		union bufctl *it;
-		SLIST_FOREACH(it, &slab->free_buffers, slist)
-		{
+		SLIST_FOREACH (it, &slab->free_buffers, slist) {
 			if (cache->dtor) {
 				union uiptr mem = BUFMEM(&it->large, cache);
 				cache->dtor(mem.p);
@@ -115,8 +115,7 @@ static unsigned caches_try_reclaim(unsigned reclaim)
 {
 	unsigned reclaimed = 0;
 	struct kmm_cache *itc;
-	SLIST_FOREACH(itc, &ALLOCATED_CACHES, caches)
-	{
+	SLIST_FOREACH (itc, &ALLOCATED_CACHES, caches) {
 		// Can't use SLIST_FOREACH 'cause it would use a slab after freeing.
 		struct kmm_slab *next;
 		struct kmm_slab *current = SLIST_FIRST(&itc->slabs_empty);
@@ -153,7 +152,8 @@ static struct page *page_alloc(struct kmm_cache *cache)
 
 	if (__unlikely(!page)) {
 		if (cache->flags & KMM_CACHE_STATIC) {
-			LOGF_W("Couldn't allocate a page from dynamic memory for %s cache. Trying static...",
+			LOGF_W("Couldn't allocate a page from dynamic memory for %s cache. Trying "
+			       "static...",
 			       cache->name);
 
 			page = mem_pool_alloc(&STATIC_PAGE_POOL);
@@ -341,8 +341,7 @@ static size_t cache_get_wasted(struct kmm_cache *cache)
 }
 
 static void cache_init(struct kmm_cache *restrict cache, const char *name, size_t size,
-		       size_t align, unsigned flags, void (*ctor)(void *),
-		       void (*dtor)(void *))
+		       size_t align, unsigned flags, void (*ctor)(void *), void (*dtor)(void *))
 {
 	assert(cache);
 

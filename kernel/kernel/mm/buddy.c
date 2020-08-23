@@ -1,13 +1,16 @@
-#include <kernel/mm/buddy.h>
-#include <kernel/cppdefs.h>
-#include <kernel/utils.h>
-#include <kernel/klog.h>
-#include <arch/platform.h>
-#include <lib/string.h>
+#include "kernel/mm/buddy.h"
 
+#include "arch/platform.h"
+
+#include "kernel/cppdefs.h"
+#include "kernel/klog.h"
+#include "kernel/utils.h"
+
+#include "lib/string.h"
+
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 // TODO: Reimplement with free lists.
 // https://hammertux.github.io/slab-allocator
@@ -38,7 +41,7 @@ static unsigned log2_down(unsigned x)
 	while (x >>= 1) {
 		tmp++;
 	}
-	return tmp;
+	return (tmp);
 }
 
 static union uiptr intern_alloc(struct buddy_allocator *alloc, size_t size)
@@ -59,7 +62,7 @@ static bool get_bit(struct chunk *ch, unsigned lvl, unsigned pos)
 {
 	unsigned bitpos_mask = BITMAP_SET_SIZE * 8 - 1;
 	unsigned bitmap_idx = (pos & ~bitpos_mask) >> log2_down(BITMAP_SET_SIZE * 8);
-	return ch->bitmaps[lvl][bitmap_idx] & (1U << (pos & bitpos_mask));
+	return (ch->bitmaps[lvl][bitmap_idx] & (1U << (pos & bitpos_mask)));
 }
 
 static void free_bit(struct chunk *ch, unsigned lvl, unsigned pos)
@@ -167,7 +170,7 @@ static int find_free(struct chunk *ch, unsigned lvl)
 
 	for (int i = free_idx; i < max_index(ch->size, lvl); i++) {
 		if (get_bit(ch, lvl, i) != 0) {
-			return i;
+			return (i);
 		}
 	}
 

@@ -1,4 +1,5 @@
-#include <lib/string.h>
+#include "lib/string.h"
+
 #include <stdint.h>
 
 void *memset(void *_data, int val, size_t len)
@@ -7,5 +8,5 @@ void *memset(void *_data, int val, size_t len)
 	for (size_t i = 0; i < len; i++) {
 		data[i] = (uint8_t)val;
 	}
-	return data;
+	return (data);
 }

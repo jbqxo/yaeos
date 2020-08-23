@@ -1,20 +1,21 @@
-#include <lib/ctype.h>
+#include "lib/ctype.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 
 int isalnum(int c)
 {
-	return isalpha(c) | isdigit(c);
+	return (isalpha(c) | isdigit(c));
 }
 
 int isalpha(int c)
 {
-	return islower(c) | isupper(c);
+	return (islower(c) | isupper(c));
 }
 
 int isblank(int c)
 {
-	return c == ' ' | c == '\t';
+	return (c == ' ' | c == '\t');
 }
 
 int iscntrl(int c)
@@ -23,49 +24,49 @@ int iscntrl(int c)
 	// in the sequence placed at the start of the ASCII.
 	int unit_sep_code = 31;
 	if (c <= unit_sep_code) {
-		return true;
+		return (true);
 	}
 
 	int del_code = 127;
-	return c == del_code;
+	return (c == del_code);
 }
 
 int isdigit(int c)
 {
-	return '0' <= c && c <= '9';
+	return ('0' <= c && c <= '9');
 }
 
 int isgraph(int c)
 {
 	// TODO(Maxim Lyapin): Check if this is correct implementation.
-	return (c != ' ') & (isalnum(c) | ispunct(c));
+	return ((c != ' ') & (isalnum(c) | ispunct(c)));
 }
 
 int islower(int c)
 {
-	return 'a' <= c && c <= 'z';
+	return ('a' <= c && c <= 'z');
 }
 
 int isprint(int c)
 {
-	return (c == ' ') | isgraph(c);
+	return ((c == ' ') | isgraph(c));
 }
 
 int ispunct(int c)
 {
 	if ('!' <= c & c <= '/') {
-		return true;
+		return (true);
 	}
 
 	if (':' <= c & c <= '@') {
-		return true;
+		return (true);
 	}
 
 	if ('[' <= c & c <= '`') {
-		return true;
+		return (true);
 	}
 
-	return '{' <= c & c <= '~';
+	return ('{' <= c & c <= '~');
 }
 
 int isspace(int c)
@@ -76,47 +77,47 @@ int isspace(int c)
 
 	for (size_t i = 0; i < wsc_len; ++i) {
 		if (c == white_space_chars[i]) {
-			return true;
+			return (true);
 		}
 	}
 
-	return false;
+	return (false);
 }
 
 int isupper(int c)
 {
-	return 'A' <= c && c <= 'Z';
+	return ('A' <= c && c <= 'Z');
 }
 
 int isxdigit(int c)
 {
 	if ('0' <= c & c <= '9') {
-		return true;
+		return (true);
 	}
 
 	if ('a' <= c & c <= 'f') {
-		return true;
+		return (true);
 	}
 
-	return 'A' <= c & c <= 'F';
+	return ('A' <= c & c <= 'F');
 }
 
 int tolower(int c)
 {
 	if (!isupper(c)) {
-		return c;
+		return (c);
 	}
 
 	int diff = 'a' - 'A';
-	return c + diff;
+	return (c + diff);
 }
 
 int toupper(int c)
 {
 	if (!islower(c)) {
-		return c;
+		return (c);
 	}
 
 	int diff = 'a' - 'A';
-	return c - diff;
+	return (c - diff);
 }

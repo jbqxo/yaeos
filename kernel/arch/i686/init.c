@@ -1,18 +1,20 @@
-#include <kernel/kernel.h>
-#include <kernel/config.h>
-#include <kernel/cppdefs.h>
-#include <arch/platform.h>
-#include <arch_i686/vm.h>
-#include <arch_i686/platform.h>
-#include <arch_i686/descriptors.h>
-#include <arch_i686/intr.h>
-#include <arch_i686/exceptions.h>
-#include <lib/string.h>
+#include "arch_i686/descriptors.h"
+#include "arch_i686/exceptions.h"
+#include "arch_i686/intr.h"
+#include "arch_i686/platform.h"
+#include "arch_i686/vm.h"
+
+#include "arch/platform.h"
+
+#include "kernel/config.h"
+#include "kernel/cppdefs.h"
+#include "kernel/kernel.h"
+
+#include "lib/string.h"
 
 #include <multiboot.h>
-
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 // TODO: Maybe add some "smart" recursive macrosses to patch the stack automatically?
@@ -21,15 +23,15 @@
  * @param level The depth of the frame to patch.
  * @param offset The offset to apply to the addresses in the frame.
  */
-#define PATCH_FRAME(level, offset)                                                                 \
-	do {                                                                                       \
-		uint32_t *frame = __builtin_frame_address(level);                                  \
-		/* Patch return address */                                                         \
-		uint32_t *ra = &frame[1];                                                          \
-		*ra += (offset);                                                                   \
-		/* Patch previous ebp */                                                           \
-		uint32_t *bp = &frame[0];                                                          \
-		*bp += (offset);                                                                   \
+#define PATCH_FRAME(level, offset)                                \
+	do {                                                      \
+		uint32_t *frame = __builtin_frame_address(level); \
+		/* Patch return address */                        \
+		uint32_t *ra = &frame[1];                         \
+		*ra += (offset);                                  \
+		/* Patch previous ebp */                          \
+		uint32_t *bp = &frame[0];                         \
+		*bp += (offset);                                  \
 	} while (false)
 
 /**

@@ -1,11 +1,11 @@
 // UNITY_TEST DEPENDS ON: kernel/tests_utils.c
 
-#include <errno.h>
-#include <assert.h>
-#include <unity.h>
-#include <stdlib.h>
+#include "kernel/mm/pool.h"
 
-#include <kernel/mm/pool.h>
+#include <assert.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <unity.h>
 
 #define SET_SIZE 1000
 static struct mem_pool POOL;
@@ -15,8 +15,7 @@ void setUp()
 {
 	MEMORY = calloc(SET_SIZE, sizeof(int64_t));
 	assert(MEMORY);
-	mem_pool_init(&POOL, MEMORY, sizeof(int64_t) * SET_SIZE, sizeof(int64_t),
-			 sizeof(int64_t));
+	mem_pool_init(&POOL, MEMORY, sizeof(int64_t) * SET_SIZE, sizeof(int64_t), sizeof(int64_t));
 }
 
 void tearDown()

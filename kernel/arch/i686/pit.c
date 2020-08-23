@@ -1,15 +1,16 @@
+#include "arch_i686/intr.h"
+#include "arch_i686/io.h"
+
+#include "kernel/cppdefs.h"
+#include "kernel/elflist.h"
+#include "kernel/timer.h"
+
 #include <stddef.h>
 
-#include <kernel/timer.h>
-#include <kernel/cppdefs.h>
-#include <kernel/elflist.h>
-#include <arch_i686/intr.h>
-#include <arch_i686/io.h>
-
 #define PIT_FREQUENCY (1193182)
-#define PIT_CH0 (0x40)
-#define PIT_CMD (0x43)
-#define PIT_TCOUNT (0x30)
+#define PIT_CH0       (0x40)
+#define PIT_CMD       (0x43)
+#define PIT_TCOUNT    (0x30)
 
 static callback_fn CALLBACK = NULL;
 
@@ -23,7 +24,7 @@ static uint16_t divisor(unsigned ms)
 	uint16_t hz = 1000 / ms;
 	if (hz < 19) {
 		// It's the slowest PIT can go.
-		return 65535;
+		return (65535);
 	}
 	return (PIT_FREQUENCY / hz);
 }

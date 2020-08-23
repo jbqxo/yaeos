@@ -1,14 +1,14 @@
 #ifndef _KERNEL_TIMER_H
 #define _KERNEL_TIMER_H
 
-#include <kernel/ds/slist.h>
+#include "kernel/ds/slist.h"
 
 typedef void (*callback_fn)(void);
 
 struct int_timer {
 	const char *name;
-	#define TIMER_RC_OK   (0x0)
-	#define TIMER_RC_FAIL (-0x1)
+#define TIMER_RC_OK   (0x0)
+#define TIMER_RC_FAIL (-0x1)
 	int (*init)(callback_fn);
 	void (*deinit)(void);
 	void (*inter_after)(unsigned ms);

@@ -1,18 +1,19 @@
 #ifndef _KERNEL_KLOG_H
 #define _KERNEL_KLOG_H
 
-#include <kernel/console.h>
-#include <kernel/cppdefs.h>
+#include "kernel/console.h"
+#include "kernel/cppdefs.h"
+
 #include <stdarg.h>
 
-#define LOGF(level, message, ...)                                                                  \
+#define LOGF(level, message, ...) \
 	klog_logf_at((level), __FILE__, __func__, TO_SSTR_MACRO(__LINE__), (message), ##__VA_ARGS__)
 
 #define LOGF_D(message, ...) LOGF(LOG_DEBUG, (message), ##__VA_ARGS__)
 #define LOGF_I(message, ...) LOGF(LOG_INFO, (message), ##__VA_ARGS__)
 #define LOGF_W(message, ...) LOGF(LOG_WARN, (message), ##__VA_ARGS__)
 #define LOGF_E(message, ...) LOGF(LOG_ERR, (message), ##__VA_ARGS__)
-#define LOGF_P(message, ...)                                                                       \
+#define LOGF_P(message, ...) \
 	klog_logf_panic(__FILE__ ":" TO_SSTR_MACRO(__LINE__), (message), ##__VA_ARGS__)
 
 enum LOG_LEVEL {
@@ -29,7 +30,7 @@ static inline char lvl_to_char(enum LOG_LEVEL lvl)
 		[LOG_DEBUG] = 'D', [LOG_INFO] = 'I',  [LOG_WARN] = 'W',
 		[LOG_ERR] = 'E',   [LOG_PANIC] = 'P',
 	};
-	return LOOKUP_TABLE[lvl];
+	return (LOOKUP_TABLE[lvl]);
 }
 
 void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, const char *restrict func,

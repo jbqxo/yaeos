@@ -1,16 +1,18 @@
-#include <stdint.h>
+#include "arch_i686/platform.h"
+#include "arch_i686/vm.h"
+
+#include "kernel/console.h"
+#include "kernel/cppdefs.h"
+#include "kernel/elflist.h"
+
+#include "lib/ctype.h"
+#include "lib/string.h"
+
 #include <stddef.h>
+#include <stdint.h>
 
-#include <lib/ctype.h>
-#include <lib/string.h>
-#include <arch_i686/platform.h>
-#include <arch_i686/vm.h>
-#include <kernel/console.h>
-#include <kernel/cppdefs.h>
-#include <kernel/elflist.h>
-
-#define VGA_WIDTH 80
-#define VGA_HEIGHT 25
+#define VGA_WIDTH       80
+#define VGA_HEIGHT      25
 #define VGA_BUFFER_ADDR (0xb8000U)
 
 struct {
@@ -46,12 +48,12 @@ enum vga_color {
 
 static inline vga_char_color vga_mix_color(enum vga_color fg, enum vga_color bg)
 {
-	return (vga_char_color)(fg | bg << 4);
+	return ((vga_char_color)(fg | bg << 4));
 }
 
 static inline uint16_t vga_char(unsigned char uc, vga_char_color color)
 {
-	return (uint16_t)uc | (uint16_t)(color << 8);
+	return ((uint16_t)uc | (uint16_t)(color << 8));
 }
 
 static void write_char(uint8_t c, vga_char_color color, uint_fast16_t x, uint_fast16_t y)
@@ -98,7 +100,7 @@ static int vga_init(struct console *c __unused)
 		}
 	}
 
-	return CONSRC_OK;
+	return (CONSRC_OK);
 }
 
 static int min(int x, int y)
@@ -134,11 +136,9 @@ void vga_clear(struct console *c __unused)
 	vga_init(c);
 }
 
-struct console vga_console = (struct console){
-	.name = "vga_console",
-	.init = vga_init,
-	.write = vga_write,
-	.clear = vga_clear,
-	.flags = CONSFLAG_EARLY
-};
+struct console vga_console = (struct console){ .name = "vga_console",
+					       .init = vga_init,
+					       .write = vga_write,
+					       .clear = vga_clear,
+					       .flags = CONSFLAG_EARLY };
 ELFLIST_NEWDATA(consoles, vga_console);

@@ -1,6 +1,8 @@
-#include <kernel/klog.h>
-#include <kernel/kernel.h>
-#include <lib/stdio.h>
+#include "kernel/klog.h"
+
+#include "kernel/kernel.h"
+
+#include "lib/stdio.h"
 
 #include <stdarg.h>
 #include <stdint.h>
@@ -16,13 +18,13 @@ static const char *find_filename(const char *path)
 		}
 		it++;
 	}
-	return last_delim + 1;
+	return (last_delim + 1);
 }
 
 static int write(const char *msg, size_t len)
 {
 	console_write(msg, len);
-	return len;
+	return (len);
 }
 
 void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, const char *restrict func,

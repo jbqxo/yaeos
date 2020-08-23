@@ -1,10 +1,13 @@
-#include <unity.h>
-#include <kernel/mm/buddy.h>
-#include <kernel/cppdefs.h>
-#include <kernel/config.h>
-#include <arch/platform.h>
+#include "kernel/mm/buddy.h"
+
+#include "arch/platform.h"
+
+#include "kernel/config.h"
+#include "kernel/cppdefs.h"
+
 #include <stdlib.h>
 #include <string.h>
+#include <unity.h>
 
 static char ALLOC_DATA[16 << 20];
 
@@ -14,7 +17,7 @@ static unsigned mylog2(unsigned x)
 	while (x >>= 1) {
 		a++;
 	}
-	return a;
+	return (a);
 }
 
 #define SIZE 5
@@ -59,9 +62,8 @@ static void cant_allocate_more_than_own(void)
 {
 	unsigned order = mylog2(sizes[4] / PLATFORM_PAGE_SIZE) + 1;
 	void *mem1 = buddy_alloc(&allocator, order);
-	TEST_ASSERT_MESSAGE(
-		!mem1,
-		"It seems that the allocator has stolen some memory from another universe. That won't do..");
+	TEST_ASSERT_MESSAGE(!mem1, "It seems that the allocator has stolen some memory from "
+				   "another universe. That won't do..");
 }
 
 static void free_works(void)
@@ -89,8 +91,8 @@ static void no_missing_memory(void)
 		expected += sizes[i];
 	}
 
-	TEST_ASSERT_MESSAGE(pages == expected / PLATFORM_PAGE_SIZE,
-			    "It seems that some memory has been lost");
+	TEST_ASSERT_MESSAGE(pages == expected / PLATFORM_PAGE_SIZE, "It seems that some memory has "
+								    "been lost");
 }
 
 static void memory_page_aligned(void)
@@ -98,8 +100,8 @@ static void memory_page_aligned(void)
 	void *mem;
 	while ((mem = buddy_alloc(&allocator, 0))) {
 		unsigned remainder = (uintptr_t)mem % PLATFORM_PAGE_SIZE;
-		TEST_ASSERT_MESSAGE(remainder == 0,
-				    "Allocated memory isn't aligned at page boundary.");
+		TEST_ASSERT_MESSAGE(remainder == 0, "Allocated memory isn't aligned at page "
+						    "boundary.");
 	}
 }
 
@@ -112,5 +114,6 @@ int main(void)
 	RUN_TEST(free_works);
 	RUN_TEST(no_missing_memory);
 	RUN_TEST(memory_page_aligned);
-	return UNITY_END();
+	UNITY_END();
+	return (0);
 }

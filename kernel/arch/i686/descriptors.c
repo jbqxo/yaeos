@@ -1,10 +1,12 @@
-#include <arch_i686/descriptors.h>
-#include <lib/string.h>
-#include <kernel/cppdefs.h>
+#include "arch_i686/descriptors.h"
 
-#include <stdint.h>
+#include "kernel/cppdefs.h"
+
+#include "lib/string.h"
+
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 /**
  * struct gdt_entry - the structure contains description of one segment descriptor.

@@ -8,7 +8,7 @@ struct vmm_addr_space {
 };
 
 #define VMM_ALLOC_KERNEL (0x1 << 0)
-#define VMM_ALLOC_HUGE (0x1 << 0)
+#define VMM_ALLOC_HUGE   (0x1 << 0)
 
 void vmm_init(void);
 void *vmm_alloc_pages(size_t count, int flags);
