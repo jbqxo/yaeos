@@ -30,19 +30,38 @@ struct bufctl_large {
 	void *memory;
 };
 
-#define BUFMEM(X, CACHE)                                                                         \
-	(_Generic((X), struct bufctl_large *                                                     \
-		  : UIPTR(((struct bufctl_large *)((void *)(X)))->memory), struct bufctl_small * \
-		  : UIPTR(UIPTR((void *)(X)).i - (CACHE)->size), union bufctl *                  \
-		  : (CACHE)->flags & KMM_CACHE_LARGE ?                                           \
-			    UIPTR(((struct bufctl_large *)((void *)(X)))->memory) :              \
-			    UIPTR(UIPTR((void *)((void *)(X))).i - (CACHE)->size)))
-
 union bufctl {
 	SLIST_FIELD(union bufctl) slist;
 	struct bufctl_small small;
 	struct bufctl_large large;
 };
+
+static union uiptr bufctl_small_mem(struct bufctl_small *ctl, struct kmm_cache *cache)
+{
+	union uiptr ctl_mem = UIPTR((void*)ctl);
+	ctl_mem.i -= cache->size;
+	return (align_rounddown(ctl_mem, cache->alignment));
+}
+
+static union uiptr bufctl_large_mem(struct bufctl_large *ctl)
+{
+	return (UIPTR(ctl->memory));
+}
+
+static union uiptr bufctl_mem(union bufctl *ctl, struct kmm_cache *cache)
+{
+	if (cache->flags & KMM_CACHE_LARGE) {
+		return (bufctl_large_mem(&ctl->large));
+	}
+	return (bufctl_small_mem(&ctl->small, cache));
+}
+
+static union uiptr bufctl_small_from_mem(union uiptr mem, struct kmm_cache *cache)
+{
+	mem.i += cache->size;
+	mem = align_roundup(mem, sizeof(struct bufctl_small));
+	return (mem);
+}
 
 struct page {
 	struct kmm_slab *owner;
@@ -92,12 +111,20 @@ static void slab_destroy(struct kmm_slab *slab, struct kmm_cache *cache)
 		union bufctl *it;
 		SLIST_FOREACH (it, &slab->free_buffers, slist) {
 			if (cache->dtor) {
-				union uiptr mem = BUFMEM(&it->large, cache);
+				union uiptr mem = bufctl_large_mem(&it->large);
 				cache->dtor(mem.p);
 			}
 			kmm_cache_free(&CACHES.large_bufctls, it);
 		}
 		kmm_cache_free(&CACHES.slabs, slab);
+	} else {
+		union bufctl *it;
+		SLIST_FOREACH (it, &slab->free_buffers, slist) {
+			if (cache->dtor) {
+				union uiptr mem = bufctl_small_mem(&it->small, cache);
+				cache->dtor(mem.p);
+			}
+		}
 	}
 
 	if (__likely(slab->inuse == 0)) {
@@ -221,15 +248,14 @@ static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colo
 		       (cursor.i + cache->capacity * cache->stride) <
 	       cache->stride);
 	for (int i = 0; i < cache->capacity; i++, cursor.i += cache->stride) {
-		union uiptr ctl_mem = UIPTR(cursor.i + cache->size);
-		ctl_mem = align_roundup(ctl_mem, sizeof(struct bufctl_small));
+		union uiptr ctl_mem = bufctl_small_from_mem(cursor, cache);
 		assert(ctl_mem.i < cursor.i + cache->stride);
 
 		struct bufctl_small *ctl = ctl_mem.p;
 		SLIST_FIELD_INIT(ctl, slist);
 		SLIST_INSERT_HEAD(&slab->free_buffers, (union bufctl *)ctl, slist);
 
-		union uiptr mem = BUFMEM(ctl, cache);
+		union uiptr mem = bufctl_small_mem(ctl, cache);
 		if (cache->ctor) {
 			cache->ctor(mem.p);
 		}
@@ -291,7 +317,7 @@ static void object_free(void *mem, struct kmm_slab *slab, struct kmm_cache *cach
 		ctl = kmm_cache_alloc(&CACHES.large_bufctls);
 		ctl->large.memory = mem;
 	} else {
-		ctl = UIPTR(UIPTR(mem).i + cache->size).p;
+		ctl = bufctl_small_from_mem(UIPTR(mem), cache).p;
 	}
 	SLIST_INSERT_HEAD(&slab->free_buffers, ctl, slist);
 }
@@ -303,7 +329,7 @@ static void *object_alloc(struct kmm_slab *slab, struct kmm_cache *cache)
 
 	union bufctl *free_ctl = SLIST_FIRST(&slab->free_buffers);
 	SLIST_REMOVE(&slab->free_buffers, free_ctl, slist);
-	union uiptr mem = BUFMEM(free_ctl, cache);
+	union uiptr mem = bufctl_mem(free_ctl, cache);
 	if (cache->flags & KMM_CACHE_LARGE) {
 		kmm_cache_free(&CACHES.large_bufctls, free_ctl);
 	}
