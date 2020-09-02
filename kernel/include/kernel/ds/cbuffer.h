@@ -21,7 +21,7 @@
 		(cbuffer)->count = 0;                                   \
 	} while (0)
 
-#define CBUFFER_LENGTH(cbuffer)    (sizeof((cbuffer)->array) / sizeof((cbuffer)->array[0]))
+#define CBUFFER_LENGTH(cbuffer)    ARRAY_SIZE((cbuffer)->array)
 #define CBUFFER_NEXT_WIDX(cbuffer) (((cbuffer)->w_idx + 1) % CBUFFER_LENGTH(cbuffer))
 #define CBUFFER_NEXT_RIDX(cbuffer) (((cbuffer)->r_idx + 1) % CBUFFER_LENGTH(cbuffer))
 

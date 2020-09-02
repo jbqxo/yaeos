@@ -18,7 +18,7 @@ static int descbuffer_write(const char *msg, size_t len)
 {
 	char *restrict buffer = DESCRIPTION_BUFFER;
 	size_t towrite =
-		min(len, sizeof(DESCRIPTION_BUFFER) / sizeof(*DESCRIPTION_BUFFER) - DESCBUFFER_POS);
+		min(len, ARRAY_SIZE(DESCRIPTION_BUFFER) - DESCBUFFER_POS);
 	for (int i = 0; i < towrite; i++) {
 		buffer[DESCBUFFER_POS++] = msg[i];
 	}

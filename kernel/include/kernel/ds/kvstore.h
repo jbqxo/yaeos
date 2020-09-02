@@ -1,6 +1,8 @@
 #ifndef _KERNEL_DS_KVSTORE_H
 #define _KERNEL_DS_KVSTORE_H
 
+#include "kernel/cppdefs.h"
+
 #include "lib/string.h"
 
 #include <stdbool.h>
@@ -15,7 +17,7 @@
 		typeof(key_cmp_func) *cmp;                         \
 	}
 
-#define KVSTATIC_CAP(kvvar) (sizeof((kvvar)->keys) / sizeof(*((kvvar)->keys)))
+#define KVSTATIC_CAP(kvvar) (ARRAY_SIZE((kvvar)->keys))
 
 #define KVSTATIC_INIT(kvvar, key_nil_value, val_init, key_cmp_func) \
 	do {                                                        \

@@ -1,4 +1,5 @@
 #include "kernel/ds/slist.h"
+#include "kernel/cppdefs.h"
 
 #include <stddef.h>
 #include <unity.h>
@@ -54,7 +55,7 @@ static void single_element_removal_head(void)
 		(struct node){ .val = 11 },
 		(struct node){ .val = 12 },
 	};
-	size_t testobjs_len = sizeof(testobjs) / sizeof(*testobjs);
+	size_t testobjs_len = ARRAY_SIZE(testobjs);
 
 	SLIST_INSERT_HEAD(&HEAD, &testobjs[0], list);
 	for (int i = 1; i < testobjs_len; i++) {
@@ -78,7 +79,7 @@ static void single_element_removal_middle(void)
 		(struct node){ .val = 11 },
 		(struct node){ .val = 12 },
 	};
-	size_t testobjs_len = sizeof(testobjs) / sizeof(*testobjs);
+	size_t testobjs_len = ARRAY_SIZE(testobjs);
 
 	SLIST_INSERT_HEAD(&HEAD, &testobjs[0], list);
 	for (int i = 1; i < testobjs_len; i++) {
@@ -101,7 +102,7 @@ static void single_element_removal(void)
 		(struct node){ .val = 11 },
 		(struct node){ .val = 12 },
 	};
-	size_t testobjs_len = sizeof(testobjs) / sizeof(*testobjs);
+	size_t testobjs_len = ARRAY_SIZE(testobjs);
 
 	SLIST_INSERT_HEAD(&HEAD, &testobjs[0], list);
 	for (int i = 1; i < testobjs_len; i++) {

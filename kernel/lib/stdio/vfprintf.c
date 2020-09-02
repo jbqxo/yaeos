@@ -326,7 +326,7 @@ static int oct_length(struct conv_spec *s, struct argument *a)
 static void oct_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 {
 	char buffer[22];
-	int buffer_size = sizeof(buffer) / sizeof(*buffer);
+	int buffer_size = ARRAY_SIZE(buffer);
 	int buffer_i = buffer_size;
 
 	// Special case:
@@ -373,7 +373,7 @@ static int dec_length(struct conv_spec *s, struct argument *a)
 static void dec_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 {
 	char buffer[20];
-	int buffer_size = sizeof(buffer) / sizeof(*buffer);
+	int buffer_size = ARRAY_SIZE(buffer);
 	int buffer_i = buffer_size;
 
 	// Special case:
@@ -411,7 +411,7 @@ static int hex_length(struct conv_spec *s, struct argument *a)
 static void hex_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 {
 	char buffer[16];
-	int buffer_size = sizeof(buffer) / sizeof(*buffer);
+	int buffer_size = ARRAY_SIZE(buffer);
 	int buffer_i = buffer_size;
 
 	// A little bit hacky, but it makes no sense to write the same code for the second and third time.

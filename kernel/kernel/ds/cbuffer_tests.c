@@ -1,4 +1,5 @@
 #include "kernel/ds/cbuffer.h"
+#include "kernel/cppdefs.h"
 
 #include <stdbool.h>
 #include <unity.h>
@@ -25,7 +26,7 @@ static void can_store_single_element(void)
 static void can_store_multiple_elements(void)
 {
 	static int testarr[] = { 255, 62, 92, 4112, 1245, 2315, 54336, -1, -2000 };
-	static const size_t testarr_sz = sizeof(testarr) / sizeof(testarr[0]);
+	static const size_t testarr_sz = ARRAY_SIZE(testarr);
 
 	CBUFFER_DECLARE(typeof(testarr[0]), testarr_sz) buffer;
 	CBUFFER_INIT(&buffer);
@@ -44,7 +45,7 @@ static void can_store_multiple_elements(void)
 static void can_handle_multiple_read_writes(void)
 {
 	static int testarr[] = { 255, 62, 92, 4112, 1245, 2315, 54336, -1, -2000 };
-	static const size_t testarr_sz = sizeof(testarr) / sizeof(testarr[0]);
+	static const size_t testarr_sz = ARRAY_SIZE(testarr);
 
 	CBUFFER_DECLARE(typeof(testarr[0]), testarr_sz) buffer;
 	CBUFFER_INIT(&buffer);
@@ -76,7 +77,7 @@ static void can_handle_multiple_read_writes(void)
 static void cant_overflow(void)
 {
 	static int testarr[] = { 255, 62, 92, 4112, 1245, 2315, 54336, -1, -2000 };
-	static const size_t testarr_sz = sizeof(testarr) / sizeof(testarr[0]);
+	static const size_t testarr_sz = ARRAY_SIZE(testarr);
 
 	CBUFFER_DECLARE(typeof(testarr[0]), testarr_sz - 2) buffer;
 	CBUFFER_INIT(&buffer);
