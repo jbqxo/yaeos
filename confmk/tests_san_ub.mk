@@ -1,8 +1,8 @@
-CFLAGS += -fsanitize=undefined -fno-omit-frame-pointer
-LDFLAGS += -fsanitize=undefined
-CPPFLAGS += -D__i686__ -DUNITY_INCLUDE_PRINT_FORMATTED
+CFLAGS_COMMON += -fsanitize=undefined -fno-omit-frame-pointer
+LDFLAGS_COMMON += -fsanitize=undefined
+CPPFLAGS_COMMON += -D__i686__ -DUNITY_INCLUDE_PRINT_FORMATTED -Wno-macro-redefined
 # Silence unity output
-CPPFLAGS += -DUNITY_OUTPUT_CHAR=""
+CPPFLAGS_COMMON += -DUNITY_OUTPUT_CHAR=""
 
 CC := clang
 LD := clang

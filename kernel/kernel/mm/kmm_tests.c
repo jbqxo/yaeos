@@ -1,6 +1,8 @@
 // UNITY_TEST DEPENDS ON: kernel/kernel/mm/pool.c
 // UNITY_TEST DEPENDS ON: kernel/tests_utils.c
 
+#define UNITY_INCLUDE_PRINT_FORMATTED
+
 #include "kernel/mm/kmm.h"
 
 #include "arch/platform.h"

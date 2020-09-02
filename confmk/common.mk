@@ -41,16 +41,17 @@ BUILDDIR_DEPS   ?= $(BUILDDIR_BUILD)/$(DIR_DEPS)
 
 # TODO: Make -mgeneral-regs-only enabled only for the arch-specific code, when
 # floating point, sse, mmx, sse2, 3dnow and avx instructions will be available.
-CFLAGS_DEBUG     := -O0 -g
-CFLAGS_RELEASE   := -O3 -flto
-CFLAGS_COMMON    := -std=gnu18 -mgeneral-regs-only
+CFLAGS_DEBUG     += -O0 -g
+CFLAGS_RELEASE   += -O3 -flto
+CFLAGS_COMMON    += -std=gnu18 -mgeneral-regs-only
 
-CPPFLAGS_DEBUG   :=
-CPPFLAGS_RELEASE := -DNDEBUG
+CPPFLAGS_COMMON  +=
+CPPFLAGS_DEBUG   +=
+CPPFLAGS_RELEASE += -DNDEBUG
 
-LDFLAGS_COMMON  := -lgcc
-LDFLAGS_DEBUG   := -fno-lto -g
-LDFLAGS_RELEASE := -flto
+LDFLAGS_COMMON  += -lgcc
+LDFLAGS_DEBUG   += -fno-lto -g
+LDFLAGS_RELEASE += -flto
 
 # Compiler diagnostics
 # All of these diagnostics there for a reason right?

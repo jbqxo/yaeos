@@ -1,8 +1,8 @@
-CFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize-memory-track-origins
-LDFLAGS += -fsanitize=address
-CPPFLAGS += -D__i686__ -DUNITY_INCLUDE_PRINT_FORMATTED
+CFLAGS_COMMON += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize-memory-track-origins
+LDFLAGS_COMMON += -fsanitize=address
+CPPFLAGS_COMMON += -D__i686__ -DUNITY_INCLUDE_PRINT_FORMATTED -Wno-macro-redefined
 # Silence unity output
-CPPFLAGS += -DUNITY_OUTPUT_CHAR=""
+CPPFLAGS_COMMON += -DUNITY_OUTPUT_CHAR=""
 
 CC := clang
 LD := clang
