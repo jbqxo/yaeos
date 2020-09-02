@@ -11,8 +11,8 @@ static inline union uiptr align_roundup(union uiptr from, uintptr_t alignment)
 	if (alignment == 0) {
 		return (from);
 	}
-	from.i += alignment - 1;
-	from.i &= -alignment;
+	from.num += alignment - 1;
+	from.num &= -alignment;
 	return (from);
 }
 
@@ -21,7 +21,7 @@ static inline union uiptr align_roundup(union uiptr from, uintptr_t alignment)
  */
 static inline union uiptr align_rounddown(union uiptr from, uintptr_t alignment)
 {
-	from.i &= -alignment;
+	from.num &= -alignment;
 	return (from);
 }
 

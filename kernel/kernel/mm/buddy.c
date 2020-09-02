@@ -46,12 +46,12 @@ static unsigned log2_down(unsigned x)
 
 static union uiptr intern_alloc(struct buddy_allocator *alloc, size_t size)
 {
-	union uiptr pos = UIPTR(alloc->internp + alloc->intern_sz);
+	union uiptr pos = num2uiptr(alloc->internp + alloc->intern_sz);
 
 	// Assert chunk space.
-	if (__unlikely(pos.i + size > alloc->internp_lim)) {
+	if (__unlikely(pos.num + size > alloc->internp_lim)) {
 		// TODO: Panic!
-		return (UIPTR(NULL));
+		return (ptr2uiptr(NULL));
 	}
 	alloc->intern_sz += size;
 
@@ -91,14 +91,14 @@ static unsigned max_index(size_t chunk_size, unsigned lvl)
 static struct chunk *init_chunks(struct buddy_allocator *alloc, void **mem_chunks,
 				 const size_t *sizes, unsigned chnum)
 {
-	struct chunk *chunks = intern_alloc(alloc, chnum * sizeof(*chunks)).p;
+	struct chunk *chunks = intern_alloc(alloc, chnum * sizeof(*chunks)).ptr;
 	unsigned levels = alloc->max_lvl + 1;
 
 	for (int c = 0; c < chnum; c++) {
-		union uiptr aligned = align_roundup(UIPTR(mem_chunks[c]), PLATFORM_PAGE_SIZE);
-		chunks[c].addr = aligned.i;
-		chunks[c].size = sizes[c] - (aligned.i - UIPTR(mem_chunks[c]).i);
-		chunks[c].bitmaps = intern_alloc(alloc, sizeof(*chunks[c].bitmaps) * levels).p;
+		union uiptr aligned = align_roundup(ptr2uiptr(mem_chunks[c]), PLATFORM_PAGE_SIZE);
+		chunks[c].addr = aligned.num;
+		chunks[c].size = sizes[c] - (aligned.num - ptr2uiptr(mem_chunks[c]).num);
+		chunks[c].bitmaps = intern_alloc(alloc, sizeof(*chunks[c].bitmaps) * levels).ptr;
 	}
 
 	// Initialize bitmaps for every chunk.
@@ -111,13 +111,13 @@ static struct chunk *init_chunks(struct buddy_allocator *alloc, void **mem_chunk
 				pad = BITMAP_SET_SIZE - (space % BITMAP_SET_SIZE);
 			}
 			union uiptr bitmap = intern_alloc(alloc, space + pad);
-			chunks[ch].bitmaps[lvl] = bitmap.p;
+			chunks[ch].bitmaps[lvl] = bitmap.ptr;
 
 			// Mark all pages as FREE.
-			memset(bitmap.p, 0xFF, space);
+			memset(bitmap.ptr, 0xFF, space);
 			// Mark all padding space as OCCUPIED.
-			union uiptr bitmap_end = UIPTR(bitmap.i + space);
-			memset(bitmap_end.p, 0x0, pad);
+			union uiptr bitmap_end = num2uiptr(bitmap.num + space);
+			memset(bitmap_end.ptr, 0x0, pad);
 		}
 	}
 
@@ -127,10 +127,10 @@ static struct chunk *init_chunks(struct buddy_allocator *alloc, void **mem_chunk
 void buddy_init(struct buddy_allocator *alloc, void **mem_chunks, const size_t *sizes,
 		unsigned chnum, void *intern_data, size_t intern_len)
 {
-	union uiptr internd = UIPTR(intern_data);
-	alloc->internp = internd.i;
+	union uiptr internd = ptr2uiptr(intern_data);
+	alloc->internp = internd.num;
 	alloc->intern_sz = 0;
-	alloc->internp_lim = internd.i + intern_len;
+	alloc->internp_lim = internd.num + intern_len;
 	{
 		alloc->max_lvl = 0;
 		for (int i = 0; i < chnum; i++) {
@@ -263,20 +263,20 @@ void *buddy_alloc(struct buddy_allocator *a, unsigned order)
 	}
 
 	occupy_buddy(chunk, a->max_lvl, order, idx);
-	union uiptr allocated = UIPTR(chunk->addr + (idx << order) * PLATFORM_PAGE_SIZE);
-	return (allocated.p);
+	union uiptr allocated = num2uiptr(chunk->addr + (idx << order) * PLATFORM_PAGE_SIZE);
+	return (allocated.ptr);
 }
 
 void buddy_free(struct buddy_allocator *a, void *_mem, unsigned order)
 {
-	union uiptr mem = UIPTR(_mem);
+	union uiptr mem = ptr2uiptr(_mem);
 	// Find buddy's chunk.
 	struct chunk *chunk = NULL;
 	for (unsigned c = 0; c < a->chunks_num; c++) {
 		struct chunk *ch = &a->chunks[c];
-		union uiptr block_start = UIPTR(ch->addr);
-		union uiptr block_end = UIPTR(ch->addr + ch->size);
-		if (mem.i > block_start.i && mem.i < block_end.i) {
+		union uiptr block_start = num2uiptr(ch->addr);
+		union uiptr block_end = num2uiptr(ch->addr + ch->size);
+		if (mem.num > block_start.num && mem.num < block_end.num) {
 			chunk = ch;
 			break;
 		}
@@ -289,7 +289,7 @@ void buddy_free(struct buddy_allocator *a, void *_mem, unsigned order)
 	// Calculate buddys index.
 	unsigned index;
 	{
-		uintptr_t offset = mem.i - chunk->addr;
+		uintptr_t offset = mem.num - chunk->addr;
 		index = (offset / PLATFORM_PAGE_SIZE) >> order;
 	}
 

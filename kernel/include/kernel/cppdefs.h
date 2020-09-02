@@ -10,7 +10,7 @@
 #define __weak            __attribute__((__weak__))
 #define __noinline        __attribute__((noinline))
 #define __noreturn        __attribute__((noreturn))
-#define __always_inline   __attribute__((always_inline))
+#define __force_inline    __attribute__((always_inline))
 #define __section(target) __attribute__((__section__(target)))
 #define __aligned(b)      __attribute__((__aligned__(b)))
 #define __likely(exp)     __builtin_expect((exp), 1)
@@ -22,13 +22,18 @@
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 union uiptr {
-	void *p;
-	uintptr_t i;
+	void *ptr;
+	uintptr_t num;
 };
 
-#define UIPTR(x) \
-	(_Generic((x),                                                                             \
-		 void *: (union uiptr){ .p = (void*)(x) },                                         \
-		 uintptr_t: (union uiptr){ .i = (uintptr_t)(x) }))
+static inline union uiptr ptr2uiptr(void *ptr)
+{
+	return ((union uiptr) {.ptr = ptr});
+}
+
+static inline union uiptr num2uiptr(uintptr_t num)
+{
+	return ((union uiptr) {.num = num});
+}
 
 #endif // _KERNEL_CPPDEFS_H

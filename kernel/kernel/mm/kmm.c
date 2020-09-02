@@ -38,14 +38,14 @@ union bufctl {
 
 static union uiptr bufctl_small_mem(struct bufctl_small *ctl, struct kmm_cache *cache)
 {
-	union uiptr ctl_mem = UIPTR((void*)ctl);
-	ctl_mem.i -= cache->size;
+	union uiptr ctl_mem = ptr2uiptr(ctl);
+	ctl_mem.num -= cache->size;
 	return (align_rounddown(ctl_mem, cache->alignment));
 }
 
 static union uiptr bufctl_large_mem(struct bufctl_large *ctl)
 {
-	return (UIPTR(ctl->memory));
+	return (ptr2uiptr(ctl->memory));
 }
 
 static union uiptr bufctl_mem(union bufctl *ctl, struct kmm_cache *cache)
@@ -58,7 +58,7 @@ static union uiptr bufctl_mem(union bufctl *ctl, struct kmm_cache *cache)
 
 static union uiptr bufctl_small_from_mem(union uiptr mem, struct kmm_cache *cache)
 {
-	mem.i += cache->size;
+	mem.num += cache->size;
 	mem = align_roundup(mem, sizeof(struct bufctl_small));
 	return (mem);
 }
@@ -112,7 +112,7 @@ static void slab_destroy(struct kmm_slab *slab, struct kmm_cache *cache)
 		SLIST_FOREACH (it, &slab->free_buffers, slist) {
 			if (cache->dtor) {
 				union uiptr mem = bufctl_large_mem(&it->large);
-				cache->dtor(mem.p);
+				cache->dtor(mem.ptr);
 			}
 			kmm_cache_free(&CACHES.large_bufctls, it);
 		}
@@ -122,7 +122,7 @@ static void slab_destroy(struct kmm_slab *slab, struct kmm_cache *cache)
 		SLIST_FOREACH (it, &slab->free_buffers, slist) {
 			if (cache->dtor) {
 				union uiptr mem = bufctl_small_mem(&it->small, cache);
-				cache->dtor(mem.p);
+				cache->dtor(mem.ptr);
 			}
 		}
 	}
@@ -160,6 +160,8 @@ static unsigned caches_try_reclaim(unsigned reclaim)
 			return (reclaimed);
 		}
 	}
+
+	return (reclaimed);
 }
 
 static struct page *page_alloc(struct kmm_cache *cache)
@@ -201,8 +203,8 @@ static struct page *page_alloc(struct kmm_cache *cache)
 	}
 
 	{
-		union uiptr page_addr = UIPTR((void *)page);
-		assert(page_addr.p == align_roundup(page_addr, PLATFORM_PAGE_SIZE).p);
+		union uiptr page_addr = ptr2uiptr(page);
+		assert(page_addr.ptr == align_roundup(page_addr, PLATFORM_PAGE_SIZE).ptr);
 	}
 
 	return (page);
@@ -210,9 +212,9 @@ static struct page *page_alloc(struct kmm_cache *cache)
 
 static struct page *page_get_by_addr(void *addr)
 {
-	union uiptr p = UIPTR(addr);
-	p.i &= -PLATFORM_PAGE_SIZE;
-	return (p.p);
+	union uiptr p = ptr2uiptr(addr);
+	p.num &= -PLATFORM_PAGE_SIZE;
+	return (p.ptr);
 }
 
 static struct kmm_slab *slab_get_by_addr(void *addr)
@@ -229,11 +231,11 @@ static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colo
 		return (NULL);
 	}
 
-	union uiptr cursor = UIPTR((void *)page->data);
+	union uiptr cursor = ptr2uiptr(page->data);
 
-	struct kmm_slab *slab = cursor.p;
-	cursor.i += sizeof(*slab);
-	cursor.i += colour;
+	struct kmm_slab *slab = cursor.ptr;
+	cursor.num += sizeof(*slab);
+	cursor.num += colour;
 	cursor = align_roundup(cursor, cache->alignment);
 
 	page->owner = slab;
@@ -244,20 +246,20 @@ static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colo
 	SLIST_INIT(&slab->free_buffers);
 
 	// Check that leftover space is less than a full stride.
-	assert((UIPTR((void *)page).i + PLATFORM_PAGE_SIZE) -
-		       (cursor.i + cache->capacity * cache->stride) <
+	assert((ptr2uiptr(page).num + PLATFORM_PAGE_SIZE) -
+		       (cursor.num + cache->capacity * cache->stride) <
 	       cache->stride);
-	for (int i = 0; i < cache->capacity; i++, cursor.i += cache->stride) {
+	for (int i = 0; i < cache->capacity; i++, cursor.num += cache->stride) {
 		union uiptr ctl_mem = bufctl_small_from_mem(cursor, cache);
-		assert(ctl_mem.i < cursor.i + cache->stride);
+		assert(ctl_mem.num < cursor.num + cache->stride);
 
-		struct bufctl_small *ctl = ctl_mem.p;
+		struct bufctl_small *ctl = ctl_mem.ptr;
 		SLIST_FIELD_INIT(ctl, slist);
 		SLIST_INSERT_HEAD(&slab->free_buffers, (union bufctl *)ctl, slist);
 
 		union uiptr mem = bufctl_small_mem(ctl, cache);
 		if (cache->ctor) {
-			cache->ctor(mem.p);
+			cache->ctor(mem.ptr);
 		}
 	}
 
@@ -279,8 +281,8 @@ static struct kmm_slab *slab_create_large(struct kmm_cache *cache, unsigned colo
 	}
 	page->owner = slab;
 
-	union uiptr obj = UIPTR((void *)page->data);
-	obj.i += colour;
+	union uiptr obj = ptr2uiptr(page->data);
+	obj.num += colour;
 	obj = align_roundup(obj, cache->alignment);
 
 	slab->inuse = 0;
@@ -288,14 +290,14 @@ static struct kmm_slab *slab_create_large(struct kmm_cache *cache, unsigned colo
 	SLIST_FIELD_INIT(slab, slabs_list);
 	SLIST_INIT(&slab->free_buffers);
 
-	for (int i = 0; i < cache->capacity; i++, obj.i += cache->stride) {
+	for (int i = 0; i < cache->capacity; i++, obj.num += cache->stride) {
 		struct bufctl_large *ctl = kmm_cache_alloc(&CACHES.large_bufctls);
 		SLIST_FIELD_INIT(ctl, slist);
 		SLIST_INSERT_HEAD(&slab->free_buffers, (union bufctl *)ctl, slist);
 
-		ctl->memory = obj.p;
+		ctl->memory = obj.ptr;
 		if (cache->ctor) {
-			cache->ctor(obj.p);
+			cache->ctor(obj.ptr);
 		}
 	}
 
@@ -317,7 +319,7 @@ static void object_free(void *mem, struct kmm_slab *slab, struct kmm_cache *cach
 		ctl = kmm_cache_alloc(&CACHES.large_bufctls);
 		ctl->large.memory = mem;
 	} else {
-		ctl = bufctl_small_from_mem(UIPTR(mem), cache).p;
+		ctl = bufctl_small_from_mem(ptr2uiptr(mem), cache).ptr;
 	}
 	SLIST_INSERT_HEAD(&slab->free_buffers, ctl, slist);
 }
@@ -336,7 +338,7 @@ static void *object_alloc(struct kmm_slab *slab, struct kmm_cache *cache)
 
 	slab->inuse++;
 
-	return (mem.p);
+	return (mem.ptr);
 }
 
 static size_t cache_get_capacity(struct kmm_cache *cache)
@@ -385,7 +387,7 @@ static void cache_init(struct kmm_cache *restrict cache, const char *name, size_
 		cache->alignment = MAX(sizeof(struct bufctl_small), cache->alignment);
 	}
 
-	cache->stride = align_roundup(UIPTR(obj_space), cache->alignment).i;
+	cache->stride = align_roundup(num2uiptr(obj_space), cache->alignment).num;
 	cache->capacity = cache_get_capacity(cache);
 
 	cache->colour_max = cache_get_wasted(cache) & (sizeof(void *) * -1);

@@ -1,8 +1,6 @@
 // UNITY_TEST DEPENDS ON: kernel/kernel/mm/pool.c
 // UNITY_TEST DEPENDS ON: kernel/tests_utils.c
 
-#define UNITY_INCLUDE_PRINT_FORMATTED
-
 #include "kernel/mm/kmm.h"
 
 #include "arch/platform.h"
@@ -180,7 +178,7 @@ static void memory_aligned(void)
 	TEST_ASSERT(cache);
 	for (int i = 0; i < testset_len; i++) {
 		ptrs[i] = kmm_cache_alloc(cache);
-		TEST_ASSERT_EQUAL_INT_MESSAGE(0, UIPTR((void *)ptrs[i]).i % required_alignment,
+		TEST_ASSERT_EQUAL_INT_MESSAGE(0, ptr2uiptr(ptrs[i]).num % required_alignment,
 					      "Alignment request hasn't been honored");
 	}
 	for (int i = 0; i < testset_len; i++) {
@@ -319,7 +317,7 @@ static void cache_coloring(void)
 	TEST_MESSAGE("Allocating all available memory...");
 	elem_t *new;
 	while ((new = kmm_cache_alloc(cache))) {
-		size_t cacheline_offset = UIPTR((void *)new).i % 64;
+		size_t cacheline_offset = ptr2uiptr(new).num % 64;
 		colour_hits[cacheline_offset]++;
 
 		(*ptrs)[allocated] = new;
