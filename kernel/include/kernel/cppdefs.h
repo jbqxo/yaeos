@@ -19,6 +19,8 @@
 #define TO_SSTR(X)       #X
 #define TO_SSTR_MACRO(X) TO_SSTR(X)
 
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
 union uiptr {
 	void *p;
 	uintptr_t i;
