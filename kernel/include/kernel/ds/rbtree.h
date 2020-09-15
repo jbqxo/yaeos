@@ -517,4 +517,85 @@ static inline struct rbtree_node *rbtree_search(struct rbtree *rbt, void *value)
 	return (node);
 }
 
+static inline struct rbtree_node *rbtree_search_min(struct rbtree *rbt, void *limit)
+{
+	assert(rbt);
+	assert(rbt->cmp);
+	assert(limit);
+
+	struct rbtree_node *cursor = rbt->root;
+
+	while (cursor) {
+		int cmp_result = rbt->cmp(cursor->data, limit);
+		while (cmp_result > 0 && cursor->left) {
+			cursor = cursor->left;
+			cmp_result = rbt->cmp(cursor->data, limit);
+		}
+		while (cmp_result < 0 && cursor->right) {
+			cursor = cursor->right;
+			cmp_result = rbt->cmp(cursor->data, limit);
+		}
+
+		if (cmp_result == 0) {
+			return (cursor);
+		} else if (cmp_result < 0 && !cursor->right) {
+			while (cmp_result < 0) {
+				cursor = rbt_get_parent(cursor);
+				cmp_result = rbt->cmp(cursor->data, limit);
+			}
+			return (cursor);
+		} else {
+			assert(cmp_result > 0 && !cursor->left);
+			return (cursor);
+		}
+
+	}
+}
+
+static inline void rbtree_iter_range(struct rbtree *rbt, void *value_from, void *value_to,
+				     bool (*fn)(void *elem, void *data), void *data)
+{
+	assert(rbt);
+	assert(rbt->cmp);
+	assert(rbt->cmp(value_from, value_to) < 0);
+
+
+	struct rbtree_node *cursor = rbtree_search_min(rbt, value_from);
+
+	// TODO: Rewrite. It's working fine but it's ugly.
+	// A hacky way to start from the current node and not to iterate over
+	// the left subtree which is smaller than the lower boundary.
+	struct rbtree_node *prev = cursor->left;
+	while (cursor) {
+		if (prev == cursor->left) {
+			int c = rbt->cmp(cursor->data, value_to);
+			if (c > 0) {
+				return;
+			}
+
+			if (fn(cursor->data, data) == false) {
+				return;
+			}
+
+			prev = cursor;
+			if (cursor->right) {
+				cursor = cursor->right;
+			} else {
+				cursor = rbt_get_parent(cursor);
+			}
+		} else if (prev == cursor->right) {
+			prev = cursor;
+			cursor = rbt_get_parent(cursor);
+		} else {
+			if (cursor->left) {
+				prev = cursor;
+				cursor = cursor->left;
+			} else {
+				// There is no left child. Pretend that we've already iterated over it.
+				prev = cursor->left;
+			}
+		}
+	}
+}
+
 #endif // _KERNEL_DS_RBTREE_H

@@ -167,7 +167,8 @@ static void every_node_red_black_cb(struct rbtree_node *node)
 	if (!node) {
 		return;
 	}
-	TEST_ASSERT_MESSAGE(rbt_get_colour(node) == RBTREE_RED || rbt_get_colour(node) == RBTREE_BLACK,
+	TEST_ASSERT_MESSAGE(rbt_get_colour(node) == RBTREE_RED ||
+				    rbt_get_colour(node) == RBTREE_BLACK,
 			    "Found unspecified colour in RBT");
 
 	if (node->left) {
@@ -256,6 +257,45 @@ static void same_black_height(void)
 	}
 }
 
+static const int can_iterate_low = 11;
+static const int can_iterate_high = 99;
+static const int can_iterate_markval = -1;
+
+static bool can_iterate_fn(void *elem, void *data)
+{
+	int e = *(int *)elem;
+	TEST_ASSERT_GREATER_OR_EQUAL_INT(can_iterate_low, e);
+	TEST_ASSERT_LESS_OR_EQUAL_INT(can_iterate_high, e);
+
+	*(int *)elem = can_iterate_markval;
+
+	return (true);
+}
+
+static void can_iterate(void)
+{
+	int testset[] = { 0, 10, 15, 16, 17, 18, 20, 21, 99, 101, 115 };
+	const size_t testset_len = ARRAY_SIZE(testset);
+
+	struct rbtree *rbt = malloc(sizeof(*rbt));
+	rbtree_init_tree(rbt, intcmp);
+
+	for (int i = 0; i < testset_len; i++) {
+		struct rbtree_node *n = malloc(sizeof(*n));
+		n->data = (void *)&testset[i];
+
+		rbtree_insert(rbt, n);
+	}
+
+	rbtree_iter_range(rbt, (void *)&can_iterate_low, (void *)&can_iterate_high, can_iterate_fn, NULL);
+
+	for (int i = 0; i < testset_len; i++) {
+		if (testset[i] != -1) {
+			TEST_ASSERT(testset[i] < can_iterate_low || testset[i] > can_iterate_high);
+		}
+	}
+}
+
 int main(void)
 {
 	UNITY_BEGIN();
@@ -264,6 +304,7 @@ int main(void)
 	RUN_TEST(root_black);
 	RUN_TEST(red_node_has_black_children);
 	RUN_TEST(same_black_height);
+	RUN_TEST(can_iterate);
 	UNITY_END();
 	return (0);
 }
