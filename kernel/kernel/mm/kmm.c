@@ -9,6 +9,7 @@
 #include "kernel/mm/pool.h"
 #include "kernel/mm/vmm.h"
 #include "kernel/utils.h"
+#include "kernel/kernel.h"
 
 #include "lib/assert.h"
 #include "lib/string.h"

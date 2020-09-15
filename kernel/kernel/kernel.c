@@ -1,6 +1,6 @@
 #include "kernel/kernel.h"
 
-#include "arch/platform.h"
+#include "arch/kernel.h"
 
 #include "kernel/config.h"
 #include "kernel/console.h"

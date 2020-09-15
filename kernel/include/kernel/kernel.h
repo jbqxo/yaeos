@@ -1,8 +1,6 @@
 #ifndef _KERNEL_KERNEL_H
 #define _KERNEL_KERNEL_H
 
-#include "arch/platform.h"
-
 #include "kernel/config.h"
 #include "kernel/ds/kvstore.h"
 
