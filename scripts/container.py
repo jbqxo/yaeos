@@ -3,6 +3,7 @@
 import os
 import os.path
 import sys
+import re
 import argparse
 import subprocess
 from collections import namedtuple
@@ -42,7 +43,13 @@ def build_image(target, container, jobs=1):
     subprocess.run(cmd)
 
 
-def run_cmd(command, container):
+# Stolen from: https://stackoverflow.com/a/38662876
+def escape_ansi(line):
+    ansi_escape = re.compile(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]')
+    return ansi_escape.sub('', line)
+
+
+def run_cmd(command, container, args):
     cmd = ["docker", "run"]
     cmd += ["-i", "--rm"]
     cmd += ["-v", container.dirs["root"] + ":" + container.dirs["root"]]
@@ -57,26 +64,32 @@ def run_cmd(command, container):
     cmd += [container.image_tag]
     cmd += command
 
-    p = subprocess.run(cmd)
+    if args.clear_escapes:
+        p = subprocess.run(cmd, capture_output=True, text=True)
+        sys.stdout.write(escape_ansi(p.stdout))
+        sys.stderr.write(escape_ansi(p.stderr))
+    else:
+        p = subprocess.run(cmd)
     return p.returncode == 0
 
 
-def run_make(targets, container, variables={}, jobs=1):
+def run_make(targets, container, args, variables={}, jobs=1):
     mvars = map(lambda kv: kv[0] + "=" + kv[1], variables.items())
     jobs_str = "-j{0}".format(jobs)
 
     return run_cmd(container=container,
-                   command=["make"] + list(mvars) + [jobs_str] + targets)
+                   command=["make"] + list(mvars) + [jobs_str] + targets,
+                   args=args)
 
 
 def do_exec(container, args):
     """Execute given comand"""
-    run_cmd(container=container, command=args.cmd)
+    run_cmd(container=container, command=args.cmd, args=args)
 
 
 def do_make(container, args):
     """Run make with given target"""
-    run_make(args.cmd, container, jobs=args.jobs)
+    run_make(args.cmd, container, args, jobs=args.jobs)
 
 
 def do_build_image(container, args):
@@ -88,17 +101,19 @@ def do_build_image(container, args):
 def do_gdb(container, args):
     """Run gdb server against given file"""
     run_cmd(container=container,
-            command=["gdbserver", "0.0.0.0:1234"] + args.cmd)
+            command=["gdbserver", "0.0.0.0:1234"] + args.cmd,
+            args=args)
 
 
 def do_tests(container, args):
     """Run unit tests"""
-    if not run_make(["tests"], container,
+    if not run_make(["tests"], container, args,
                     variables={"TARGET_ARCH": "tests"},
                     jobs=args.jobs):
         return
     run_cmd(container=container,
-            command=["./scripts/run_tests.py"] + args.cmd)
+            command=["./scripts/run_tests.py"] + args.cmd,
+            args=args)
 
 
 def find_sanitizers(args):
@@ -116,13 +131,13 @@ def find_sanitizers(args):
 
 def do_sanitizers(container, args):
     """Run sanitizers"""
-    if not run_make(["tests"], container,
+    if not run_make(["tests"], container, args,
                     variables={"TARGET_ARCH": "tests"},
                     jobs=args.jobs):
         return
 
     for t in find_sanitizers(args):
-        if not run_make(["tests"], container,
+        if not run_make(["tests"], container, args,
                         variables={"TARGET_ARCH": t},
                         jobs=args.jobs):
             return
@@ -134,12 +149,12 @@ def do_sanitizers(container, args):
 def do_clean(container, args):
     """Clean the build directory"""
     for t in find_sanitizers(args):
-        run_make(["clean"], container,
+        run_make(["clean"], container, args,
                  variables={"TARGET_ARCH": t},
                  jobs=args.jobs)
 
-    run_make(["clean"], container, jobs=args.jobs)
-    run_make(["clean"], container, jobs=args.jobs,
+    run_make(["clean"], container, args, jobs=args.jobs)
+    run_make(["clean"], container, args, jobs=args.jobs,
              variables={"TARGET_ARCH": "tests"})
 
 
@@ -177,6 +192,8 @@ def parse_args():
     a.add_argument("action",
                    help="Action to perform: " + actions_str,
                    choices=ACTIONS)
+    a.add_argument("-e", dest="clear_escapes", action="store_true",
+                   help="Remove escape sequences from the output")
     a.add_argument("-d", dest="debug", help="Debug port", default=1234)
     a.add_argument("cmd", help="Command to execute.", nargs="*")
     a.add_argument("-j", dest="jobs", help="Number of jobs", default=ncpu)
