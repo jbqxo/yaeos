@@ -36,4 +36,14 @@ static inline union uiptr num2uiptr(uintptr_t num)
 	return ((union uiptr) {.num = num});
 }
 
+static inline void *uint2ptr(uintptr_t address)
+{
+	return (num2uiptr(address).ptr);
+}
+
+static inline uintptr_t ptr2uint(void *address)
+{
+	return (ptr2uiptr(address).num);
+}
+
 #endif // _KERNEL_CPPDEFS_H

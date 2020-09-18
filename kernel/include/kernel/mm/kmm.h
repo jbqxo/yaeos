@@ -2,6 +2,7 @@
 #define _KERNEL_MM_KMM_H
 
 #include "kernel/ds/slist.h"
+#include "kernel/mm/vmm.h"
 
 #include <stddef.h>
 #include <stdint.h>

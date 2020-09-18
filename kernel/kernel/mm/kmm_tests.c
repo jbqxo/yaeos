@@ -7,6 +7,7 @@
 
 #include "kernel/config.h"
 #include "kernel/cppdefs.h"
+#include "kernel/mm/vmm.h"
 
 #include <assert.h>
 #include <stddef.h>
@@ -19,6 +20,34 @@
 
 #define VMM_MEM_LIMIT (6 * PLATFORM_PAGE_SIZE)
 static size_t VMM_MEM_USAGE = 0;
+struct vm_space kvm_space = (struct vm_space) {};
+
+struct vm_mapping *vmm_alloc_pages(struct vm_space *space, size_t count, int flags)
+{
+	size_t s = PLATFORM_PAGE_SIZE * count;
+	if (VMM_MEM_USAGE + s > VMM_MEM_LIMIT) {
+		return (NULL);
+	}
+	VMM_MEM_USAGE += s;
+
+	struct vm_mapping *m = calloc(1, sizeof(*m));
+	m->start = aligned_alloc(PLATFORM_PAGE_SIZE, PLATFORM_PAGE_SIZE * count);
+	return (m);
+}
+
+void vmm_free_pages_at(struct vm_space *space, void *address, size_t count)
+{
+	TEST_ASSERT_NOT_NULL(address);
+	VMM_MEM_USAGE -= PLATFORM_PAGE_SIZE;
+	free(address);
+}
+
+void *vm_mapping_addr(struct vm_mapping *mapping) {
+	if (!mapping) {
+		return (NULL);
+	}
+	return (mapping->start);
+}
 
 void setUp(void)
 {
@@ -28,27 +57,6 @@ void setUp(void)
 
 void tearDown(void)
 {}
-
-void *vmm_alloc_pages(size_t count, int flags __unused)
-{
-	// TODO: Improve VMM emulation?
-	assert(count <= 1);
-
-	size_t s = PLATFORM_PAGE_SIZE * count;
-	if (VMM_MEM_USAGE + s > VMM_MEM_LIMIT) {
-		return (NULL);
-	}
-	VMM_MEM_USAGE += s;
-
-	return (aligned_alloc(PLATFORM_PAGE_SIZE, s));
-}
-
-void vmm_free_pages_at(void *address)
-{
-	TEST_ASSERT_NOT_NULL(address);
-	VMM_MEM_USAGE -= PLATFORM_PAGE_SIZE;
-	free(address);
-}
 
 static void small_allocations(void)
 {

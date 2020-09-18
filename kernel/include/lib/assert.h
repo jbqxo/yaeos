@@ -3,7 +3,7 @@
 #undef assert
 
 #include "kernel/cppdefs.h"
-#include "kernel/kernel.h"
+#include "kernel/panic.h"
 
 #ifdef NDEBUG
 #define assert(exp) ((void)0)

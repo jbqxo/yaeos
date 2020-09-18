@@ -9,16 +9,7 @@
 #include <stdlib.h>
 #include <unity.h>
 
-__weak void *vmm_alloc_pages(size_t count, int flags)
-{
-	return (aligned_alloc(PLATFORM_PAGE_SIZE, PLATFORM_PAGE_SIZE * count));
-}
 
-__weak void vmm_free_pages_at(void *address)
-{
-	TEST_ASSERT_NOT_NULL(address);
-	free(address);
-}
 
 __weak void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, const char *restrict func,
 			 const char *restrict line, const char *restrict format, ...)

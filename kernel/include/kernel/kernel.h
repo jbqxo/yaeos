@@ -2,8 +2,8 @@
 #define _KERNEL_KERNEL_H
 
 #include "kernel/config.h"
+#include "kernel/mm/vmm.h"
 
-
-void kernel_init(void);
+struct vm_space kvm_space;
 
 #endif // _KERNEL_KERNEL_H

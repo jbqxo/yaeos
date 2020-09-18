@@ -92,7 +92,7 @@ static void page_free(struct page *p)
 {
 	assert(p);
 	if (p->dynamic) {
-		vmm_free_pages_at(p);
+		vmm_free_pages_at(&kvm_space, p, 1);
 	} else {
 		mem_pool_free(&STATIC_PAGE_POOL, p);
 	}
@@ -170,15 +170,17 @@ static struct page *page_alloc(struct kmm_cache *cache)
 	assert(cache);
 
 	const size_t to_allocate = 1;
-	struct page *page = vmm_alloc_pages(to_allocate, VMM_ALLOC_KERNEL);
-	if (!page) {
+	struct vm_mapping *mapping = vmm_alloc_pages(&kvm_space, to_allocate);
+	if (!mapping) {
 		LOGF_W("System is running out of memory. Trying to reclaim some...");
 		if (caches_try_reclaim(to_allocate) >= to_allocate) {
-			page = vmm_alloc_pages(to_allocate, VMM_ALLOC_KERNEL);
+			mapping = vmm_alloc_pages(&kvm_space, to_allocate);
 		} else {
 			LOGF_W("Failed to reclaim required amount of memory.");
 		}
 	}
+
+	struct page *page = mapping->start;
 
 	if (__unlikely(!page)) {
 		if (cache->flags & KMM_CACHE_STATIC) {
@@ -404,6 +406,10 @@ static void cache_init(struct kmm_cache *restrict cache, const char *name, size_
 
 void kmm_init(void)
 {
+	assert(vmmapi.alloc_pages);
+	assert(vmmapi.alloc_pages_at);
+	assert(vmmapi.free_pages_at);
+
 	mem_pool_init(&STATIC_PAGE_POOL, STATIC_STORAGE, sizeof(STATIC_STORAGE), PLATFORM_PAGE_SIZE,
 		      PLATFORM_PAGE_SIZE);
 

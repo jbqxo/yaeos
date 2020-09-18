@@ -6,22 +6,22 @@
 /**
  * @brief Return the nearest address that is bigger than the address and fit the alignment.
  */
-static inline union uiptr align_roundup(union uiptr from, uintptr_t alignment)
+static inline uintptr_t align_roundup(uintptr_t from, uintptr_t alignment)
 {
 	if (alignment == 0) {
 		return (from);
 	}
-	from.num += alignment - 1;
-	from.num &= -alignment;
+	from += alignment - 1;
+	from &= -alignment;
 	return (from);
 }
 
 /**
  * @brief Return the nearest address that is smaller than the address and fit the alignment.
  */
-static inline union uiptr align_rounddown(union uiptr from, uintptr_t alignment)
+static inline uintptr_t align_rounddown(uintptr_t from, uintptr_t alignment)
 {
-	from.num &= -alignment;
+	from &= -alignment;
 	return (from);
 }
 

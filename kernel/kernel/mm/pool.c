@@ -21,8 +21,8 @@ void mem_pool_init(struct mem_pool *pool, void *mem, size_t mem_size, size_t ele
 	assert(mem_size >= elem_size);
 
 	elem_size = MAX(elem_size, sizeof(union node));
-	union uiptr mblock = align_roundup(ptr2uiptr(mem), elem_align);
-	size_t stride = align_roundup(num2uiptr(elem_size), elem_align).num;
+	uintptr_t mblock = align_roundup(ptr2uint(mem), elem_align);
+	size_t stride = align_roundup(elem_size, elem_align);
 	size_t limit = ptr2uiptr(mem).num + mem_size;
 
 	SLIST_INIT(&pool->list);
@@ -31,13 +31,13 @@ void mem_pool_init(struct mem_pool *pool, void *mem, size_t mem_size, size_t ele
 	pool->mem_end = num2uiptr(limit);
 #endif
 
-	assert(mblock.num + elem_size <= limit);
-	SLIST_INSERT_HEAD(&pool->list, (union node *)mblock.ptr, list);
+	assert(mblock + elem_size <= limit);
+	SLIST_INSERT_HEAD(&pool->list, (union node *)uint2ptr(mblock), list);
 
-	while (mblock.num + stride + elem_size <= limit) {
-		union node *current = mblock.ptr;
-		union node *next = num2uiptr(mblock.num + stride).ptr;
-		mblock.ptr = next;
+	while (mblock + stride + elem_size <= limit) {
+		union node *current = uint2ptr(mblock);
+		union node *next = num2uiptr(mblock + stride).ptr;
+		mblock = ptr2uint(next);
 
 		SLIST_INSERT_AFTER(current, next, list);
 	}
