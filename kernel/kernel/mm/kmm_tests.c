@@ -22,7 +22,7 @@
 static size_t VMM_MEM_USAGE = 0;
 struct vm_space kvm_space = (struct vm_space) {};
 
-struct vm_mapping *vmm_alloc_pages(struct vm_space *space, size_t count, int flags)
+struct vm_mapping *vmm_alloc_pages(struct vm_space *space, size_t count)
 {
 	size_t s = PLATFORM_PAGE_SIZE * count;
 	if (VMM_MEM_USAGE + s > VMM_MEM_LIMIT) {

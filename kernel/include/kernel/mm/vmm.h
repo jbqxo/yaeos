@@ -28,7 +28,7 @@ struct vm_mapping {
 	struct rbtree_node process_mappings;
 	SLIST_FIELD(struct vm_mapping) sorted;
 };
-struct vm_mapping vm_mapping_new(union uiptr start, size_t length, struct vmm_region *region,
+struct vm_mapping vm_mapping_new(void *start, size_t length, struct vmm_region *region,
 				 size_t region_offset);
 int vm_mapping_cmp(void *_x, void *_y);
 

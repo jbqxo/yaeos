@@ -22,6 +22,10 @@
 static char STATIC_STORAGE[CONF_STATIC_SLAB_PAGES * PLATFORM_PAGE_SIZE];
 static struct mem_pool STATIC_PAGE_POOL;
 
+///
+/// Buffer control block for small objects (< PAGE_SIZE / 8).
+/// It's stored at the end of the buffer it manages.
+///
 struct bufctl_small {
 	SLIST_FIELD(struct bufctl_small) slist;
 };
@@ -37,38 +41,55 @@ union bufctl {
 	struct bufctl_large large;
 };
 
-static union uiptr bufctl_small_mem(struct bufctl_small *ctl, struct kmm_cache *cache)
+
+///
+/// Returns an address of a memory block that is owned by a small bufctl.
+///
+static void *bufctl_small_get_mem(struct bufctl_small *ctl, struct kmm_cache *cache)
 {
-	union uiptr ctl_mem = ptr2uiptr(ctl);
-	ctl_mem.num -= cache->size;
-	return (align_rounddown(ctl_mem, cache->alignment));
+	uintptr_t ctl_addr = ptr2uint(ctl);
+	uintptr_t buffer_addr = ctl_addr - cache->size;
+	buffer_addr = align_rounddown(buffer_addr, cache->alignment);
+	return (uint2ptr(buffer_addr));
 }
 
-static union uiptr bufctl_large_mem(struct bufctl_large *ctl)
+///
+/// Returns an address of a memory block that is owned by a large bufctl.
+///
+static void *bufctl_large_get_mem(struct bufctl_large *ctl)
 {
-	return (ptr2uiptr(ctl->memory));
+	return (ctl->memory);
 }
 
-static union uiptr bufctl_mem(union bufctl *ctl, struct kmm_cache *cache)
+///
+/// Returns an address of a memory block owned by a bufctl.
+///
+static void *bufctl_mem(union bufctl *ctl, struct kmm_cache *cache)
 {
 	if (cache->flags & KMM_CACHE_LARGE) {
-		return (bufctl_large_mem(&ctl->large));
+		return (bufctl_large_get_mem(&ctl->large));
 	}
-	return (bufctl_small_mem(&ctl->small, cache));
+	return (bufctl_small_get_mem(&ctl->small, cache));
 }
 
-static union uiptr bufctl_small_from_mem(union uiptr mem, struct kmm_cache *cache)
+///
+/// Returns an address of a small bufctl that owns given buffer.
+///
+static void *get_bufctl_small(uintptr_t buffer_addr, struct kmm_cache *cache)
 {
-	mem.num += cache->size;
-	mem = align_roundup(mem, sizeof(struct bufctl_small));
-	return (mem);
+	buffer_addr += cache->size;
+	buffer_addr = align_roundup(buffer_addr, sizeof(struct bufctl_small));
+	return (uint2ptr(buffer_addr));
 }
 
+///
+/// The structure of every used page.
+/// We keep some information at the beginning and use the rest of the page.
+///
 struct page {
 	struct kmm_slab *owner;
-	bool dynamic;
-	// Align address of buffer's data region.
-	uintptr_t : 0;
+	bool dynamic;  //! Whether the page was allocated from VMM, or from the static memory pool.
+	uintptr_t : 0; //! Align address of buffer's data region.
 	char data[0];
 };
 
@@ -77,7 +98,7 @@ struct kmm_slab {
 	SLIST_HEAD(, union bufctl) free_buffers;
 
 	struct page *page;
-	unsigned inuse;
+	unsigned objects_inuse;
 };
 
 static struct {
@@ -86,6 +107,7 @@ static struct {
 	struct kmm_cache slabs;
 } CACHES;
 
+/// Used to find empty memory slabs.
 static SLIST_HEAD(, struct kmm_cache) ALLOCATED_CACHES;
 
 static void page_free(struct page *p)
@@ -103,17 +125,17 @@ static void slab_destroy(struct kmm_slab *slab, struct kmm_cache *cache)
 	assert(slab);
 	assert(cache);
 
-	if (slab->inuse > 0) {
+	if (slab->objects_inuse > 0) {
 		LOGF_W("Freeing the slab %p while there are %d objects in use...", slab,
-		       slab->inuse);
+		       slab->objects_inuse);
 	}
 
 	if (cache->flags & KMM_CACHE_LARGE) {
 		union bufctl *it;
 		SLIST_FOREACH (it, &slab->free_buffers, slist) {
 			if (cache->dtor) {
-				union uiptr mem = bufctl_large_mem(&it->large);
-				cache->dtor(mem.ptr);
+				void *mem = bufctl_large_get_mem(&it->large);
+				cache->dtor(mem);
 			}
 			kmm_cache_free(&CACHES.large_bufctls, it);
 		}
@@ -122,15 +144,15 @@ static void slab_destroy(struct kmm_slab *slab, struct kmm_cache *cache)
 		union bufctl *it;
 		SLIST_FOREACH (it, &slab->free_buffers, slist) {
 			if (cache->dtor) {
-				union uiptr mem = bufctl_small_mem(&it->small, cache);
-				cache->dtor(mem.ptr);
+				void *mem = bufctl_small_get_mem(&it->small, cache);
+				cache->dtor(mem);
 			}
 		}
 	}
 
-	if (__likely(slab->inuse == 0)) {
+	if (__likely(slab->objects_inuse == 0)) {
 		SLIST_REMOVE(&cache->slabs_empty, slab, slabs_list);
-	} else if (slab->inuse == cache->capacity) {
+	} else if (slab->objects_inuse == cache->slab_capacity) {
 		SLIST_REMOVE(&cache->slabs_full, slab, slabs_list);
 	} else {
 		SLIST_REMOVE(&cache->slabs_partial, slab, slabs_list);
@@ -139,15 +161,19 @@ static void slab_destroy(struct kmm_slab *slab, struct kmm_cache *cache)
 	page_free(slab->page);
 }
 
+///
+/// Reclaims required number of free pages from all system caches.
+///
+/// @return The number of reclaimed pages. May be less or more than required.
 static unsigned caches_try_reclaim(unsigned reclaim)
 {
 	unsigned reclaimed = 0;
 	struct kmm_cache *itc;
 	SLIST_FOREACH (itc, &ALLOCATED_CACHES, caches) {
-		// Can't use SLIST_FOREACH 'cause it would use a slab after freeing.
+		// Can't use SLIST_FOREACH because it would use a slab after freeing.
 		struct kmm_slab *next;
 		struct kmm_slab *current = SLIST_FIRST(&itc->slabs_empty);
-		while (current) {
+		while (current != NULL) {
 			if (reclaimed >= reclaim) {
 				return (reclaimed);
 			}
@@ -165,31 +191,40 @@ static unsigned caches_try_reclaim(unsigned reclaim)
 	return (reclaimed);
 }
 
+///
+/// Allocates a new page from VMM.
+/// If the allocation fails, it will try to reclaim some memory from other caches.
+/// If the allocation fails again and the cache is capable of using static storage,
+/// it will get memory from static memory pool as a last resort.
+///
 static struct page *page_alloc(struct kmm_cache *cache)
 {
 	assert(cache);
 
 	const size_t to_allocate = 1;
 	struct vm_mapping *mapping = vmm_alloc_pages(&kvm_space, to_allocate);
-	if (!mapping) {
+	if (mapping == NULL) {
 		LOGF_W("System is running out of memory. Trying to reclaim some...");
 		if (caches_try_reclaim(to_allocate) >= to_allocate) {
 			mapping = vmm_alloc_pages(&kvm_space, to_allocate);
+			if (mapping == NULL) {
+				LOGF_E("Can't allocate new page, but we've successfully reclaimed some.");
+			}
 		} else {
 			LOGF_W("Failed to reclaim required amount of memory.");
 		}
 	}
 
-	struct page *page = mapping->start;
+	struct page *page = mapping != NULL ? mapping->start : NULL;
 
-	if (__unlikely(!page)) {
+	if (__unlikely(page == NULL)) {
 		if (cache->flags & KMM_CACHE_STATIC) {
 			LOGF_W("Couldn't allocate a page from dynamic memory for %s cache. Trying "
 			       "static...",
 			       cache->name);
 
 			page = mem_pool_alloc(&STATIC_PAGE_POOL);
-			if (__unlikely(!page)) {
+			if (__unlikely(page == NULL)) {
 				LOGF_E("Couldn't allocate a page from static memory for %s cache.",
 				       cache->name);
 				return (NULL);
@@ -205,21 +240,24 @@ static struct page *page_alloc(struct kmm_cache *cache)
 		page->dynamic = true;
 	}
 
-	{
-		union uiptr page_addr = ptr2uiptr(page);
-		assert(page_addr.ptr == align_roundup(page_addr, PLATFORM_PAGE_SIZE).ptr);
-	}
+	assert(ptr2uint(page) == align_roundup(ptr2uint(page), PLATFORM_PAGE_SIZE));
 
 	return (page);
 }
 
+///
+/// Returns page structure that contains an address.
+///
 static struct page *page_get_by_addr(void *addr)
 {
-	union uiptr p = ptr2uiptr(addr);
-	p.num &= -PLATFORM_PAGE_SIZE;
-	return (p.ptr);
+	uintptr_t p = ptr2uint(addr);
+	p &= -PLATFORM_PAGE_SIZE;
+	return (uint2ptr(p));
 }
 
+///
+/// Returns slab that owns an address.
+///
 static struct kmm_slab *slab_get_by_addr(void *addr)
 {
 	return (page_get_by_addr(addr)->owner);
@@ -230,7 +268,7 @@ static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colo
 	assert(cache);
 
 	struct page *page = page_alloc(cache);
-	if (__unlikely(!page)) {
+	if (__unlikely(page == NULL)) {
 		return (NULL);
 	}
 
@@ -239,30 +277,30 @@ static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colo
 	struct kmm_slab *slab = cursor.ptr;
 	cursor.num += sizeof(*slab);
 	cursor.num += colour;
-	cursor = align_roundup(cursor, cache->alignment);
+	cursor.num = align_roundup(cursor.num, cache->alignment);
 
 	page->owner = slab;
 
-	slab->inuse = 0;
+	slab->objects_inuse = 0;
 	slab->page = page;
 	SLIST_FIELD_INIT(slab, slabs_list);
 	SLIST_INIT(&slab->free_buffers);
 
 	// Check that leftover space is less than a full stride.
-	assert((ptr2uiptr(page).num + PLATFORM_PAGE_SIZE) -
-		       (cursor.num + cache->capacity * cache->stride) <
+	assert((ptr2uint(page) + PLATFORM_PAGE_SIZE) -
+		       (cursor.num + cache->slab_capacity * cache->stride) <
 	       cache->stride);
-	for (int i = 0; i < cache->capacity; i++, cursor.num += cache->stride) {
-		union uiptr ctl_mem = bufctl_small_from_mem(cursor, cache);
+	for (int i = 0; i < cache->slab_capacity; i++, cursor.num += cache->stride) {
+		union uiptr ctl_mem = ptr2uiptr(get_bufctl_small(cursor.num, cache));
 		assert(ctl_mem.num < cursor.num + cache->stride);
 
 		struct bufctl_small *ctl = ctl_mem.ptr;
 		SLIST_FIELD_INIT(ctl, slist);
 		SLIST_INSERT_HEAD(&slab->free_buffers, (union bufctl *)ctl, slist);
 
-		union uiptr mem = bufctl_small_mem(ctl, cache);
+		void *mem = bufctl_small_get_mem(ctl, cache);
 		if (cache->ctor) {
-			cache->ctor(mem.ptr);
+			cache->ctor(mem);
 		}
 	}
 
@@ -284,23 +322,24 @@ static struct kmm_slab *slab_create_large(struct kmm_cache *cache, unsigned colo
 	}
 	page->owner = slab;
 
-	union uiptr obj = ptr2uiptr(page->data);
-	obj.num += colour;
-	obj = align_roundup(obj, cache->alignment);
+	uintptr_t obj_addr = ptr2uint(page->data);
+	obj_addr += colour;
+	obj_addr = align_roundup(obj_addr, cache->alignment);
 
-	slab->inuse = 0;
+	slab->objects_inuse = 0;
 	slab->page = page;
 	SLIST_FIELD_INIT(slab, slabs_list);
 	SLIST_INIT(&slab->free_buffers);
 
-	for (int i = 0; i < cache->capacity; i++, obj.num += cache->stride) {
+	for (int i = 0; i < cache->slab_capacity; i++, obj_addr += cache->stride) {
 		struct bufctl_large *ctl = kmm_cache_alloc(&CACHES.large_bufctls);
 		SLIST_FIELD_INIT(ctl, slist);
 		SLIST_INSERT_HEAD(&slab->free_buffers, (union bufctl *)ctl, slist);
 
-		ctl->memory = obj.ptr;
+		void *obj = uint2ptr(obj_addr);
+		ctl->memory = obj;
 		if (cache->ctor) {
-			cache->ctor(obj.ptr);
+			cache->ctor(obj);
 		}
 	}
 
@@ -316,13 +355,13 @@ static void object_free(void *mem, struct kmm_slab *slab, struct kmm_cache *cach
 	assert(mem);
 	assert(slab);
 
-	slab->inuse--;
+	slab->objects_inuse--;
 	union bufctl *ctl;
 	if (cache->flags & KMM_CACHE_LARGE) {
 		ctl = kmm_cache_alloc(&CACHES.large_bufctls);
 		ctl->large.memory = mem;
 	} else {
-		ctl = bufctl_small_from_mem(ptr2uiptr(mem), cache).ptr;
+		ctl = get_bufctl_small(ptr2uint(mem), cache);
 	}
 	SLIST_INSERT_HEAD(&slab->free_buffers, ctl, slist);
 }
@@ -334,14 +373,28 @@ static void *object_alloc(struct kmm_slab *slab, struct kmm_cache *cache)
 
 	union bufctl *free_ctl = SLIST_FIRST(&slab->free_buffers);
 	SLIST_REMOVE(&slab->free_buffers, free_ctl, slist);
-	union uiptr mem = bufctl_mem(free_ctl, cache);
+	void *mem = bufctl_mem(free_ctl, cache);
 	if (cache->flags & KMM_CACHE_LARGE) {
 		kmm_cache_free(&CACHES.large_bufctls, free_ctl);
 	}
 
-	slab->inuse++;
+	slab->objects_inuse++;
 
-	return (mem.ptr);
+	return (mem);
+}
+
+static size_t cache_get_avail_space(struct kmm_cache *cache)
+{
+	assert(cache);
+	assert(cache->stride > 0);
+
+	// struct page is always stored at the beginning of the page.
+	size_t avail_space = PLATFORM_PAGE_SIZE - sizeof(struct page);
+	if (!(cache->flags & KMM_CACHE_LARGE)) {
+		avail_space -= sizeof(struct kmm_slab);
+	}
+
+	return (avail_space);
 }
 
 static size_t cache_get_capacity(struct kmm_cache *cache)
@@ -349,26 +402,16 @@ static size_t cache_get_capacity(struct kmm_cache *cache)
 	assert(cache);
 	assert(cache->stride > 0);
 
-	size_t avail_space = PLATFORM_PAGE_SIZE - sizeof(struct page);
-	if (!(cache->flags & KMM_CACHE_LARGE)) {
-		avail_space -= sizeof(struct kmm_slab);
-	}
-
-	return (avail_space / cache->stride);
+	return (cache_get_avail_space(cache) / cache->stride);
 }
 
 static size_t cache_get_wasted(struct kmm_cache *cache)
 {
 	assert(cache);
-	assert(cache->capacity > 0);
+	assert(cache->slab_capacity > 0);
 	assert(cache->stride > 0);
 
-	size_t avail_space = PLATFORM_PAGE_SIZE - sizeof(struct page);
-	if (!(cache->flags & KMM_CACHE_LARGE)) {
-		avail_space -= sizeof(struct kmm_slab);
-	}
-
-	return (avail_space - cache->capacity * cache->stride);
+	return (cache_get_avail_space(cache) - cache->slab_capacity * cache->stride);
 }
 
 static void cache_init(struct kmm_cache *restrict cache, const char *name, size_t size,
@@ -390,8 +433,8 @@ static void cache_init(struct kmm_cache *restrict cache, const char *name, size_
 		cache->alignment = MAX(sizeof(struct bufctl_small), cache->alignment);
 	}
 
-	cache->stride = align_roundup(num2uiptr(obj_space), cache->alignment).num;
-	cache->capacity = cache_get_capacity(cache);
+	cache->stride = align_roundup(obj_space, cache->alignment);
+	cache->slab_capacity = cache_get_capacity(cache);
 
 	cache->colour_max = cache_get_wasted(cache) & (sizeof(void *) * -1);
 	cache->colour_off = sizeof(void *);
@@ -406,10 +449,6 @@ static void cache_init(struct kmm_cache *restrict cache, const char *name, size_
 
 void kmm_init(void)
 {
-	assert(vmmapi.alloc_pages);
-	assert(vmmapi.alloc_pages_at);
-	assert(vmmapi.free_pages_at);
-
 	mem_pool_init(&STATIC_PAGE_POOL, STATIC_STORAGE, sizeof(STATIC_STORAGE), PLATFORM_PAGE_SIZE,
 		      PLATFORM_PAGE_SIZE);
 
@@ -482,7 +521,7 @@ void *kmm_cache_alloc(struct kmm_cache *cache)
 	if (!SLIST_EMPTY(&cache->slabs_partial)) {
 		slab = SLIST_FIRST(&cache->slabs_partial);
 
-		bool becomes_full = slab->inuse + 1 == cache->capacity;
+		bool becomes_full = slab->objects_inuse + 1 == cache->slab_capacity;
 		if (becomes_full) {
 			SLIST_REMOVE(&cache->slabs_partial, slab, slabs_list);
 			SLIST_INSERT_HEAD(&cache->slabs_full, slab, slabs_list);
@@ -525,8 +564,8 @@ void kmm_cache_free(struct kmm_cache *cache, void *mem)
 	struct kmm_slab *slab = slab_get_by_addr(mem);
 	assert(slab);
 
-	bool was_full = slab->inuse == cache->capacity;
-	bool becomes_empty = slab->inuse == 1;
+	bool was_full = slab->objects_inuse == cache->slab_capacity;
+	bool becomes_empty = slab->objects_inuse == 1;
 
 	if (was_full) {
 		SLIST_REMOVE(&cache->slabs_full, slab, slabs_list);

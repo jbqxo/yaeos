@@ -95,9 +95,9 @@ static struct chunk *init_chunks(struct buddy_allocator *alloc, void **mem_chunk
 	unsigned levels = alloc->max_lvl + 1;
 
 	for (int c = 0; c < chnum; c++) {
-		union uiptr aligned = align_roundup(ptr2uiptr(mem_chunks[c]), PLATFORM_PAGE_SIZE);
-		chunks[c].addr = aligned.num;
-		chunks[c].size = sizes[c] - (aligned.num - ptr2uiptr(mem_chunks[c]).num);
+		uintptr_t aligned = align_roundup(ptr2uint(mem_chunks[c]), PLATFORM_PAGE_SIZE);
+		chunks[c].addr = aligned;
+		chunks[c].size = sizes[c] - (aligned - ptr2uint(mem_chunks[c]));
 		chunks[c].bitmaps = intern_alloc(alloc, sizeof(*chunks[c].bitmaps) * levels).ptr;
 	}
 
