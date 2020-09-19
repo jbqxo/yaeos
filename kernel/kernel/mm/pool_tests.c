@@ -1,4 +1,4 @@
-// UNITY_TEST DEPENDS ON: kernel/tests_utils.c
+// UNITY_TEST DEPENDS ON: kernel/test_fakes/panic.c
 
 #include "kernel/mm/pool.h"
 

@@ -9,8 +9,6 @@
 #include <stdlib.h>
 #include <unity.h>
 
-
-
 __weak void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, const char *restrict func,
 			 const char *restrict line, const char *restrict format, ...)
 {

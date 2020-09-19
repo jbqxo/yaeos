@@ -34,7 +34,7 @@ FIND_IGNORE_ARCHS :=\
     $(patsubst %, -not \( -path % -prune \), \
     $(shell $(FIND) * -type d -path 'arch/*' -prune | $(GREP) -v $(ARCH)))
 FILES_OBJ :=\
-    $(filter-out $(FILES_TESTS_OBJ) tests_utils.c.o, \
+    $(filter-out $(FILES_TESTS_OBJ) test_fakes/%.c.o, \
     $(addsuffix .o, \
     $(shell $(FIND) * $(FIND_IGNORE_ARCHS) -name '*.c' -or -name '*.asm')))
 
