@@ -545,8 +545,7 @@ static int put_flags(fprintf_fn f, struct conv_spec s, struct argument arg)
 static int print_conv_spec(fprintf_fn f, struct conv_spec s, va_list *args)
 {
 	if (s.spec == CS_PERCENTAGE) {
-		f("%%", 2);
-		return (1);
+		return (f("%", 1));
 	}
 
 	struct argument arg = fetch_arg(s, args);

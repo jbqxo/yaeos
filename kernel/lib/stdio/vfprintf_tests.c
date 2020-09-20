@@ -1,6 +1,6 @@
-#include <unity.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
+#include <unity.h>
 
 #define GUARDVAL 0xAAu
 
@@ -27,19 +27,21 @@ void setUp(void)
 }
 
 void tearDown(void)
-{
-}
+{}
 
-#define VFPRINTF(expected, format, ...)                                                            \
-	do {                                                                                       \
-		int s = strlen(expected);                                                          \
-		int r = fprintf(console_write, (format), ##__VA_ARGS__);                           \
-		TEST_ASSERT_EQUAL_HEX8(GUARDVAL, buffer[s]);                                       \
-		buffer[s] = '\0';                                                                  \
-		TEST_ASSERT_EQUAL_STRING((expected), buffer);                                      \
-		TEST_ASSERT_EQUAL_INT(s, r);                                                       \
-		reset();                                                                           \
-	} while (0);
+#define VFPRINTF(expected, format, ...)                                        \
+	do {                                                                   \
+		int s = strlen(expected);                                      \
+		int r = fprintf(console_write, (format), ##__VA_ARGS__);       \
+		TEST_ASSERT_EQUAL_HEX8(GUARDVAL, buffer[s]);                   \
+		buffer[s] = '\0';                                              \
+		TEST_ASSERT_EQUAL_STRING((expected), buffer);                  \
+		TEST_ASSERT_EQUAL_INT(s, r);                                   \
+		TEST_ASSERT_EACH_EQUAL_CHAR_MESSAGE(GUARDVAL, &buffer[s + 1],  \
+						    ARRAY_SIZE(buffer) - s,    \
+						    "Corrupted guard values"); \
+		reset();                                                       \
+	} while (0)
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wformat"
@@ -185,12 +187,6 @@ static void conv_uchar(void)
 {
 	VFPRINTF("F", "%c", 'F');
 	VFPRINTF("Some string", "Some str%cng", 'i');
-}
-static void conv_written_output(void)
-{
-}
-static void conv_percentage(void)
-{
 }
 
 int main(void)
