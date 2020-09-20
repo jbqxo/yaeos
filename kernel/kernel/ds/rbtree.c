@@ -1,6 +1,6 @@
 #include "kernel/ds/rbtree.h"
 
-void rbt_set_colour(struct rbtree_node *n, enum rbtree_colour c)
+static void rbt_set_colour(struct rbtree_node *n, enum rbtree_colour c)
 {
 	assert(n);
 
@@ -15,7 +15,7 @@ void rbt_set_colour(struct rbtree_node *n, enum rbtree_colour c)
 #endif
 }
 
-enum rbtree_colour rbt_get_colour(struct rbtree_node *n)
+static enum rbtree_colour rbt_get_colour(struct rbtree_node *n)
 {
 	if (!n) {
 		return (RBTREE_BLACK);
@@ -27,7 +27,7 @@ enum rbtree_colour rbt_get_colour(struct rbtree_node *n)
 #endif
 }
 
-void rbt_set_parent(struct rbtree_node *node, struct rbtree_node *parent)
+static void rbt_set_parent(struct rbtree_node *node, struct rbtree_node *parent)
 {
 	assert(node);
 
@@ -39,7 +39,7 @@ void rbt_set_parent(struct rbtree_node *node, struct rbtree_node *parent)
 #endif
 }
 
-struct rbtree_node *rbt_get_parent(struct rbtree_node *node)
+static struct rbtree_node *rbt_get_parent(struct rbtree_node *node)
 {
 	assert(node);
 
@@ -50,7 +50,7 @@ struct rbtree_node *rbt_get_parent(struct rbtree_node *node)
 #endif
 }
 
-struct rbtree_node *rbt_get_grandparent(struct rbtree_node *node)
+static struct rbtree_node *rbt_get_grandparent(struct rbtree_node *node)
 {
 	assert(node);
 
@@ -63,7 +63,7 @@ struct rbtree_node *rbt_get_grandparent(struct rbtree_node *node)
 	return (grandparent);
 }
 
-struct rbtree_node *rbt_get_sibling(struct rbtree_node *node)
+static struct rbtree_node *rbt_get_sibling(struct rbtree_node *node)
 {
 	assert(node);
 
@@ -77,7 +77,7 @@ struct rbtree_node *rbt_get_sibling(struct rbtree_node *node)
 	}
 }
 
-struct rbtree_node *rbt_get_uncle(struct rbtree_node *node)
+static struct rbtree_node *rbt_get_uncle(struct rbtree_node *node)
 {
 	assert(node);
 
@@ -88,7 +88,7 @@ struct rbtree_node *rbt_get_uncle(struct rbtree_node *node)
 	return rbt_get_sibling(parent);
 }
 
-void rbt_replace_subtree(struct rbtree *rbt, struct rbtree_node *replacee,
+static void rbt_replace_subtree(struct rbtree *rbt, struct rbtree_node *replacee,
 				       struct rbtree_node *replacement)
 {
 	struct rbtree_node *replacee_parent = rbt_get_parent(replacee);
@@ -108,7 +108,7 @@ void rbt_replace_subtree(struct rbtree *rbt, struct rbtree_node *replacee,
 	}
 }
 
-void rbt_swap_nodes(struct rbtree *rbt, struct rbtree_node *x, struct rbtree_node *y)
+static void rbt_swap_nodes(struct rbtree *rbt, struct rbtree_node *x, struct rbtree_node *y)
 {
 #define TRY_SET_PARENT(NODE, PARENT)                      \
 	do {                                              \
@@ -239,7 +239,7 @@ void rbt_rotate_left(struct rbtree *rbt, struct rbtree_node *old_root)
 	rbt_set_parent(old_root, new_root);
 }
 
-void rbt_rotate_right(struct rbtree *rbt, struct rbtree_node *old_root)
+static void rbt_rotate_right(struct rbtree *rbt, struct rbtree_node *old_root)
 {
 	assert(old_root);
 
@@ -254,7 +254,7 @@ void rbt_rotate_right(struct rbtree *rbt, struct rbtree_node *old_root)
 	rbt_set_parent(old_root, new_root);
 }
 
-void rbt_insert_fix(struct rbtree *rbt, struct rbtree_node *new)
+static void rbt_insert_fix(struct rbtree *rbt, struct rbtree_node *new)
 {
 	assert(new);
 
@@ -359,7 +359,7 @@ void rbtree_insert(struct rbtree *rbt, struct rbtree_node *new)
 	rbt_insert_fix(rbt, new);
 }
 
-struct rbtree_node *rbt_find_successor(struct rbtree_node *subtree)
+static struct rbtree_node *rbt_find_successor(struct rbtree_node *subtree)
 {
 	struct rbtree_node *n = subtree->left;
 	while (n->right) {
@@ -368,7 +368,7 @@ struct rbtree_node *rbt_find_successor(struct rbtree_node *subtree)
 	return (n);
 }
 
-void rbt_delete_fix(struct rbtree *rbt, struct rbtree_node *node)
+static void rbt_delete_fix(struct rbtree *rbt, struct rbtree_node *node)
 {
 	while (true) {
 		struct rbtree_node *parent = rbt_get_parent(node);

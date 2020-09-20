@@ -1,5 +1,8 @@
 // UNITY_TEST DEPENDS ON: kernel/test_fakes/panic.c
 
+// TODO: Is it good idea for unit testing?
+#include "rbtree.c"
+
 #include "kernel/ds/rbtree.h"
 
 #include "kernel/cppdefs.h"
