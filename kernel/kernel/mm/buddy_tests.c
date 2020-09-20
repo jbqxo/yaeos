@@ -1,3 +1,5 @@
+// UNITY_TEST DEPENDS ON: kernel/kernel/mm/buddy.c
+
 #include "kernel/mm/buddy.h"
 
 #include "arch/platform.h"

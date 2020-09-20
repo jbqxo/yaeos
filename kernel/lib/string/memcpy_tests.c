@@ -1,3 +1,5 @@
+// UNITY_TEST DEPENDS ON: kernel/lib/string/memcpy.c
+
 #include "lib/string.h"
 
 #include <stdbool.h>

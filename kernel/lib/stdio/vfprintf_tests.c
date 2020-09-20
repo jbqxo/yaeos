@@ -1,3 +1,6 @@
+// UNITY_TEST DEPENDS ON: kernel/lib/stdio/vfprintf.c
+#include "kernel/cppdefs.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <unity.h>
