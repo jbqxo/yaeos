@@ -37,6 +37,7 @@ void rbtree_delete(struct rbtree *rbt, struct rbtree_node *deletee);
 struct rbtree_node *rbtree_search(struct rbtree *rbt, void *value);
 
 struct rbtree_node *rbtree_search_min(struct rbtree *rbt, void *limit);
+struct rbtree_node *rbtree_search_max(struct rbtree *rbt, void *limit);
 
 void rbtree_iter_range(struct rbtree *rbt, void *value_from, void *value_to,
 		       bool (*fn)(void *elem, void *data), void *data);
