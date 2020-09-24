@@ -89,7 +89,7 @@ static struct rbtree_node *rbt_get_uncle(struct rbtree_node *node)
 }
 
 static void rbt_replace_subtree(struct rbtree *rbt, struct rbtree_node *replacee,
-				struct rbtree_node *replacement)
+				       struct rbtree_node *replacement)
 {
 	struct rbtree_node *replacee_parent = rbt_get_parent(replacee);
 	if (replacee_parent) {

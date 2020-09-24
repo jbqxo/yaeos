@@ -279,12 +279,12 @@ static void can_iterate(void)
 {
 	int testset[] = { 0, 10, 15, 16, 17, 18, 20, 21, 99, 101, 115 };
 	const size_t testset_len = ARRAY_SIZE(testset);
-
 	struct rbtree *rbt = malloc(sizeof(*rbt));
 	rbtree_init_tree(rbt, intcmp);
 
 	for (int i = 0; i < testset_len; i++) {
 		struct rbtree_node *n = malloc(sizeof(*n));
+		rbtree_init_node(n);
 		n->data = (void *)&testset[i];
 
 		rbtree_insert(rbt, n);
@@ -299,6 +299,48 @@ static void can_iterate(void)
 	}
 }
 
+static void search_min(void)
+{
+	int testset[] = {0, 8, 10, 35, 40};
+	const size_t testset_len = ARRAY_SIZE(testset);
+	struct rbtree *rbt = calloc(1, sizeof(*rbt));
+	rbtree_init_tree(rbt, intcmp);
+
+	for (int i = 0; i < testset_len; i++) {
+		struct rbtree_node *n = malloc(sizeof(*n));
+		rbtree_init_node(n);
+		n->data = &testset[i];
+
+		rbtree_insert(rbt, n);
+	}
+
+	int minlimit = 9;
+	struct rbtree_node *result = rbtree_search_min(rbt, &minlimit);
+
+	TEST_ASSERT_EQUAL_INT_MESSAGE(10, *(int*)result->data, "We've found a wrong node");
+}
+
+static void search_max(void)
+{
+	int testset[] = {0, 8, 10, 35, 40};
+	const size_t testset_len = ARRAY_SIZE(testset);
+	struct rbtree *rbt = calloc(1, sizeof(*rbt));
+	rbtree_init_tree(rbt, intcmp);
+
+	for (int i = 0; i < testset_len; i++) {
+		struct rbtree_node *n = malloc(sizeof(*n));
+		rbtree_init_node(n);
+		n->data = &testset[i];
+
+		rbtree_insert(rbt, n);
+	}
+
+	int maxlimit = 39;
+	struct rbtree_node *result = rbtree_search_max(rbt, &maxlimit);
+
+	TEST_ASSERT_EQUAL_INT_MESSAGE(35, *(int*)result->data, "We've found a wrong node");
+}
+
 int main(void)
 {
 	UNITY_BEGIN();
@@ -308,6 +350,8 @@ int main(void)
 	RUN_TEST(red_node_has_black_children);
 	RUN_TEST(same_black_height);
 	RUN_TEST(can_iterate);
+	RUN_TEST(search_min);
+	RUN_TEST(search_max);
 	UNITY_END();
 	return (0);
 }
