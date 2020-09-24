@@ -89,7 +89,7 @@ static struct rbtree_node *rbt_get_uncle(struct rbtree_node *node)
 }
 
 static void rbt_replace_subtree(struct rbtree *rbt, struct rbtree_node *replacee,
-				       struct rbtree_node *replacement)
+				struct rbtree_node *replacement)
 {
 	struct rbtree_node *replacee_parent = rbt_get_parent(replacee);
 	if (replacee_parent) {
@@ -501,29 +501,38 @@ struct rbtree_node *rbtree_search_min(struct rbtree *rbt, void *limit)
 
 	while (cursor) {
 		int cmp_result = rbt->cmp(cursor->data, limit);
-		while (cmp_result > 0 && cursor->left) {
+
+		while (cmp_result > 0 && cursor->left != NULL) {
 			cursor = cursor->left;
 			cmp_result = rbt->cmp(cursor->data, limit);
 		}
-		while (cmp_result < 0 && cursor->right) {
+
+		while (cmp_result < 0 && cursor->right != NULL) {
+			// We could overstep the limit, so try to return to the limit's boundaries.
 			cursor = cursor->right;
 			cmp_result = rbt->cmp(cursor->data, limit);
 		}
 
 		if (cmp_result == 0) {
-			return (cursor);
-		} else if (cmp_result < 0 && !cursor->right) {
+			break;
+		}
+
+		if (cmp_result < 0 && cursor->right == NULL) {
 			while (cmp_result < 0) {
 				cursor = rbt_get_parent(cursor);
 				cmp_result = rbt->cmp(cursor->data, limit);
 			}
-			return (cursor);
-		} else {
-			assert(cmp_result > 0 && !cursor->left);
-			return (cursor);
+			break;
 		}
 
+		if (cmp_result > 0 && cursor->left == NULL) {
+			break;
+		}
 	}
+
+	return (cursor);
+}
+
 }
 
 void rbtree_iter_range(struct rbtree *rbt, void *value_from, void *value_to,
