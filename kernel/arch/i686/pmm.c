@@ -1,15 +1,17 @@
-#include "arch_i686/vm.h"
-#include "arch_i686/platform.h"
 #include "arch/mm/pmm.h"
+
+#include "arch_i686/kernel.h"
+#include "arch_i686/platform.h"
+#include "arch_i686/vm.h"
+
 #include "kernel/cppdefs.h"
-#include "kernel/utils.h"
 #include "kernel/klog.h"
+#include "kernel/utils.h"
 
 #include <multiboot.h>
-
-#include <stdint.h>
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 static uintptr_t max_addr(void)
 {

@@ -36,7 +36,7 @@ struct vm_mapping *vmm_alloc_pages(struct vm_space *space, size_t count)
 	return (m);
 }
 
-void vmm_free_pages_at(struct vm_space *space, void *address, size_t count)
+void vmm_free_pages(struct vm_space *space, void *address, size_t count)
 {
 	TEST_ASSERT_NOT_NULL(address);
 	VMM_MEM_USAGE -= PLATFORM_PAGE_SIZE;

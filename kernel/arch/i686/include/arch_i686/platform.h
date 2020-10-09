@@ -3,6 +3,8 @@
 
 #define PLATFORM_PAGE_SIZE       (4096)
 #define PLATFORM_REGISTERS_COUNT (20)
+#define PLATFORM_PAGEDIR_SIZE    PLATFORM_PAGE_SIZE
+#define PLATFORM_PAGEDIR_COUNT   (2)
 
 #ifndef __ASSEMBLER__
 #include "kernel/cppdefs.h"

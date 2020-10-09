@@ -114,7 +114,7 @@ static void page_free(struct page *p)
 {
 	assert(p);
 	if (p->dynamic) {
-		vmm_free_pages_at(&kvm_space, p, 1);
+		vmm_free_pages(&kvm_space, p, 1);
 	} else {
 		mem_pool_free(&STATIC_PAGE_POOL, p);
 	}
