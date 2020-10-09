@@ -143,7 +143,8 @@ def do_sanitizers(container, args):
             return
 
     run_cmd(container=container,
-            command=["./scripts/run_sanitizers.py"] + args.cmd)
+            command=["./scripts/run_sanitizers.py"] + args.cmd,
+            args=args)
 
 
 def do_clean(container, args):

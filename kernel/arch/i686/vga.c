@@ -1,5 +1,6 @@
 #include "arch_i686/platform.h"
 #include "arch_i686/vm.h"
+#include "arch_i686/kernel.h"
 
 #include "kernel/console.h"
 #include "kernel/cppdefs.h"

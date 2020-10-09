@@ -56,6 +56,7 @@ ForEachMacros:
   - 'KVSTATIC_FOREACH'
   - 'KVSTATIC_FOREACH0'
   - 'SLIST_FOREACH'
+  - 'VM_SPACE_MAPPINGS_FOREACH'
 
 IncludeBlocks: Regroup
 IncludeCategories:

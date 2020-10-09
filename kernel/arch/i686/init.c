@@ -3,6 +3,7 @@
 #include "arch_i686/intr.h"
 #include "arch_i686/platform.h"
 #include "arch_i686/vm.h"
+#include "arch_i686/kernel.h"
 
 #include "arch/platform.h"
 
@@ -17,7 +18,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// TODO: Maybe add some "smart" recursive macrosses to patch the stack automatically?
 /**
  * @brief Adjust the frame with given offset.
  * @param level The depth of the frame to patch.
@@ -75,6 +75,7 @@ static void map_platform(void *page_dir)
 	// Map low 1MiB
 	const uintptr_t start = 0x0;
 	const uintptr_t end = 1 * 1024 * 1024;
+
 	map_addr_range(page_dir, (void *)start, (void *)end,
 		       VM_TABLE_FLAG_PRESENT | VM_TABLE_FLAG_RW);
 }

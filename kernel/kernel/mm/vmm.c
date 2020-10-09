@@ -101,22 +101,6 @@ static size_t find_free_space(struct vm_space *s, size_t pg_count, uintptr_t *re
 
 struct vm_mapping *vmm_alloc_pages(struct vm_space *s, size_t count)
 {
-	// Find required free space.
-	// Call alloc_at.
-	//     Assert that there is enough space.
-	//     Create mapping object.
-	//     Create region object.
-	//     init region
-	//         Set paddr to 0, as it won't be backed by the physical memory by default.
-	//         Set length.
-	//         Set flags.
-	//     init mapping
-	//         Set start: Can be in higher or lower memory.
-	//         Set length.
-	//         Connect with region.
-	//         *Calculate* and set region_offset.
-	//         Wire it up with RBT and linked list.
-	// Result: Inited mapping for user- or kernel- space.
 	uintptr_t location;
 	if (find_free_space(s, count, &location) < count) {
 		return (NULL);

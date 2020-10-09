@@ -25,12 +25,16 @@ void kmm_cache_destroy(struct kmm_cache *cache)
 void *kmm_cache_alloc(struct kmm_cache *cache)
 {
 	void *obj = aligned_alloc(cache->alignment, cache->size);
-	cache->ctor(obj);
+	if (cache->ctor != NULL) {
+		cache->ctor(obj);
+	}
 	return (obj);
 }
 
 void kmm_cache_free(struct kmm_cache *cache, void *mem)
 {
-	cache->dtor(mem);
+	if (cache->dtor != NULL) {
+		cache->dtor(mem);
+	}
 	free(mem);
 }

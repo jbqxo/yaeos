@@ -8,6 +8,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// BUG: Bit-field's order is not portable.
+
 /**
  * struct gdt_entry - the structure contains description of one segment descriptor.
  * @limit_low: the lowest part of the segment limit.
