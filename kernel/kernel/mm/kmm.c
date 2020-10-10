@@ -1,6 +1,6 @@
 #include "kernel/mm/kmm.h"
 
-#include "arch/platform.h"
+#include "kernel/platform.h"
 
 #include "kernel/config.h"
 #include "kernel/cppdefs.h"

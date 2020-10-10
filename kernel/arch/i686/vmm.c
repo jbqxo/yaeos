@@ -1,9 +1,8 @@
 #include "arch_i686/vmm.h"
 
-#include "arch/mm/vmm.h"
-
 #include "kernel/klog.h"
 #include "kernel/mm/kmm.h"
+#include "kernel/mm/vmm.h"
 
 #include <stdbool.h>
 #include <stdint.h>

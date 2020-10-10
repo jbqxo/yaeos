@@ -1,15 +1,14 @@
 #include "arch_i686/descriptors.h"
 #include "arch_i686/exceptions.h"
 #include "arch_i686/intr.h"
-#include "arch_i686/platform.h"
-#include "arch_i686/vm.h"
 #include "arch_i686/kernel.h"
-
-#include "arch/platform.h"
+#include "arch_i686/platform.h"
+#include "arch_i686/vmm.h"
 
 #include "kernel/config.h"
 #include "kernel/cppdefs.h"
 #include "kernel/kernel.h"
+#include "kernel/platform.h"
 
 #include "lib/string.h"
 

@@ -2,10 +2,9 @@
 
 #include "kernel/mm/buddy.h"
 
-#include "arch/platform.h"
-
 #include "kernel/config.h"
 #include "kernel/cppdefs.h"
+#include "kernel/platform.h"
 
 #include <stdlib.h>
 #include <string.h>

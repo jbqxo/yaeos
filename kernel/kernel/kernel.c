@@ -1,12 +1,9 @@
 #include "kernel/kernel.h"
 
-#include "arch/kernel.h"
-
 #include "kernel/config.h"
 #include "kernel/console.h"
 #include "kernel/cppdefs.h"
 #include "kernel/klog.h"
-#include "kernel/mm/pmm.h"
 
 #include "lib/stdio.h"
 

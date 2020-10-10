@@ -4,11 +4,10 @@
 
 #include "kernel/mm/kmm.h"
 
-#include "arch/platform.h"
-
 #include "kernel/config.h"
 #include "kernel/cppdefs.h"
 #include "kernel/mm/vmm.h"
+#include "kernel/platform.h"
 
 #include <assert.h>
 #include <stddef.h>

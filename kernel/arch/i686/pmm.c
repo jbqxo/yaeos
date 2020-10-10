@@ -1,4 +1,4 @@
-#include "arch/mm/pmm.h"
+#include "kernel/mm/pmm.h"
 
 #include "arch_i686/kernel.h"
 #include "arch_i686/platform.h"

@@ -1,9 +1,8 @@
 #include "kernel/mm/buddy.h"
 
-#include "arch/platform.h"
-
 #include "kernel/cppdefs.h"
 #include "kernel/klog.h"
+#include "kernel/platform.h"
 #include "kernel/utils.h"
 
 #include "lib/string.h"
