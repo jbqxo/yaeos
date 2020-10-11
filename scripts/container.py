@@ -84,12 +84,12 @@ def run_make(targets, container, args, variables={}, jobs=1):
 
 def do_exec(container, args):
     """Execute given comand"""
-    run_cmd(container=container, command=args.cmd, args=args)
+    run_cmd(container=container, command=args.cmd + args.args, args=args)
 
 
 def do_make(container, args):
     """Run make with given target"""
-    run_make(args.cmd, container, args, jobs=args.jobs)
+    run_make(args.cmd + args.args, container, args, jobs=args.jobs)
 
 
 def do_build_image(container, args):
@@ -101,7 +101,7 @@ def do_build_image(container, args):
 def do_gdb(container, args):
     """Run gdb server against given file"""
     run_cmd(container=container,
-            command=["gdbserver", "0.0.0.0:1234"] + args.cmd,
+            command=["gdbserver", "0.0.0.0:1234"] + args.cmd + args.args,
             args=args)
 
 
@@ -112,7 +112,7 @@ def do_tests(container, args):
                     jobs=args.jobs):
         return
     run_cmd(container=container,
-            command=["./scripts/run_tests.py"] + args.cmd,
+            command=["./scripts/run_tests.py"] + args.cmd + args.args,
             args=args)
 
 
@@ -143,7 +143,7 @@ def do_sanitizers(container, args):
             return
 
     run_cmd(container=container,
-            command=["./scripts/run_sanitizers.py"] + args.cmd,
+            command=["./scripts/run_sanitizers.py"] + args.cmd + args.args,
             args=args)
 
 
@@ -154,8 +154,8 @@ def do_clean(container, args):
                  variables={"TARGET_ARCH": t},
                  jobs=args.jobs)
 
-    run_make(["clean"], container, args, jobs=args.jobs)
-    run_make(["clean"], container, args, jobs=args.jobs,
+    run_make(["clean"] + args.args, container, args, jobs=args.jobs)
+    run_make(["clean"] + args.args, container, args, jobs=args.jobs,
              variables={"TARGET_ARCH": "tests"})
 
 
@@ -163,7 +163,7 @@ ACTIONS = {"exec": do_exec,
            "make": do_make,
            "image": do_build_image,
            "gdb": do_gdb,
-           "test": do_tests,
+           "tests": do_tests,
            "san": do_sanitizers,
            "clean": do_clean, }
 
@@ -197,6 +197,7 @@ def parse_args():
                    help="Remove escape sequences from the output")
     a.add_argument("-d", dest="debug", help="Debug port", default=1234)
     a.add_argument("cmd", help="Command to execute.", nargs="*")
+    a.add_argument("args", nargs=argparse.REMAINDER)
     a.add_argument("-j", dest="jobs", help="Number of jobs", default=ncpu)
     return a, a.parse_args()
 
