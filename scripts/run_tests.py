@@ -91,7 +91,7 @@ def get_col_len(column):
     return max(map(len, column), default=0)
 
 
-def present_unit_results(cases_it):
+def present_unit_results(cases_it, args):
     its = itertools.tee(cases_it, 4)
     columns = [map(lambda c: str(c.status), its[0]),
                map(lambda c: c.exec_path + str(c.line), its[1]),
@@ -127,12 +127,13 @@ def present_unit_results(cases_it):
             case.name.ljust(columns_len[2]),
             message))
 
-        col_len0 = get_col_len(map(lambda i: i[0], case.additional_info))
-        col_len1 = get_col_len(map(lambda i: i[1], case.additional_info))
-        for info in case.additional_info:
-            print((TColors.GRAY + "\t{0}\t{1}" + TColors.END).format(
-                info[0].ljust(col_len0),
-                info[1].ljust(col_len1)))
+        if args.info:
+            col_len0 = get_col_len(map(lambda i: i[0], case.additional_info))
+            col_len1 = get_col_len(map(lambda i: i[1], case.additional_info))
+            for info in case.additional_info:
+                print((TColors.GRAY + "\t{0}\t{1}" + TColors.END).format(
+                    info[0].ljust(col_len0),
+                    info[1].ljust(col_len1)))
 
 
 def parse_args() -> argparse.Namespace:
@@ -141,6 +142,7 @@ def parse_args() -> argparse.Namespace:
                    help="Build directory", default="./build")
     a.add_argument("-p", dest="pattern",
                    help="Filenames pattern", default="*_tests")
+    a.add_argument("-i", dest="info", help="Print info-level output messages from unit tests", action="store_true")
 
     return a.parse_args()
 
@@ -149,7 +151,7 @@ def main():
     args = parse_args()
     tests = find_executables(args.build_dir + "/tests", args.pattern)
     cases = run_tests(tests)
-    present_unit_results(cases)
+    present_unit_results(cases, args)
 
 
 main()
