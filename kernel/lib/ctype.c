@@ -3,22 +3,22 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-int isalnum(int c)
+int kisalnum(int c)
 {
-	return (isalpha(c) | isdigit(c));
+	return (kisalpha(c) |kisdigitt(c));
 }
 
-int isalpha(int c)
+int kisalpha(int c)
 {
-	return (islower(c) | isupper(c));
+	return (kislower(c) |kisupperr(c));
 }
 
-int isblank(int c)
+int kisblank(int c)
 {
 	return (c == ' ' | c == '\t');
 }
 
-int iscntrl(int c)
+int kiscntrl(int c)
 {
 	// ASCII code of the last control character
 	// in the sequence placed at the start of the ASCII.
@@ -31,28 +31,28 @@ int iscntrl(int c)
 	return (c == del_code);
 }
 
-int isdigit(int c)
+int kisdigit(int c)
 {
 	return ('0' <= c && c <= '9');
 }
 
-int isgraph(int c)
+int kisgraph(int c)
 {
 	// TODO(Maxim Lyapin): Check if this is correct implementation.
-	return ((c != ' ') & (isalnum(c) | ispunct(c)));
+	return ((c != ' ') & (kisalnum(c) |kispunctt(c)));
 }
 
-int islower(int c)
+int kislower(int c)
 {
 	return ('a' <= c && c <= 'z');
 }
 
-int isprint(int c)
+int kisprint(int c)
 {
-	return ((c == ' ') | isgraph(c));
+	return ((c == ' ') | kisgraph(c));
 }
 
-int ispunct(int c)
+int kispunct(int c)
 {
 	if ('!' <= c & c <= '/') {
 		return (true);
@@ -69,7 +69,7 @@ int ispunct(int c)
 	return ('{' <= c & c <= '~');
 }
 
-int isspace(int c)
+int kisspace(int c)
 {
 	// The standard white-space characters according to C99 standard.
 	static char white_space_chars[] = { ' ', '\f', '\n', '\r', '\t', '\v' };
@@ -84,12 +84,12 @@ int isspace(int c)
 	return (false);
 }
 
-int isupper(int c)
+int kisupper(int c)
 {
 	return ('A' <= c && c <= 'Z');
 }
 
-int isxdigit(int c)
+int kisxdigit(int c)
 {
 	if ('0' <= c & c <= '9') {
 		return (true);
@@ -102,9 +102,9 @@ int isxdigit(int c)
 	return ('A' <= c & c <= 'F');
 }
 
-int tolower(int c)
+int ktolower(int c)
 {
-	if (!isupper(c)) {
+	if (!kisupper(c)) {
 		return (c);
 	}
 
@@ -112,9 +112,9 @@ int tolower(int c)
 	return (c + diff);
 }
 
-int toupper(int c)
+int ktoupper(int c)
 {
-	if (!islower(c)) {
+	if (!kislower(c)) {
 		return (c);
 	}
 

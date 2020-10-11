@@ -1,3 +1,6 @@
+// UNITY_TEST DEPENDS ON: kernel/lib/string/strchr.c
+// UNITY_TEST DEPENDS ON: kernel/lib/string/strlen.c
+
 #include "kernel/console.h"
 #include "kernel/cppdefs.h"
 
@@ -464,7 +467,7 @@ static const char *hex_prefix(struct conv_spec *s, struct argument *a, unsigned 
 
 static int str_length(struct conv_spec *s, struct argument *a)
 {
-	int l = strlen(a->val.str);
+	int l = kstrlen(a->val.str);
 	if (s->precision != PREC_EMPTY && s->precision < l) {
 		return (s->precision);
 	}
@@ -600,7 +603,7 @@ static int print_conv_spec(fprintf_fn f, struct conv_spec s, va_list *args)
 	return (printed);
 }
 
-int vfprintf(fprintf_fn f, const char *restrict format, va_list args)
+int kvfprintf(fprintf_fn f, const char *restrict format, va_list args)
 {
 	va_list ap;
 	va_copy(ap, args);
@@ -615,12 +618,12 @@ int vfprintf(fprintf_fn f, const char *restrict format, va_list args)
 			continue;
 		}
 
-		const char *cspec = strchr(format, '%');
+		const char *cspec = kstrchr(format, '%');
 		size_t toprint;
 		if (cspec) {
 			toprint = cspec - format;
 		} else {
-			toprint = strlen(format);
+			toprint = kstrlen(format);
 		}
 
 		f(format, toprint);
@@ -631,11 +634,11 @@ int vfprintf(fprintf_fn f, const char *restrict format, va_list args)
 	return (printed);
 }
 
-int fprintf(fprintf_fn f, const char *restrict format, ...)
+int kfprintf(fprintf_fn f, const char *restrict format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	int i = vfprintf(f, format, args);
+	int i = kvfprintf(f, format, args);
 	va_end(args);
 	return (i);
 }

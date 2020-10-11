@@ -14,7 +14,7 @@ void setUp(void)
 void tearDown(void)
 {}
 
-static void memcpy_simple(void)
+static void kmemcpy_simple(void)
 {
 	static const unsigned char src[] = "Test string";
 	unsigned char dest[sizeof(src) + 32];
@@ -22,14 +22,14 @@ static void memcpy_simple(void)
 		dest[sizeof(src) + i] = GUARDVAL;
 	}
 
-	void *res = memcpy(dest, src, sizeof(src));
+	void *res = kmemcpy(dest, src, sizeof(src));
 	TEST_ASSERT_EQUAL_PTR(dest, res);
 	TEST_ASSERT_EQUAL_STRING(src, dest);
 	TEST_ASSERT_EACH_EQUAL_CHAR_MESSAGE(GUARDVAL, &dest[sizeof(src)], 32,
 					    "Guard value is ruined");
 }
 
-static void memcpy_empty_str(void)
+static void kmemcpy_empty_str(void)
 {
 	static const unsigned char src[] = "";
 	unsigned char dest[sizeof(src) + 32];
@@ -37,7 +37,7 @@ static void memcpy_empty_str(void)
 		dest[sizeof(src) + i] = GUARDVAL;
 	}
 
-	void *res = memcpy(dest, src, sizeof(src));
+	void *res = kmemcpy(dest, src, sizeof(src));
 	TEST_ASSERT_EQUAL_PTR(dest, res);
 	TEST_ASSERT_EQUAL_STRING(src, dest);
 	TEST_ASSERT_EACH_EQUAL_CHAR_MESSAGE(GUARDVAL, &dest[sizeof(src)], 32,
@@ -47,8 +47,8 @@ static void memcpy_empty_str(void)
 int main(void)
 {
 	UNITY_BEGIN();
-	RUN_TEST(memcpy_simple);
-	RUN_TEST(memcpy_empty_str);
+	RUN_TEST(kmemcpy_simple);
+	RUN_TEST(kmemcpy_empty_str);
 	UNITY_END();
 	return (0);
 }

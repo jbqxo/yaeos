@@ -100,7 +100,7 @@
 		if (__idx >= 0 && __idx < KVSTATIC_CAP(kvvar)) {       \
 			(kvvar)->values[__idx] = (value);              \
 		} else {                                               \
-			assert("kvstatic_set: key hasn't been found"); \
+			kassert("kvstatic_set: key hasn't been found"); \
 		}                                                      \
 	} while (0)
 

@@ -105,28 +105,28 @@ void isr_handler(struct intr_ctx ctx)
 
 void intr_handler_cpu_default(intr_handler_fn f)
 {
-	assert(DEFAULT_HANDLER == NULL);
+	kassert(DEFAULT_HANDLER == NULL);
 	DEFAULT_HANDLER = f;
 }
 
 void intr_handler_cpu(uint8_t int_no, intr_handler_fn f)
 {
-	assert(int_no < 0x16);
-	assert(HANDLERS[int_no] == NULL);
+	kassert(int_no < 0x16);
+	kassert(HANDLERS[int_no] == NULL);
 	HANDLERS[int_no] = f;
 }
 
 void intr_handler_pic(uint8_t int_no, intr_handler_fn f)
 {
-	assert(int_no < 0x10);
+	kassert(int_no < 0x10);
 	// Cascade IRQ. It's never raised.
-	assert(int_no != 0x2);
+	kassert(int_no != 0x2);
 
 	uint8_t isr_no = IRQ_MASTER_OFFSET + int_no;
 	if (int_no > 0x7) {
 		isr_no = IRQ_SLAVE_OFFSET + int_no - 0x8;
 	}
-	assert(HANDLERS[isr_no] == NULL);
+	kassert(HANDLERS[isr_no] == NULL);
 	HANDLERS[isr_no] = f;
 }
 

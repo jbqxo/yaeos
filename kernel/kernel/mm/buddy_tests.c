@@ -1,4 +1,6 @@
 // UNITY_TEST DEPENDS ON: kernel/kernel/mm/buddy.c
+// UNITY_TEST DEPENDS ON: kernel/lib/string/memset.c
+// UNITY_TEST DEPENDS ON: kernel/lib/string/strchr.c
 
 #include "kernel/mm/buddy.h"
 

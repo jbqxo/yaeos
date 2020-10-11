@@ -16,9 +16,9 @@ union node {
 void mem_pool_init(struct mem_pool *pool, void *mem, size_t mem_size, size_t elem_size,
 		   size_t elem_align)
 {
-	assert(pool);
-	assert(mem);
-	assert(mem_size >= elem_size);
+	kassert(pool);
+	kassert(mem);
+	kassert(mem_size >= elem_size);
 
 	elem_size = MAX(elem_size, sizeof(union node));
 	uintptr_t mblock = align_roundup(ptr2uint(mem), elem_align);
@@ -31,7 +31,7 @@ void mem_pool_init(struct mem_pool *pool, void *mem, size_t mem_size, size_t ele
 	pool->mem_end = num2uiptr(limit);
 #endif
 
-	assert(mblock + elem_size <= limit);
+	kassert(mblock + elem_size <= limit);
 	SLIST_INSERT_HEAD(&pool->list, (union node *)uint2ptr(mblock), list);
 
 	while (mblock + stride + elem_size <= limit) {
@@ -45,7 +45,7 @@ void mem_pool_init(struct mem_pool *pool, void *mem, size_t mem_size, size_t ele
 
 void *mem_pool_alloc(struct mem_pool *pool)
 {
-	assert(pool);
+	kassert(pool);
 
 	union node *n = SLIST_FIRST(&pool->list);
 	if (!n) {
@@ -58,12 +58,12 @@ void *mem_pool_alloc(struct mem_pool *pool)
 
 void mem_pool_free(struct mem_pool *pool, void *mem)
 {
-	assert(pool);
-	assert(mem);
+	kassert(pool);
+	kassert(mem);
 
 	union uiptr m = ptr2uiptr(mem);
 #ifndef NDEBUG
-	assert(m.num > pool->mem_start.num && m.num < pool->mem_end.num);
+	kassert(m.num > pool->mem_start.num && m.num < pool->mem_end.num);
 #endif
 
 	SLIST_INSERT_HEAD(&pool->list, (union node *)m.ptr, list);

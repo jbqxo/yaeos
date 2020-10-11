@@ -55,8 +55,8 @@ void vmm_init(void)
 					   KMM_CACHE_STATIC, NULL, NULL);
 	CACHES.regions = kmm_cache_create("vmm_regions", sizeof(struct vmm_region), 0,
 					  KMM_CACHE_STATIC, NULL, NULL);
-	assert(CACHES.mappings);
-	assert(CACHES.regions);
+	kassert(CACHES.mappings);
+	kassert(CACHES.regions);
 }
 
 ///
@@ -64,7 +64,7 @@ void vmm_init(void)
 ///
 static bool space_occupied(struct vm_space *s, void *start_vaddr, void *end_vaddr)
 {
-	assert(s);
+	kassert(s);
 
 	uintptr_t left_bound = ptr2uint(start_vaddr);
 	uintptr_t right_bound = ptr2uint(end_vaddr);
@@ -87,7 +87,7 @@ struct vm_mapping *vmm_alloc_pages_at(struct vm_space *s, void *vaddr, size_t co
 	// TODO: Return error codes.
 	// There is no way for the caller to know why the operation failed.
 	// Is it because the system is ran out of memory, or because the desired range is occupied?
-	assert(s);
+	kassert(s);
 
 	size_t mem_length = count * PLATFORM_PAGE_SIZE;
 
@@ -130,7 +130,7 @@ static size_t find_free_space(struct vm_space *s, size_t pg_count, uintptr_t *re
 {
 	// TODO: Search for free space before the list, then after, then in the middle.
 	// Maybe implement circular doubly linked list?
-	assert(pg_count > 0);
+	kassert(pg_count > 0);
 
 	// TODO: Calculate actual platform's address spaces' limits.
 	static const uintptr_t low_platform = 0;
@@ -152,12 +152,12 @@ static size_t find_free_space(struct vm_space *s, size_t pg_count, uintptr_t *re
 			uintptr_t current_start = ptr2uint(current->start);
 			uintptr_t prev_end = ptr2uint(prev->start) + prev->length;
 
-			assert(current_start > prev_end);
+			kassert(current_start > prev_end);
 
 			uintptr_t low_bound = align_roundup(prev_end, PLATFORM_PAGE_SIZE);
 			uintptr_t high_bound = align_rounddown(current_start, PLATFORM_PAGE_SIZE);
 
-			assert(low_bound <= high_bound);
+			kassert(low_bound <= high_bound);
 			size_t free_space = high_bound - low_bound;
 			if (free_space >= pg_count * PLATFORM_PAGE_SIZE) {
 				*result = low_bound;
@@ -196,7 +196,7 @@ struct vm_mapping *vmm_alloc_pages(struct vm_space *s, size_t count)
 
 void vmm_free_mapping(struct vm_space *s, struct vm_mapping *mapping)
 {
-	assert(s);
+	kassert(s);
 
 	SLIST_REMOVE(&s->vmappings.sorted_list, mapping, sorted);
 	rbtree_delete(&s->vmappings.tree, &mapping->process_mappings);
@@ -207,7 +207,7 @@ void vmm_free_mapping(struct vm_space *s, struct vm_mapping *mapping)
 
 void vmm_free_pages(struct vm_space *s, void *vaddress, size_t count)
 {
-	assert(s);
+	kassert(s);
 
 	// TODO: Make an appropriate mapping search by a virtual address.
 	struct rbtree_node dummy_node;
@@ -223,7 +223,7 @@ void vmm_free_pages(struct vm_space *s, void *vaddress, size_t count)
 		}
 
 		// BUG: Won't work correctly if mapping's length isn't equal to PAGE_SIZE.
-		assert(current->length == PLATFORM_PAGE_SIZE);
+		kassert(current->length == PLATFORM_PAGE_SIZE);
 
 		next = SLIST_NEXT(current, sorted);
 		vmm_free_mapping(s, current);

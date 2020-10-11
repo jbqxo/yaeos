@@ -23,9 +23,9 @@ static struct {
 
 static void copy_alloc(struct pmm_allocator *src, struct pmm_allocator *restrict dest)
 {
-	assert(src);
-	assert(dest);
-	assert(src != dest);
+	kassert(src);
+	kassert(dest);
+	kassert(src != dest);
 
 	dest->name = src->name;
 	dest->restrict_flags = src->restrict_flags;
@@ -35,14 +35,14 @@ static void copy_alloc(struct pmm_allocator *src, struct pmm_allocator *restrict
 
 void pmm_init(struct pmm_allocator *allocators, size_t alloc_length)
 {
-	assert(allocators);
+	kassert(allocators);
 
 	CACHES.allocators = kmm_cache_create("pmm_allocators_cache", sizeof(struct pmm_allocator),
 					     0, 0, NULL, NULL);
 	CACHES.pages =
 		kmm_cache_create("pmm_pages_cache", sizeof(struct pmm_page), 0, 0, NULL, NULL);
-	assert(CACHES.allocators);
-	assert(CACHES.pages);
+	kassert(CACHES.allocators);
+	kassert(CACHES.pages);
 
 	for (int i = 0; i < alloc_length; i++) {
 		struct pmm_allocator *a = kmm_cache_alloc(CACHES.allocators);

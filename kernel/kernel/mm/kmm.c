@@ -112,7 +112,7 @@ static SLIST_HEAD(, struct kmm_cache) ALLOCATED_CACHES;
 
 static void page_free(struct page *p)
 {
-	assert(p);
+	kassert(p);
 	if (p->dynamic) {
 		vmm_free_pages(&kvm_space, p, 1);
 	} else {
@@ -122,8 +122,8 @@ static void page_free(struct page *p)
 
 static void slab_destroy(struct kmm_slab *slab, struct kmm_cache *cache)
 {
-	assert(slab);
-	assert(cache);
+	kassert(slab);
+	kassert(cache);
 
 	if (slab->objects_inuse > 0) {
 		LOGF_W("Freeing the slab %p while there are %d objects in use...", slab,
@@ -199,7 +199,7 @@ static unsigned caches_try_reclaim(unsigned reclaim)
 ///
 static struct page *page_alloc(struct kmm_cache *cache)
 {
-	assert(cache);
+	kassert(cache);
 
 	const size_t to_allocate = 1;
 	struct vm_mapping *mapping = vmm_alloc_pages(&kvm_space, to_allocate);
@@ -240,7 +240,7 @@ static struct page *page_alloc(struct kmm_cache *cache)
 		page->dynamic = true;
 	}
 
-	assert(ptr2uint(page) == align_roundup(ptr2uint(page), PLATFORM_PAGE_SIZE));
+	kassert(ptr2uint(page) == align_roundup(ptr2uint(page), PLATFORM_PAGE_SIZE));
 
 	return (page);
 }
@@ -265,7 +265,7 @@ static struct kmm_slab *slab_get_by_addr(void *addr)
 
 static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colour)
 {
-	assert(cache);
+	kassert(cache);
 
 	struct page *page = page_alloc(cache);
 	if (__unlikely(page == NULL)) {
@@ -287,12 +287,12 @@ static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colo
 	SLIST_INIT(&slab->free_buffers);
 
 	// Check that leftover space is less than a full stride.
-	assert((ptr2uint(page) + PLATFORM_PAGE_SIZE) -
+	kassert((ptr2uint(page) + PLATFORM_PAGE_SIZE) -
 		       (cursor.num + cache->slab_capacity * cache->stride) <
 	       cache->stride);
 	for (int i = 0; i < cache->slab_capacity; i++, cursor.num += cache->stride) {
 		union uiptr ctl_mem = ptr2uiptr(get_bufctl_small(cursor.num, cache));
-		assert(ctl_mem.num < cursor.num + cache->stride);
+		kassert(ctl_mem.num < cursor.num + cache->stride);
 
 		struct bufctl_small *ctl = ctl_mem.ptr;
 		SLIST_FIELD_INIT(ctl, slist);
@@ -309,7 +309,7 @@ static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colo
 
 static struct kmm_slab *slab_create_large(struct kmm_cache *cache, unsigned colour)
 {
-	assert(cache);
+	kassert(cache);
 
 	struct kmm_slab *slab = kmm_cache_alloc(&CACHES.slabs);
 	if (__unlikely(!slab)) {
@@ -352,8 +352,8 @@ clean_slab:
 
 static void object_free(void *mem, struct kmm_slab *slab, struct kmm_cache *cache)
 {
-	assert(mem);
-	assert(slab);
+	kassert(mem);
+	kassert(slab);
 
 	slab->objects_inuse--;
 	union bufctl *ctl;
@@ -368,8 +368,8 @@ static void object_free(void *mem, struct kmm_slab *slab, struct kmm_cache *cach
 
 static void *object_alloc(struct kmm_slab *slab, struct kmm_cache *cache)
 {
-	assert(slab);
-	assert(!SLIST_EMPTY(&slab->free_buffers));
+	kassert(slab);
+	kassert(!SLIST_EMPTY(&slab->free_buffers));
 
 	union bufctl *free_ctl = SLIST_FIRST(&slab->free_buffers);
 	SLIST_REMOVE(&slab->free_buffers, free_ctl, slist);
@@ -385,8 +385,8 @@ static void *object_alloc(struct kmm_slab *slab, struct kmm_cache *cache)
 
 static size_t cache_get_avail_space(struct kmm_cache *cache)
 {
-	assert(cache);
-	assert(cache->stride > 0);
+	kassert(cache);
+	kassert(cache->stride > 0);
 
 	// struct page is always stored at the beginning of the page.
 	size_t avail_space = PLATFORM_PAGE_SIZE - sizeof(struct page);
@@ -399,17 +399,17 @@ static size_t cache_get_avail_space(struct kmm_cache *cache)
 
 static size_t cache_get_capacity(struct kmm_cache *cache)
 {
-	assert(cache);
-	assert(cache->stride > 0);
+	kassert(cache);
+	kassert(cache->stride > 0);
 
 	return (cache_get_avail_space(cache) / cache->stride);
 }
 
 static size_t cache_get_wasted(struct kmm_cache *cache)
 {
-	assert(cache);
-	assert(cache->slab_capacity > 0);
-	assert(cache->stride > 0);
+	kassert(cache);
+	kassert(cache->slab_capacity > 0);
+	kassert(cache->stride > 0);
 
 	return (cache_get_avail_space(cache) - cache->slab_capacity * cache->stride);
 }
@@ -417,7 +417,7 @@ static size_t cache_get_wasted(struct kmm_cache *cache)
 static void cache_init(struct kmm_cache *restrict cache, const char *name, size_t size,
 		       size_t align, unsigned flags, void (*ctor)(void *), void (*dtor)(void *))
 {
-	assert(cache);
+	kassert(cache);
 
 	cache->name = name;
 	cache->size = size;
@@ -481,7 +481,7 @@ struct kmm_cache *kmm_cache_create(const char *name, size_t size, size_t align,
 
 void kmm_cache_destroy(struct kmm_cache *cache)
 {
-	assert(cache);
+	kassert(cache);
 
 	// Can't use SLIST_FOREACH 'cause it would use a slab after freeing.
 	struct kmm_slab *next;
@@ -515,7 +515,7 @@ void kmm_cache_destroy(struct kmm_cache *cache)
 
 void *kmm_cache_alloc(struct kmm_cache *cache)
 {
-	assert(cache);
+	kassert(cache);
 
 	struct kmm_slab *slab = NULL;
 	if (!SLIST_EMPTY(&cache->slabs_partial)) {
@@ -551,18 +551,18 @@ void *kmm_cache_alloc(struct kmm_cache *cache)
 	}
 
 	void *obj = object_alloc(slab, cache);
-	assert(obj);
+	kassert(obj);
 
 	return (obj);
 }
 
 void kmm_cache_free(struct kmm_cache *cache, void *mem)
 {
-	assert(cache);
-	assert(mem);
+	kassert(cache);
+	kassert(mem);
 
 	struct kmm_slab *slab = slab_get_by_addr(mem);
-	assert(slab);
+	kassert(slab);
 
 	bool was_full = slab->objects_inuse == cache->slab_capacity;
 	bool becomes_empty = slab->objects_inuse == 1;

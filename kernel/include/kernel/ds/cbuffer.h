@@ -15,7 +15,7 @@
 
 #define CBUFFER_INIT(cbuffer)                                           \
 	do {                                                            \
-		memset(&(cbuffer)->array, 0, sizeof((cbuffer)->array)); \
+		kmemset(&(cbuffer)->array, 0, sizeof((cbuffer)->array)); \
 		(cbuffer)->r_idx = 0;                                   \
 		(cbuffer)->w_idx = 0;                                   \
 		(cbuffer)->count = 0;                                   \

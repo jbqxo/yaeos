@@ -2,7 +2,7 @@
 
 static void rbt_set_colour(struct rbtree_node *n, enum rbtree_colour c)
 {
-	assert(n);
+	kassert(n);
 
 #ifndef NDEBUG
 	n->colour = c;
@@ -29,7 +29,7 @@ static enum rbtree_colour rbt_get_colour(struct rbtree_node *n)
 
 static void rbt_set_parent(struct rbtree_node *node, struct rbtree_node *parent)
 {
-	assert(node);
+	kassert(node);
 
 #ifndef NDEBUG
 	node->parent = ptr2uiptr(parent);
@@ -41,7 +41,7 @@ static void rbt_set_parent(struct rbtree_node *node, struct rbtree_node *parent)
 
 static struct rbtree_node *rbt_get_parent(struct rbtree_node *node)
 {
-	assert(node);
+	kassert(node);
 
 #ifndef NDEBUG
 	return (node->parent.ptr);
@@ -52,23 +52,23 @@ static struct rbtree_node *rbt_get_parent(struct rbtree_node *node)
 
 static struct rbtree_node *rbt_get_grandparent(struct rbtree_node *node)
 {
-	assert(node);
+	kassert(node);
 
 	struct rbtree_node *parent = rbt_get_parent(node);
-	assert(parent);
+	kassert(parent);
 
 	struct rbtree_node *grandparent = rbt_get_parent(parent);
-	assert(grandparent);
+	kassert(grandparent);
 
 	return (grandparent);
 }
 
 static struct rbtree_node *rbt_get_sibling(struct rbtree_node *node)
 {
-	assert(node);
+	kassert(node);
 
 	struct rbtree_node *parent = rbt_get_parent(node);
-	assert(parent);
+	kassert(parent);
 
 	if (parent->left == node) {
 		return (parent->right);
@@ -79,11 +79,11 @@ static struct rbtree_node *rbt_get_sibling(struct rbtree_node *node)
 
 static struct rbtree_node *rbt_get_uncle(struct rbtree_node *node)
 {
-	assert(node);
+	kassert(node);
 
 	struct rbtree_node *parent = rbt_get_parent(node);
-	assert(parent);
-	assert(rbt_get_parent(parent));
+	kassert(parent);
+	kassert(rbt_get_parent(parent));
 
 	return rbt_get_sibling(parent);
 }
@@ -117,9 +117,9 @@ static void rbt_swap_nodes(struct rbtree *rbt, struct rbtree_node *x, struct rbt
 		}                                         \
 	} while (0)
 
-	assert(rbt);
-	assert(x);
-	assert(y);
+	kassert(rbt);
+	kassert(x);
+	kassert(y);
 
 	// If Xp == Y, swap them
 	// So only Yp == X is possible.
@@ -146,7 +146,7 @@ static void rbt_swap_nodes(struct rbtree *rbt, struct rbtree_node *x, struct rbt
 	} else {
 		// X was a root.
 		// Make Y a root.
-		assert(rbt->root == x);
+		kassert(rbt->root == x);
 		rbt_set_parent(y, NULL);
 		rbt->root = y;
 	}
@@ -175,7 +175,7 @@ static void rbt_swap_nodes(struct rbtree *rbt, struct rbtree_node *x, struct rbt
 	} else {
 		// Y was a root.
 		// Make X a root.
-		assert(rbt->root == y);
+		kassert(rbt->root == y);
 		rbt_set_parent(x, NULL);
 		rbt->root = x;
 	}
@@ -188,36 +188,36 @@ static void rbt_swap_nodes(struct rbtree *rbt, struct rbtree_node *x, struct rbt
 
 	// Assertions.
 	if (x->left) {
-		assert(rbt_get_parent(x->left) == x);
+		kassert(rbt_get_parent(x->left) == x);
 	}
 	if (x->right) {
-		assert(rbt_get_parent(x->right) == x);
+		kassert(rbt_get_parent(x->right) == x);
 	}
 	if (rbt_get_parent(x)) {
-		assert(rbt_get_parent(x)->left == x || rbt_get_parent(x)->right == x);
+		kassert(rbt_get_parent(x)->left == x || rbt_get_parent(x)->right == x);
 	}
 
 	if (y->left) {
-		assert(rbt_get_parent(y->left) == y);
+		kassert(rbt_get_parent(y->left) == y);
 	}
 	if (y->right) {
-		assert(rbt_get_parent(y->right) == y);
+		kassert(rbt_get_parent(y->right) == y);
 	}
 	if (rbt_get_parent(y)) {
-		assert(rbt_get_parent(y)->left == y || rbt_get_parent(y)->right == y);
+		kassert(rbt_get_parent(y)->left == y || rbt_get_parent(y)->right == y);
 	}
 }
 
 void rbtree_init_tree(struct rbtree *rbt, int (*cmp)(void *, void *))
 {
-	assert(rbt);
+	kassert(rbt);
 	rbt->root = NULL;
 	rbt->cmp = cmp;
 }
 
 void rbtree_init_node(struct rbtree_node *node)
 {
-	assert(node);
+	kassert(node);
 	node->left = NULL;
 	node->right = NULL;
 	node->parent = ptr2uiptr(NULL);
@@ -226,7 +226,7 @@ void rbtree_init_node(struct rbtree_node *node)
 
 void rbt_rotate_left(struct rbtree *rbt, struct rbtree_node *old_root)
 {
-	assert(old_root);
+	kassert(old_root);
 
 	struct rbtree_node *new_root = old_root->right;
 	rbt_replace_subtree(rbt, old_root, new_root);
@@ -241,7 +241,7 @@ void rbt_rotate_left(struct rbtree *rbt, struct rbtree_node *old_root)
 
 static void rbt_rotate_right(struct rbtree *rbt, struct rbtree_node *old_root)
 {
-	assert(old_root);
+	kassert(old_root);
 
 	struct rbtree_node *new_root = old_root->left;
 	rbt_replace_subtree(rbt, old_root, new_root);
@@ -256,7 +256,7 @@ static void rbt_rotate_right(struct rbtree *rbt, struct rbtree_node *old_root)
 
 static void rbt_insert_fix(struct rbtree *rbt, struct rbtree_node *new)
 {
-	assert(new);
+	kassert(new);
 
 	struct rbtree_node *node = new;
 	while (true) {
@@ -277,7 +277,7 @@ static void rbt_insert_fix(struct rbtree *rbt, struct rbtree_node *new)
 		if (rbt_get_colour(uncle) == RBTREE_RED) {
 			struct rbtree_node *grandparent = rbt_get_grandparent(node);
 			// Grandparent can't be NULL because node's parent is red.
-			assert(grandparent);
+			kassert(grandparent);
 
 			rbt_set_colour(parent, RBTREE_BLACK);
 			rbt_set_colour(uncle, RBTREE_BLACK);
@@ -291,7 +291,7 @@ static void rbt_insert_fix(struct rbtree *rbt, struct rbtree_node *new)
 
 		// Parent is red but an Uncle is black. Also G->P->N relation forms a triangle.
 		struct rbtree_node *grandparent = rbt_get_grandparent(node);
-		assert(grandparent);
+		kassert(grandparent);
 		if ((node == parent->right) && (parent == grandparent->left)) {
 			rbt_rotate_left(rbt, parent);
 			node = node->left;
@@ -302,8 +302,8 @@ static void rbt_insert_fix(struct rbtree *rbt, struct rbtree_node *new)
 		// Update after potential rotations.
 		parent = rbt_get_parent(node);
 		grandparent = rbt_get_grandparent(node);
-		assert(parent);
-		assert(grandparent);
+		kassert(parent);
+		kassert(grandparent);
 
 		// Parent is red but an Uncle is black. But G->P->N relation forms a line.
 		if ((node == parent->left) && (parent == grandparent->left)) {
@@ -312,7 +312,7 @@ static void rbt_insert_fix(struct rbtree *rbt, struct rbtree_node *new)
 			rbt_rotate_left(rbt, grandparent);
 		} else {
 			// How did we get here?
-			assert(false);
+			kassert(false);
 		}
 		// Grandparent becomes a child of the parent. Strange times.
 		rbt_set_colour(parent, RBTREE_BLACK);
@@ -324,8 +324,8 @@ static void rbt_insert_fix(struct rbtree *rbt, struct rbtree_node *new)
 
 void rbtree_insert(struct rbtree *rbt, struct rbtree_node *new)
 {
-	assert(rbt);
-	assert(new);
+	kassert(rbt);
+	kassert(new);
 
 	rbtree_init_node(new);
 
@@ -352,7 +352,7 @@ void rbtree_insert(struct rbtree *rbt, struct rbtree_node *new)
 		}
 	} else {
 		// Tree is empty.
-		assert(!rbt->root);
+		kassert(!rbt->root);
 		rbt->root = new;
 	}
 
@@ -379,7 +379,7 @@ static void rbt_delete_fix(struct rbtree *rbt, struct rbtree_node *node)
 
 		struct rbtree_node *sibling = rbt_get_sibling(node);
 		if (rbt_get_colour(sibling) == RBTREE_RED) {
-			assert(rbt_get_colour(parent) == RBTREE_BLACK);
+			kassert(rbt_get_colour(parent) == RBTREE_BLACK);
 
 			// Convert to a one of the cases with a black sibling.
 			if (parent->right == sibling) {
@@ -430,18 +430,18 @@ static void rbt_delete_fix(struct rbtree *rbt, struct rbtree_node *node)
 			parent = rbt_get_parent(node);
 		}
 
-		assert(rbt_get_colour(sibling) == RBTREE_BLACK);
-		assert((rbt_get_colour(sibling->left) == RBTREE_RED && node == parent->right) ||
+		kassert(rbt_get_colour(sibling) == RBTREE_BLACK);
+		kassert((rbt_get_colour(sibling->left) == RBTREE_RED && node == parent->right) ||
 		       (rbt_get_colour(sibling->right) == RBTREE_RED && node == parent->left));
 
 		rbt_set_colour(sibling, rbt_get_colour(parent));
 		rbt_set_colour(parent, RBTREE_BLACK);
 		if (parent->right == node) {
-			assert(rbt_get_colour(sibling->left) == RBTREE_RED);
+			kassert(rbt_get_colour(sibling->left) == RBTREE_RED);
 			rbt_set_colour(sibling->left, RBTREE_BLACK);
 			rbt_rotate_right(rbt, parent);
 		} else {
-			assert(rbt_get_colour(sibling->right) == RBTREE_RED);
+			kassert(rbt_get_colour(sibling->right) == RBTREE_RED);
 			rbt_set_colour(sibling->right, RBTREE_BLACK);
 			rbt_rotate_left(rbt, parent);
 		}
@@ -457,7 +457,7 @@ void rbtree_delete(struct rbtree *rbt, struct rbtree_node *deletee)
 		rbt_swap_nodes(rbt, deletee, successor);
 	}
 
-	assert(deletee->left == NULL || deletee->right == NULL);
+	kassert(deletee->left == NULL || deletee->right == NULL);
 
 	struct rbtree_node *child = deletee->right ? deletee->right : deletee->left;
 	// When a child is black and a deletee is red, we don't need to do anything.
@@ -473,7 +473,7 @@ void rbtree_delete(struct rbtree *rbt, struct rbtree_node *deletee)
 
 struct rbtree_node *rbtree_search(struct rbtree *rbt, void *value)
 {
-	assert(rbt);
+	kassert(rbt);
 
 	struct rbtree_node *node = rbt->root;
 	while (node) {
@@ -483,7 +483,7 @@ struct rbtree_node *rbtree_search(struct rbtree *rbt, void *value)
 		} else if (c < 0) {
 			node = node->left;
 		} else {
-			assert(c > 0);
+			kassert(c > 0);
 			node = node->right;
 		}
 	}
@@ -493,9 +493,9 @@ struct rbtree_node *rbtree_search(struct rbtree *rbt, void *value)
 
 struct rbtree_node *rbtree_search_min(struct rbtree *rbt, void *limit)
 {
-	assert(rbt);
-	assert(rbt->cmp);
-	assert(limit);
+	kassert(rbt);
+	kassert(rbt->cmp);
+	kassert(limit);
 
 	struct rbtree_node *cursor = rbt->root;
 
@@ -535,9 +535,9 @@ struct rbtree_node *rbtree_search_min(struct rbtree *rbt, void *limit)
 
 struct rbtree_node *rbtree_search_max(struct rbtree *rbt, void *limit)
 {
-	assert(rbt);
-	assert(rbt->cmp);
-	assert(limit);
+	kassert(rbt);
+	kassert(rbt->cmp);
+	kassert(limit);
 
 	struct rbtree_node *cursor = rbt->root;
 
@@ -578,9 +578,9 @@ struct rbtree_node *rbtree_search_max(struct rbtree *rbt, void *limit)
 void rbtree_iter_range(struct rbtree *rbt, void *value_from, void *value_to,
 		       bool (*fn)(void *elem, void *data), void *data)
 {
-	assert(rbt);
-	assert(rbt->cmp);
-	assert(rbt->cmp(value_from, value_to) < 0);
+	kassert(rbt);
+	kassert(rbt->cmp);
+	kassert(rbt->cmp(value_from, value_to) < 0);
 
 	struct rbtree_node *cursor = rbtree_search_min(rbt, value_from);
 

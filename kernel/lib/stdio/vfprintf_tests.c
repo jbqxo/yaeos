@@ -1,5 +1,10 @@
 // UNITY_TEST DEPENDS ON: kernel/lib/stdio/vfprintf.c
+// UNITY_TEST DEPENDS ON: kernel/lib/string/strlen.c
+// UNITY_TEST DEPENDS ON: kernel/lib/string/strchr.c
+
 #include "kernel/cppdefs.h"
+
+#include "lib/stdio.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -32,18 +37,18 @@ void setUp(void)
 void tearDown(void)
 {}
 
-#define VFPRINTF(expected, format, ...)                                        \
-	do {                                                                   \
-		int s = strlen(expected);                                      \
-		int r = fprintf(console_write, (format), ##__VA_ARGS__);       \
-		TEST_ASSERT_EQUAL_HEX8(GUARDVAL, buffer[s]);                   \
-		buffer[s] = '\0';                                              \
-		TEST_ASSERT_EQUAL_STRING((expected), buffer);                  \
-		TEST_ASSERT_EQUAL_INT(s, r);                                   \
-		TEST_ASSERT_EACH_EQUAL_CHAR_MESSAGE(GUARDVAL, &buffer[s + 1],  \
-						    ARRAY_SIZE(buffer) - s,    \
-						    "Corrupted guard values"); \
-		reset();                                                       \
+#define KVFPRINTF(expected, format, ...)                                        \
+	do {                                                                    \
+		int s = strlen(expected);                                       \
+		int r = kfprintf(console_write, (format), ##__VA_ARGS__);       \
+		TEST_ASSERT_EQUAL_HEX8(GUARDVAL, buffer[s]);                    \
+		buffer[s] = '\0';                                               \
+		TEST_ASSERT_EQUAL_STRING((expected), buffer);                   \
+		TEST_ASSERT_EQUAL_INT(s, r);                                    \
+		TEST_ASSERT_EACH_EQUAL_CHAR_MESSAGE(GUARDVAL, &buffer[s + 1],   \
+						    ARRAY_SIZE(buffer) - s - 1, \
+						    "Corrupted guard values");  \
+		reset();                                                        \
 	} while (0)
 
 #pragma clang diagnostic push
@@ -53,75 +58,75 @@ void tearDown(void)
 
 static void simple(void)
 {
-	VFPRINTF("16", "16");
-	VFPRINTF("20% + 80% = 100%", "%d%% + %d%% = %d%%", 20, 80, 100);
+	KVFPRINTF("16", "16");
+	KVFPRINTF("20% + 80% = 100%", "%d%% + %d%% = %d%%", 20, 80, 100);
 }
 
 static void conv_int(void)
 {
-	VFPRINTF("2 + 14 = 16", "2 + 14 = %d", 16);
-	VFPRINTF("2 + 14 = -16", "2 + 14 = %d", -16);
-	VFPRINTF("2 + 14 = 16", "2 + 14 = %i", 16);
-	VFPRINTF("2 + 14 = -16", "2 + 14 = %i", -16);
+	KVFPRINTF("2 + 14 = 16", "2 + 14 = %d", 16);
+	KVFPRINTF("2 + 14 = -16", "2 + 14 = %d", -16);
+	KVFPRINTF("2 + 14 = 16", "2 + 14 = %i", 16);
+	KVFPRINTF("2 + 14 = -16", "2 + 14 = %i", -16);
 
 	// Width
-	VFPRINTF("  16", "%4d", 16);
+	KVFPRINTF("  16", "%4d", 16);
 
 	// Precision
-	VFPRINTF("16", "%.0d", 16);
-	VFPRINTF("", "%.0d", 0);
-	VFPRINTF("0", "%.1d", 0);
+	KVFPRINTF("16", "%.0d", 16);
+	KVFPRINTF("", "%.0d", 0);
+	KVFPRINTF("0", "%.1d", 0);
 
 	// Length
-	VFPRINTF("-128", "%hhd", 0x7F + 1);
-	VFPRINTF("-32768", "%hd", 0x7FFF + 1);
+	KVFPRINTF("-128", "%hhd", 0x7F + 1);
+	KVFPRINTF("-32768", "%hd", 0x7FFF + 1);
 
 	// TODO: Test all length modifiers
 
 	// Flags
-	VFPRINTF("16 ", "%-3d", 16);
-	VFPRINTF("+16", "%+d", 16);
-	VFPRINTF("-16", "%+d", -16);
-	VFPRINTF("16", "%d", 16);
-	VFPRINTF("-16", "%d", -16);
-	VFPRINTF(" 16", "% d", 16);
-	VFPRINTF("-16", "% d", -16);
-	VFPRINTF("+16", "% +d", 16);
-	VFPRINTF("-16", "% +d", -16);
-	VFPRINTF("0016", "%04d", 16);
-	VFPRINTF("-016", "%04d", -16);
+	KVFPRINTF("16 ", "%-3d", 16);
+	KVFPRINTF("+16", "%+d", 16);
+	KVFPRINTF("-16", "%+d", -16);
+	KVFPRINTF("16", "%d", 16);
+	KVFPRINTF("-16", "%d", -16);
+	KVFPRINTF(" 16", "% d", 16);
+	KVFPRINTF("-16", "% d", -16);
+	KVFPRINTF("+16", "% +d", 16);
+	KVFPRINTF("-16", "% +d", -16);
+	KVFPRINTF("0016", "%04d", 16);
+	KVFPRINTF("-016", "%04d", -16);
 }
 
 static void conv_uint(void)
 {
-	VFPRINTF("2 + 14 = 16", "2 + 14 = %u", 16);
+	KVFPRINTF("2 + 14 = 16", "2 + 14 = %u", 16);
 
 	// Width
-	VFPRINTF("  16", "%4u", 16);
+	KVFPRINTF("  16", "%4u", 16);
 
 	// Precision
-	VFPRINTF("16", "%.0u", 16);
-	VFPRINTF("", "%.0u", 0);
-	VFPRINTF("0", "%.1u", 0);
+	KVFPRINTF("16", "%.0u", 16);
+	KVFPRINTF("", "%.0u", 0);
+	KVFPRINTF("0", "%.1u", 0);
 
 	// Length
-	VFPRINTF("0", "%hhu", 0xFF + 1);
-	VFPRINTF("0", "%hu", 0xFFFF + 1);
+	KVFPRINTF("0", "%hhu", 0xFF + 1);
+	KVFPRINTF("0", "%hu", 0xFFFF + 1);
 
 	// TODO: Test all length modifiers
 
 	// Flag
-	VFPRINTF("16 ", "%-3u", 16);
-	VFPRINTF("0016", "%04u", 16);
+	KVFPRINTF("16 ", "%-3u", 16);
+	KVFPRINTF("0016", "%04u", 16);
 }
 
 static void conv_str(void)
 {
-	VFPRINTF("Test string!", "Test %s!", "string");
+	KVFPRINTF("Test string!", "Test %s!", "string");
 
 	// Precision
-	VFPRINTF("Test str!", "Test %.3s!", "string");
-	VFPRINTF("Test string!", "Test %.10s!", "string");
+	KVFPRINTF("Test str!", "Test %.3s!", "string");
+	KVFPRINTF("Test string!", "Test %.10s!", "string");
 
 	// TODO: Wide characters
 }
@@ -130,66 +135,66 @@ static void conv_ptr(void)
 {
 	void *ptr = (uintptr_t)0xABC123;
 
-	VFPRINTF("0xABC123", "%p", ptr);
-	VFPRINTF("  0xABC123", "%10p", ptr);
-	VFPRINTF("0xABC123  ", "%-10p", ptr);
+	KVFPRINTF("0xABC123", "%p", ptr);
+	KVFPRINTF("  0xABC123", "%10p", ptr);
+	KVFPRINTF("0xABC123  ", "%-10p", ptr);
 }
 
 static void conv_uhex(void)
 {
-	VFPRINTF("0x1 + 0xe = f", "0x1 + 0xe = %x", 0x1 + 0xe);
-	VFPRINTF("0x1 + 0xE = F", "0x1 + 0xE = %X", 0x1 + 0xE);
+	KVFPRINTF("0x1 + 0xe = f", "0x1 + 0xe = %x", 0x1 + 0xe);
+	KVFPRINTF("0x1 + 0xE = F", "0x1 + 0xE = %X", 0x1 + 0xE);
 
 	// Width
-	VFPRINTF("  f", "%3x", 0xf);
-	VFPRINTF("  F", "%3X", 0xf);
+	KVFPRINTF("  f", "%3x", 0xf);
+	KVFPRINTF("  F", "%3X", 0xf);
 
 	// Precision
-	VFPRINTF("f", "%.0x", 0xf);
-	VFPRINTF("", "%.0x", 0);
-	VFPRINTF("0", "%.1x", 0);
+	KVFPRINTF("f", "%.0x", 0xf);
+	KVFPRINTF("", "%.0x", 0);
+	KVFPRINTF("0", "%.1x", 0);
 
 	// Length
-	VFPRINTF("0", "%hhx", 0xFF + 1);
-	VFPRINTF("0", "%hx", 0xFFFF + 1);
+	KVFPRINTF("0", "%hhx", 0xFF + 1);
+	KVFPRINTF("0", "%hx", 0xFFFF + 1);
 
 	// TODO: Test all length modifiers
 
 	// Flags
-	VFPRINTF("10 ", "%-3x", 16);
-	VFPRINTF("0010", "%04x", 16);
-	VFPRINTF("0xf", "%#x", 15);
-	VFPRINTF("0xF", "%#X", 15);
-	VFPRINTF("0x00f", "%#05x", 15);
+	KVFPRINTF("10 ", "%-3x", 16);
+	KVFPRINTF("0010", "%04x", 16);
+	KVFPRINTF("0xf", "%#x", 15);
+	KVFPRINTF("0xF", "%#X", 15);
+	KVFPRINTF("0x00f", "%#05x", 15);
 }
 
 static void conv_uoctal(void)
 {
-	VFPRINTF("7 + 3 = 12", "7 + 3 = %o", 07 + 03);
+	KVFPRINTF("7 + 3 = 12", "7 + 3 = %o", 07 + 03);
 
 	// Width
-	VFPRINTF("  12", "%4o", 012);
+	KVFPRINTF("  12", "%4o", 012);
 
 	// Precision
-	VFPRINTF("12", "%.0o", 012);
-	VFPRINTF("", "%.0o", 00);
-	VFPRINTF("0", "%.1o", 00);
+	KVFPRINTF("12", "%.0o", 012);
+	KVFPRINTF("", "%.0o", 00);
+	KVFPRINTF("0", "%.1o", 00);
 
 	// Length
-	VFPRINTF("0", "%hho", 0400);
-	VFPRINTF("0", "%ho", 0200000);
+	KVFPRINTF("0", "%hho", 0400);
+	KVFPRINTF("0", "%ho", 0200000);
 
 	// TODO: Test all length modifiers
 
 	// Flags
-	VFPRINTF("12 ", "%-3o", 012);
-	VFPRINTF("0012", "%04o", 012);
+	KVFPRINTF("12 ", "%-3o", 012);
+	KVFPRINTF("0012", "%04o", 012);
 }
 
 static void conv_uchar(void)
 {
-	VFPRINTF("F", "%c", 'F');
-	VFPRINTF("Some string", "Some str%cng", 'i');
+	KVFPRINTF("F", "%c", 'F');
+	KVFPRINTF("Some string", "Some str%cng", 'i');
 }
 
 int main(void)

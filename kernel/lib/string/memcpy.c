@@ -1,6 +1,6 @@
 #include "lib/string.h"
 
-void *memcpy(void *restrict _dest, const void *restrict _src, size_t n)
+void *kmemcpy(void *restrict _dest, const void *restrict _src, size_t n)
 {
 	const unsigned char *src = _src;
 	unsigned char *dest = _dest;

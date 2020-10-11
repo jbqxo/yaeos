@@ -1,6 +1,6 @@
 #include "lib/string.h"
 
-int strcmp(const char *s1, const char *s2) {
+int kstrcmp(const char *s1, const char *s2) {
 	const unsigned char *lhs = (const unsigned char*)s1;
 	const unsigned char *rhs = (const unsigned char*)s2;
 	while (lhs && rhs && *lhs == *rhs) {
@@ -11,7 +11,7 @@ int strcmp(const char *s1, const char *s2) {
 	return (*lhs - *rhs);
 }
 
-int strncmp(const char *s1, const char *s2, size_t n) {
+int kstrncmp(const char *s1, const char *s2, size_t n) {
 	const unsigned char *lhs = (const unsigned char*)s1;
 	const unsigned char *rhs = (const unsigned char*)s2;
 	while (n > 0 && lhs && rhs && *lhs == *rhs) {

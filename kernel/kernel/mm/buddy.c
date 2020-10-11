@@ -113,10 +113,10 @@ static struct chunk *init_chunks(struct buddy_allocator *alloc, void **mem_chunk
 			chunks[ch].bitmaps[lvl] = bitmap.ptr;
 
 			// Mark all pages as FREE.
-			memset(bitmap.ptr, 0xFF, space);
+			kmemset(bitmap.ptr, 0xFF, space);
 			// Mark all padding space as OCCUPIED.
 			union uiptr bitmap_end = num2uiptr(bitmap.num + space);
-			memset(bitmap_end.ptr, 0x0, pad);
+			kmemset(bitmap_end.ptr, 0x0, pad);
 		}
 	}
 
