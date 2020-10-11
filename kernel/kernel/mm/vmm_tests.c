@@ -29,7 +29,7 @@ static int vmspace_mappings_count(struct vm_space *vms)
 {
 	int counter = 0;
 	struct vm_mapping *it;
-	vm_space_mappings_foreach(vms, it)
+	VM_SPACE_MAPPINGS_FOREACH(vms, it)
 	{
 		TEST_ASSERT_NOT_NULL(it->start);
 		TEST_ASSERT_GREATER_THAN_INT(0, it->length);

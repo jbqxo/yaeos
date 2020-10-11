@@ -20,7 +20,7 @@
 
 #define VMM_MEM_LIMIT (6 * PLATFORM_PAGE_SIZE)
 static size_t VMM_MEM_USAGE = 0;
-struct vm_space kvm_space = (struct vm_space) {};
+struct vm_space kvm_space = (struct vm_space){};
 
 struct vm_mapping *vmm_alloc_pages(struct vm_space *space, size_t count)
 {
@@ -42,7 +42,8 @@ void vmm_free_pages(struct vm_space *space, void *address, size_t count)
 	free(address);
 }
 
-void *vm_mapping_addr(struct vm_mapping *mapping) {
+void *vm_mapping_addr(struct vm_mapping *mapping)
+{
 	if (!mapping) {
 		return (NULL);
 	}

@@ -39,8 +39,7 @@
  * @param page_dir Page Directory to modify
  * @param flags Flags to apply to every page.
  */
-static void map_addr_range(void *page_dir, const void *start, const void *end,
-			   enum VM_TABLE_FLAGS flags)
+static void map_addr_range(void *page_dir, const void *start, const void *end, int flags)
 {
 	// TODO: Enforce page boundary checks
 	uintptr_t paddr = (uintptr_t)start;

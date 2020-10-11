@@ -16,6 +16,10 @@ static struct {
 struct vm_mapping vm_mapping_new(void *start, size_t length, int flags, struct vmm_region *region,
 				 size_t region_offset)
 {
+
+	// TODO: Implement eager mappings.
+	kassert(!(flags & VMMM_FLAGS_EAGER));
+
 	struct vm_mapping mapping = { 0 };
 	mapping.start = start;
 	mapping.length = length;

@@ -15,12 +15,11 @@
 static char buffer[256];
 static int pos;
 
-int console_write(const char *msg, size_t length)
+void console_write(const char *msg, size_t length)
 {
 	for (int i = 0; i < length; i++) {
 		buffer[pos++] = msg[i];
 	}
-	return (length);
 }
 
 static void reset(void)

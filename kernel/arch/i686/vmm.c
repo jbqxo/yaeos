@@ -55,7 +55,8 @@ void vm_map(void *page_dir, void *virt_addr, void *phys_addr, int flags)
 	// TODO: Assert that the table is present.
 	// Discard PDE flags.
 	void *ptable = (void *)((uintptr_t)*pdir_entry & -0x1000);
-	vm_set_table_entry(ptable_entry, phys_addr, flags);
+	uint32_t *pte = vm_table_entry_addr(ptable, virt_addr);
+	vm_set_table_entry(pte, phys_addr, flags);
 }
 
 struct {
@@ -89,8 +90,8 @@ static void patch_pagetree(struct vmm_arch_page_tree *pt, struct vm_space *vspac
 {
 	struct vm_mapping *it;
 	VM_SPACE_MAPPINGS_FOREACH (vspace, it) {
-		assert(pt->pagedirs[0] != NULL);
-		assert(pt->pagedirs_lengths[0] > 0);
+		kassert(pt->pagedirs[0] != NULL);
+		kassert(pt->pagedirs_lengths[0] > 0);
 
 		uint32_t *ped = vm_dir_entry_addr(pt->pagedirs[0], it->start);
 		const uintptr_t table_mask = 0xFFFFF000U;
@@ -140,6 +141,8 @@ void vmm_arch_free_pt(struct vmm_arch_page_tree *pt)
 
 void vmm_arch_load_pt(struct vmm_arch_page_tree *pt)
 {
+	// BUG: CR3 must contain physical address!!!
+	kassert(false);
 	vm_paging_set(pt->pagedirs[0]);
 }
 
@@ -174,7 +177,7 @@ void vm_register_pagefault_handler(void)
 uintptr_t vm_get_cr2(void)
 {
 	uintptr_t vaddr;
-	asm("mov %%cr2, %0" : "=rm"(vaddr));
+	asm ("mov %%cr2, %0" : "=r"(vaddr));
 
 	return (vaddr);
 }

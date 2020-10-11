@@ -1,3 +1,5 @@
+// UNITY_TEST DEPENDS ON: kernel/lib/string/memset.c
+
 #include "kernel/ds/cbuffer.h"
 #include "kernel/cppdefs.h"
 

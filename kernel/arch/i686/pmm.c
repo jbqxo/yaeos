@@ -2,7 +2,7 @@
 
 #include "arch_i686/kernel.h"
 #include "arch_i686/platform.h"
-#include "arch_i686/vm.h"
+#include "arch_i686/vmm.h"
 
 #include "kernel/cppdefs.h"
 #include "kernel/klog.h"
@@ -145,7 +145,7 @@ static void find(uintptr_t start, uintptr_t end, uint32_t type, void *data)
 	(*chunks)++;
 }
 
-int pmm_arch_available_chunks(void)
+int pmm_arch_chunks_len(void)
 {
 	int counter = 0;
 	struct availmem_data d = (struct availmem_data){ .fn = count, .fn_data = &counter };

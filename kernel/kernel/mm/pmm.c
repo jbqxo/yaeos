@@ -57,7 +57,7 @@ void pmm_init(struct pmm_allocator *allocators, size_t alloc_length)
 
 static struct pmm_page *try_allocate_from_zone(struct zone_allocators zlist)
 {
-	struct pmm_alloc_resutl allocres;
+	struct pmm_alloc_result allocres;
 
 	struct pmm_allocator *allocator;
 	SLIST_FOREACH (allocator, &zlist, allocators) {
@@ -100,8 +100,8 @@ struct pmm_page *pmm_alloc_page(int flags)
 
 void pmm_free(struct pmm_page *p)
 {
-	assert(p);
-	assert(p->alloc);
+	kassert(p);
+	kassert(p->alloc);
 
 	if (__likely(p->alloc->page_free != NULL)) {
 		p->alloc->page_free(p->alloc->data, p->paddr);
