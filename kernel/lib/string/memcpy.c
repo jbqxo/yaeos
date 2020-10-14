@@ -10,3 +10,9 @@ void *kmemcpy(void *restrict _dest, const void *restrict _src, size_t n)
         }
         return (_dest);
 }
+
+// A compiler may make use of the memcpy function.
+void *memcpy(void *restrict _dest, const void *restrict _src, size_t n)
+{
+        return (kmemcpy(_dest, _src, n));
+}

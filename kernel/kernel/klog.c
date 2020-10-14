@@ -31,12 +31,12 @@ void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, const char *res
                   const char *restrict line, const char *restrict format, ...)
 {
         uint64_t cycle = __rdtsc();
-        fprintf(write, "[%llu:%c] %s:%s:%s | ", cycle, lvl_to_char(lvl), find_filename(path), func,
+        kfprintf(write, "[%llu:%c] %s:%s:%s | ", cycle, lvl_to_char(lvl), find_filename(path), func,
                 line);
 
         va_list ap;
         va_start(ap, format);
-        vfprintf(write, format, ap);
+        kvfprintf(write, format, ap);
         va_end(ap);
 }
 

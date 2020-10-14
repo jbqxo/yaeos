@@ -126,7 +126,7 @@ struct vmm_arch_page_tree *vmm_arch_create_pt(struct vm_space *userspace,
         // i686 has only two page tree directories.
         // Create top-level directory here, and create second-level directories when necessary.
         struct vmm_arch_page_tree *pt = kmm_cache_alloc(&CACHES.page_trees);
-        memset(pt, 0, sizeof(*pt));
+        kmemset(pt, 0, sizeof(*pt));
         pt->pagedirs[0] = kmm_cache_alloc(&CACHES.page_dirs);
         pt->pagedirs_lengths[0] = 1;
 

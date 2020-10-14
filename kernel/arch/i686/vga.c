@@ -112,7 +112,7 @@ static int min(int x, int y)
 void vga_write(struct console *c __unused, const char *restrict data, size_t size)
 {
         while (size > 0) {
-                const char *nl_pos = strchr(data, '\n');
+                const char *nl_pos = kstrchr(data, '\n');
                 size_t w = min(size, VGA_WIDTH - STATE.col);
                 if (nl_pos) {
                         w = min(w, nl_pos - data);

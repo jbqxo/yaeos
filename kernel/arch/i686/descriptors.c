@@ -121,7 +121,7 @@ void boot_setup_gdt(void)
         struct gdt_entry *code_d = &GDT.code_descriptor;
         struct gdt_entry *data_d = &GDT.data_descriptor;
 
-        memset(null_d, 0, sizeof(*null_d));
+        kmemset(null_d, 0, sizeof(*null_d));
 
         code_d->limit_low = LIMIT & 0xFFFF;
         code_d->limit_high = (LIMIT >> 0x10) & 0x0F;
@@ -175,7 +175,7 @@ void idt_set_gatedesc(uint8_t gate_num, void *offset, enum idt_flag flags, enum 
 
 void boot_setup_idt(void)
 {
-        memset(&IDT, 0, sizeof(IDT));
+        kmemset(&IDT, 0, sizeof(IDT));
         struct idt_ptr p = { .limit = sizeof(IDT) - 1, .base = (uint32_t)&IDT };
         idt_set_table(&p);
 }
