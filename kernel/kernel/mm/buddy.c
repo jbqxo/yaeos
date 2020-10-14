@@ -15,11 +15,11 @@
 // https://hammertux.github.io/slab-allocator
 
 struct chunk {
-	uintptr_t addr;
-	size_t size;
-	// The value of 1 denotes FREE page
-	// The value of 0 denotes OCCUPIED page
-	unsigned **bitmaps;
+        uintptr_t addr;
+        size_t size;
+        // The value of 1 denotes FREE page
+        // The value of 0 denotes OCCUPIED page
+        unsigned **bitmaps;
 #define BITMAP_SET_SIZE (sizeof((((struct chunk *)NULL)->bitmaps[0][0])))
 };
 
@@ -28,7 +28,7 @@ struct chunk {
  */
 static unsigned div_roundup(unsigned dividend, unsigned divisor)
 {
-	return ((dividend + (divisor - 1)) / divisor);
+        return ((dividend + (divisor - 1)) / divisor);
 }
 
 /**
@@ -36,46 +36,46 @@ static unsigned div_roundup(unsigned dividend, unsigned divisor)
  */
 static unsigned log2_down(unsigned x)
 {
-	unsigned tmp = 0;
-	while (x >>= 1) {
-		tmp++;
-	}
-	return (tmp);
+        unsigned tmp = 0;
+        while (x >>= 1) {
+                tmp++;
+        }
+        return (tmp);
 }
 
 static union uiptr intern_alloc(struct buddy_allocator *alloc, size_t size)
 {
-	union uiptr pos = num2uiptr(alloc->internp + alloc->intern_sz);
+        union uiptr pos = num2uiptr(alloc->internp + alloc->intern_sz);
 
-	// Assert chunk space.
-	if (__unlikely(pos.num + size > alloc->internp_lim)) {
-		// TODO: Panic!
-		return (ptr2uiptr(NULL));
-	}
-	alloc->intern_sz += size;
+        // Assert chunk space.
+        if (__unlikely(pos.num + size > alloc->internp_lim)) {
+                // TODO: Panic!
+                return (ptr2uiptr(NULL));
+        }
+        alloc->intern_sz += size;
 
-	return (pos);
+        return (pos);
 }
 
 static bool get_bit(struct chunk *ch, unsigned lvl, unsigned pos)
 {
-	unsigned bitpos_mask = BITMAP_SET_SIZE * 8 - 1;
-	unsigned bitmap_idx = (pos & ~bitpos_mask) >> log2_down(BITMAP_SET_SIZE * 8);
-	return (ch->bitmaps[lvl][bitmap_idx] & (1U << (pos & bitpos_mask)));
+        unsigned bitpos_mask = BITMAP_SET_SIZE * 8 - 1;
+        unsigned bitmap_idx = (pos & ~bitpos_mask) >> log2_down(BITMAP_SET_SIZE * 8);
+        return (ch->bitmaps[lvl][bitmap_idx] & (1U << (pos & bitpos_mask)));
 }
 
 static void free_bit(struct chunk *ch, unsigned lvl, unsigned pos)
 {
-	unsigned bitpos_mask = BITMAP_SET_SIZE * 8 - 1;
-	unsigned bitmap_idx = (pos & ~bitpos_mask) >> log2_down(BITMAP_SET_SIZE * 8);
-	ch->bitmaps[lvl][bitmap_idx] |= (1U << (pos & bitpos_mask));
+        unsigned bitpos_mask = BITMAP_SET_SIZE * 8 - 1;
+        unsigned bitmap_idx = (pos & ~bitpos_mask) >> log2_down(BITMAP_SET_SIZE * 8);
+        ch->bitmaps[lvl][bitmap_idx] |= (1U << (pos & bitpos_mask));
 }
 
 static void occupy_bit(struct chunk *ch, unsigned lvl, unsigned pos)
 {
-	unsigned bitpos_mask = BITMAP_SET_SIZE * 8 - 1;
-	unsigned bitmap_idx = (pos & ~bitpos_mask) >> log2_down(BITMAP_SET_SIZE * 8);
-	ch->bitmaps[lvl][bitmap_idx] &= ~(1U << (pos & bitpos_mask));
+        unsigned bitpos_mask = BITMAP_SET_SIZE * 8 - 1;
+        unsigned bitmap_idx = (pos & ~bitpos_mask) >> log2_down(BITMAP_SET_SIZE * 8);
+        ch->bitmaps[lvl][bitmap_idx] &= ~(1U << (pos & bitpos_mask));
 }
 
 /**
@@ -84,63 +84,63 @@ static void occupy_bit(struct chunk *ch, unsigned lvl, unsigned pos)
  */
 static unsigned max_index(size_t chunk_size, unsigned lvl)
 {
-	return (chunk_size / PLATFORM_PAGE_SIZE) >> lvl;
+        return (chunk_size / PLATFORM_PAGE_SIZE) >> lvl;
 }
 
 static struct chunk *init_chunks(struct buddy_allocator *alloc, void **mem_chunks,
-				 const size_t *sizes, unsigned chnum)
+                                 const size_t *sizes, unsigned chnum)
 {
-	struct chunk *chunks = intern_alloc(alloc, chnum * sizeof(*chunks)).ptr;
-	unsigned levels = alloc->max_lvl + 1;
+        struct chunk *chunks = intern_alloc(alloc, chnum * sizeof(*chunks)).ptr;
+        unsigned levels = alloc->max_lvl + 1;
 
-	for (int c = 0; c < chnum; c++) {
-		uintptr_t aligned = align_roundup(ptr2uint(mem_chunks[c]), PLATFORM_PAGE_SIZE);
-		chunks[c].addr = aligned;
-		chunks[c].size = sizes[c] - (aligned - ptr2uint(mem_chunks[c]));
-		chunks[c].bitmaps = intern_alloc(alloc, sizeof(*chunks[c].bitmaps) * levels).ptr;
-	}
+        for (int c = 0; c < chnum; c++) {
+                uintptr_t aligned = align_roundup(ptr2uint(mem_chunks[c]), PLATFORM_PAGE_SIZE);
+                chunks[c].addr = aligned;
+                chunks[c].size = sizes[c] - (aligned - ptr2uint(mem_chunks[c]));
+                chunks[c].bitmaps = intern_alloc(alloc, sizeof(*chunks[c].bitmaps) * levels).ptr;
+        }
 
-	// Initialize bitmaps for every chunk.
-	for (int lvl = 0; lvl < levels; lvl++) {
-		for (int ch = 0; ch < chnum; ch++) {
-			// Round the required space to prevent overlapping.
-			size_t space = div_roundup(max_index(chunks[ch].size, lvl), 8);
-			size_t pad = 0;
-			if (space % BITMAP_SET_SIZE) {
-				pad = BITMAP_SET_SIZE - (space % BITMAP_SET_SIZE);
-			}
-			union uiptr bitmap = intern_alloc(alloc, space + pad);
-			chunks[ch].bitmaps[lvl] = bitmap.ptr;
+        // Initialize bitmaps for every chunk.
+        for (int lvl = 0; lvl < levels; lvl++) {
+                for (int ch = 0; ch < chnum; ch++) {
+                        // Round the required space to prevent overlapping.
+                        size_t space = div_roundup(max_index(chunks[ch].size, lvl), 8);
+                        size_t pad = 0;
+                        if (space % BITMAP_SET_SIZE) {
+                                pad = BITMAP_SET_SIZE - (space % BITMAP_SET_SIZE);
+                        }
+                        union uiptr bitmap = intern_alloc(alloc, space + pad);
+                        chunks[ch].bitmaps[lvl] = bitmap.ptr;
 
-			// Mark all pages as FREE.
-			kmemset(bitmap.ptr, 0xFF, space);
-			// Mark all padding space as OCCUPIED.
-			union uiptr bitmap_end = num2uiptr(bitmap.num + space);
-			kmemset(bitmap_end.ptr, 0x0, pad);
-		}
-	}
+                        // Mark all pages as FREE.
+                        kmemset(bitmap.ptr, 0xFF, space);
+                        // Mark all padding space as OCCUPIED.
+                        union uiptr bitmap_end = num2uiptr(bitmap.num + space);
+                        kmemset(bitmap_end.ptr, 0x0, pad);
+                }
+        }
 
-	return (chunks);
+        return (chunks);
 }
 
 void buddy_init(struct buddy_allocator *alloc, void **mem_chunks, const size_t *sizes,
-		unsigned chnum, void *intern_data, size_t intern_len)
+                unsigned chnum, void *intern_data, size_t intern_len)
 {
-	union uiptr internd = ptr2uiptr(intern_data);
-	alloc->internp = internd.num;
-	alloc->intern_sz = 0;
-	alloc->internp_lim = internd.num + intern_len;
-	{
-		alloc->max_lvl = 0;
-		for (int i = 0; i < chnum; i++) {
-			unsigned region_max = log2_down(sizes[i] / PLATFORM_PAGE_SIZE);
-			if (alloc->max_lvl < region_max) {
-				alloc->max_lvl = region_max;
-			}
-		}
-	}
-	alloc->chunks_num = chnum;
-	alloc->chunks = init_chunks(alloc, mem_chunks, sizes, chnum);
+        union uiptr internd = ptr2uiptr(intern_data);
+        alloc->internp = internd.num;
+        alloc->intern_sz = 0;
+        alloc->internp_lim = internd.num + intern_len;
+        {
+                alloc->max_lvl = 0;
+                for (int i = 0; i < chnum; i++) {
+                        unsigned region_max = log2_down(sizes[i] / PLATFORM_PAGE_SIZE);
+                        if (alloc->max_lvl < region_max) {
+                                alloc->max_lvl = region_max;
+                        }
+                }
+        }
+        alloc->chunks_num = chnum;
+        alloc->chunks = init_chunks(alloc, mem_chunks, sizes, chnum);
 }
 
 /**
@@ -150,147 +150,147 @@ void buddy_init(struct buddy_allocator *alloc, void **mem_chunks, const size_t *
  */
 static int find_free(struct chunk *ch, unsigned lvl)
 {
-	unsigned *bitmap = ch->bitmaps[lvl];
-	// The last index of the element that contains the last bit.
-	unsigned max_bitmap_idx = max_index(ch->size, lvl) / BITMAP_SET_SIZE;
-	int free_idx = -1;
-	for (unsigned i = 0; i <= max_bitmap_idx; i++) {
-		// If at least 1 bit in the whole set isn't 0,
-		// then there is a free page here.
-		if (bitmap[i] != 0) {
-			free_idx = (int)(i * BITMAP_SET_SIZE);
-			break;
-		}
-	}
+        unsigned *bitmap = ch->bitmaps[lvl];
+        // The last index of the element that contains the last bit.
+        unsigned max_bitmap_idx = max_index(ch->size, lvl) / BITMAP_SET_SIZE;
+        int free_idx = -1;
+        for (unsigned i = 0; i <= max_bitmap_idx; i++) {
+                // If at least 1 bit in the whole set isn't 0,
+                // then there is a free page here.
+                if (bitmap[i] != 0) {
+                        free_idx = (int)(i * BITMAP_SET_SIZE);
+                        break;
+                }
+        }
 
-	if (free_idx == -1) {
-		return (-1);
-	}
+        if (free_idx == -1) {
+                return (-1);
+        }
 
-	for (int i = free_idx; i < max_index(ch->size, lvl); i++) {
-		if (get_bit(ch, lvl, i) != 0) {
-			return (i);
-		}
-	}
+        for (int i = free_idx; i < max_index(ch->size, lvl); i++) {
+                if (get_bit(ch, lvl, i) != 0) {
+                        return (i);
+                }
+        }
 
-	return (-1);
+        return (-1);
 }
 
 static void occupy_buddys_children(struct chunk *ch, unsigned lvl, unsigned bit)
 {
-	if (lvl == 0) {
-		return;
-	}
-	bit <<= 1;
-	lvl--;
+        if (lvl == 0) {
+                return;
+        }
+        bit <<= 1;
+        lvl--;
 
-	occupy_bit(ch, lvl, bit);
-	occupy_bit(ch, lvl, bit + 1);
-	occupy_buddys_children(ch, lvl, bit);
-	occupy_buddys_children(ch, lvl, bit + 1);
+        occupy_bit(ch, lvl, bit);
+        occupy_bit(ch, lvl, bit + 1);
+        occupy_buddys_children(ch, lvl, bit);
+        occupy_buddys_children(ch, lvl, bit + 1);
 }
 
 static void occupy_buddy(struct chunk *ch, unsigned max_lvl, unsigned lvl, unsigned bit)
 {
-	// Occupy buddy.
-	occupy_bit(ch, lvl, bit);
-	occupy_buddys_children(ch, lvl, bit);
+        // Occupy buddy.
+        occupy_bit(ch, lvl, bit);
+        occupy_buddys_children(ch, lvl, bit);
 
-	// Occupy buddy's ancestors.
-	while (lvl < max_lvl) {
-		lvl++;
-		bit >>= 1;
-		occupy_bit(ch, lvl, bit);
-	}
+        // Occupy buddy's ancestors.
+        while (lvl < max_lvl) {
+                lvl++;
+                bit >>= 1;
+                occupy_bit(ch, lvl, bit);
+        }
 }
 
 static void free_buddys_ancestors(struct chunk *ch, unsigned max_lvl, unsigned lvl, unsigned bit)
 {
-	while (lvl <= max_lvl) {
-		lvl++;
-		bit >>= 1;
-		bool left_child_free = get_bit(ch, lvl - 1, bit << 1);
-		bool right_child_free = get_bit(ch, lvl - 1, (bit << 1) + 1);
-		if (!left_child_free || !right_child_free) {
-			return;
-		}
+        while (lvl <= max_lvl) {
+                lvl++;
+                bit >>= 1;
+                bool left_child_free = get_bit(ch, lvl - 1, bit << 1);
+                bool right_child_free = get_bit(ch, lvl - 1, (bit << 1) + 1);
+                if (!left_child_free || !right_child_free) {
+                        return;
+                }
 
-		free_bit(ch, lvl, bit);
-	}
+                free_bit(ch, lvl, bit);
+        }
 }
 
 static void free_buddys_children(struct chunk *ch, unsigned lvl, unsigned bit)
 {
-	if (lvl == 0) {
-		return;
-	}
-	bit <<= 1;
-	lvl--;
+        if (lvl == 0) {
+                return;
+        }
+        bit <<= 1;
+        lvl--;
 
-	free_bit(ch, lvl, bit);
-	free_bit(ch, lvl, bit + 1);
-	free_buddys_children(ch, lvl, bit);
-	free_buddys_children(ch, lvl, bit + 1);
+        free_bit(ch, lvl, bit);
+        free_bit(ch, lvl, bit + 1);
+        free_buddys_children(ch, lvl, bit);
+        free_buddys_children(ch, lvl, bit + 1);
 }
 
 static void free_buddy(struct chunk *ch, unsigned max_lvl, unsigned lvl, unsigned bit)
 {
-	free_bit(ch, lvl, bit);
-	free_buddys_children(ch, lvl, bit);
-	free_buddys_ancestors(ch, max_lvl, lvl, bit);
+        free_bit(ch, lvl, bit);
+        free_buddys_children(ch, lvl, bit);
+        free_buddys_ancestors(ch, max_lvl, lvl, bit);
 }
 
 void *buddy_alloc(struct buddy_allocator *a, unsigned order)
 {
-	if (order > a->max_lvl) {
-		return (NULL);
-	}
+        if (order > a->max_lvl) {
+                return (NULL);
+        }
 
-	// Find bit index of a free buddy
-	struct chunk *chunk;
-	int idx = -1;
-	for (unsigned ch = 0; ch < a->chunks_num; ch++) {
-		chunk = &a->chunks[ch];
-		idx = find_free(chunk, order);
-		if (idx != -1) {
-			break;
-		}
-	}
+        // Find bit index of a free buddy
+        struct chunk *chunk;
+        int idx = -1;
+        for (unsigned ch = 0; ch < a->chunks_num; ch++) {
+                chunk = &a->chunks[ch];
+                idx = find_free(chunk, order);
+                if (idx != -1) {
+                        break;
+                }
+        }
 
-	if (idx == -1) {
-		return (NULL);
-	}
+        if (idx == -1) {
+                return (NULL);
+        }
 
-	occupy_buddy(chunk, a->max_lvl, order, idx);
-	union uiptr allocated = num2uiptr(chunk->addr + (idx << order) * PLATFORM_PAGE_SIZE);
-	return (allocated.ptr);
+        occupy_buddy(chunk, a->max_lvl, order, idx);
+        union uiptr allocated = num2uiptr(chunk->addr + (idx << order) * PLATFORM_PAGE_SIZE);
+        return (allocated.ptr);
 }
 
 void buddy_free(struct buddy_allocator *a, void *_mem, unsigned order)
 {
-	union uiptr mem = ptr2uiptr(_mem);
-	// Find buddy's chunk.
-	struct chunk *chunk = NULL;
-	for (unsigned c = 0; c < a->chunks_num; c++) {
-		struct chunk *ch = &a->chunks[c];
-		union uiptr block_start = num2uiptr(ch->addr);
-		union uiptr block_end = num2uiptr(ch->addr + ch->size);
-		if (mem.num > block_start.num && mem.num < block_end.num) {
-			chunk = ch;
-			break;
-		}
-	}
+        union uiptr mem = ptr2uiptr(_mem);
+        // Find buddy's chunk.
+        struct chunk *chunk = NULL;
+        for (unsigned c = 0; c < a->chunks_num; c++) {
+                struct chunk *ch = &a->chunks[c];
+                union uiptr block_start = num2uiptr(ch->addr);
+                union uiptr block_end = num2uiptr(ch->addr + ch->size);
+                if (mem.num > block_start.num && mem.num < block_end.num) {
+                        chunk = ch;
+                        break;
+                }
+        }
 
-	if (!chunk) {
-		return;
-	}
+        if (!chunk) {
+                return;
+        }
 
-	// Calculate buddys index.
-	unsigned index;
-	{
-		uintptr_t offset = mem.num - chunk->addr;
-		index = (offset / PLATFORM_PAGE_SIZE) >> order;
-	}
+        // Calculate buddys index.
+        unsigned index;
+        {
+                uintptr_t offset = mem.num - chunk->addr;
+                index = (offset / PLATFORM_PAGE_SIZE) >> order;
+        }
 
-	free_buddy(chunk, a->max_lvl, order, index);
+        free_buddy(chunk, a->max_lvl, order, index);
 }

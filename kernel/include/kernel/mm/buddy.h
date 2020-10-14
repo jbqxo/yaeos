@@ -10,13 +10,13 @@
  * Don't quote this comment on the part of space and speed efficiency.
  */
 struct buddy_allocator {
-	uintptr_t internp;     /**< Address of allocator's control information. Page aligned. */
-	size_t intern_sz;      /**< Length of the allocator's control information. */
-	uintptr_t internp_lim; /**< Last address that we can use for our purposes. */
+        uintptr_t internp;     /**< Address of allocator's control information. Page aligned. */
+        size_t intern_sz;      /**< Length of the allocator's control information. */
+        uintptr_t internp_lim; /**< Last address that we can use for our purposes. */
 
-	struct chunk *chunks; /**< Pointer at the memory chunks' structures. */
-	unsigned chunks_num;
-	unsigned max_lvl;
+        struct chunk *chunks; /**< Pointer at the memory chunks' structures. */
+        unsigned chunks_num;
+        unsigned max_lvl;
 };
 
 /**
@@ -29,7 +29,7 @@ struct buddy_allocator {
  * @param intern_len Length of the memory for the allocator's data.
  */
 void buddy_init(struct buddy_allocator *alloc, void **mem_chunks, const size_t *sizes,
-		unsigned chnum, void *intern_data, size_t intern_len);
+                unsigned chnum, void *intern_data, size_t intern_len);
 
 /**
  * @brief Allocate specified number of pages.

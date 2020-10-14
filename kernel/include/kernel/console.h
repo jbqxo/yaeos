@@ -9,14 +9,14 @@
 struct console {
 #define CONSRC_OK       (0)
 #define CONSRC_NOTREADY (-1)
-	const char *name;
-	void (*write)(struct console *, const char *msg, size_t len);
-	void (*clear)(struct console *);
-	int (*init)(struct console *);
+        const char *name;
+        void (*write)(struct console *, const char *msg, size_t len);
+        void (*clear)(struct console *);
+        int (*init)(struct console *);
 #define CONSFLAG_EARLY (0x1)
-	unsigned flags;
+        unsigned flags;
 
-	SLIST_FIELD(struct console) active_consoles;
+        SLIST_FIELD(struct console) active_consoles;
 };
 
 void console_init(void);

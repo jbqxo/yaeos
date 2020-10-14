@@ -5,10 +5,10 @@
 #include "kernel/platform.h"
 
 struct kernel_panic_info {
-	char *description;
-	char *location;
+        char *description;
+        char *location;
 
-	KVSTATIC_DECLARE(const char *, size_t, PLATFORM_REGISTERS_COUNT, kstrcmp) regs;
+        KVSTATIC_DECLARE(const char *, size_t, PLATFORM_REGISTERS_COUNT, kstrcmp) regs;
 };
 
 void kernel_panic(struct kernel_panic_info *);

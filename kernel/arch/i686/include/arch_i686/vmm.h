@@ -1,8 +1,8 @@
 #ifndef _KERNEL_ARCH_I686_VM_H
 #define _KERNEL_ARCH_I686_VM_H
 
-#include "arch_i686/platform.h"
 #include "arch_i686/intr.h"
+#include "arch_i686/platform.h"
 
 #include "kernel/cppdefs.h"
 

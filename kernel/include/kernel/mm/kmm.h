@@ -8,29 +8,30 @@
 #include <stdint.h>
 
 struct kmm_cache {
-	size_t size;          //! Size of objects in the cache.
-	size_t alignment;     //! Alignment of each object.
-	size_t slab_capacity; //! Number of objects stuffed in one slab.
-	size_t stride;        //! Actual space wasted on each object.
+        size_t size;          //! Size of objects in the cache.
+        size_t alignment;     //! Alignment of each object.
+        size_t slab_capacity; //! Number of objects stuffed in one slab.
+        size_t stride;        //! Actual space wasted on each object.
 
-	// Slab coloring.
-	unsigned colour_max;
-	unsigned colour_off;
-	unsigned colour_next;
+        // Slab coloring.
+        unsigned colour_max;
+        unsigned colour_off;
+        unsigned colour_next;
 
 #define KMM_CACHE_STATIC (0x1 << 0) //! Can use reserved static storage.
 #define KMM_CACHE_LARGE  (0x1 << 1)
-	unsigned flags;
+        unsigned flags;
 
-	const char *name;
-	void (*ctor)(void *);
-	void (*dtor)(void *);
+        const char *name;
+        void (*ctor)(void *);
+        void (*dtor)(void *);
 
-	SLIST_HEAD(, struct kmm_slab) slabs_empty;
-	SLIST_HEAD(, struct kmm_slab) slabs_partial;
-	SLIST_HEAD(, struct kmm_slab) slabs_full;
+        SLIST_HEAD(, struct kmm_slab) slabs_empty;
+        SLIST_HEAD(, struct kmm_slab) slabs_partial;
+        SLIST_HEAD(, struct kmm_slab) slabs_full;
 
-	SLIST_FIELD(struct kmm_cache) caches; //! List of all creating caches. Used to reclaim memory.
+        SLIST_FIELD(struct kmm_cache)
+        caches; //! List of all creating caches. Used to reclaim memory.
 };
 
 ///
@@ -50,8 +51,8 @@ void kmm_init(void);
 /// @return Pointer on a newly created cache.
 ///
 struct kmm_cache *kmm_cache_create(const char *name, size_t size, size_t align,
-				   unsigned cache_flags, void (*ctor)(void *),
-				   void (*dtor)(void *));
+                                   unsigned cache_flags, void (*ctor)(void *),
+                                   void (*dtor)(void *));
 
 ///
 /// Destroy given cache.

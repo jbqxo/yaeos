@@ -22,28 +22,28 @@
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 union uiptr {
-	void *ptr;
-	uintptr_t num;
+        void *ptr;
+        uintptr_t num;
 };
 
 static inline union uiptr ptr2uiptr(void *ptr)
 {
-	return ((union uiptr) {.ptr = ptr});
+        return ((union uiptr){ .ptr = ptr });
 }
 
 static inline union uiptr num2uiptr(uintptr_t num)
 {
-	return ((union uiptr) {.num = num});
+        return ((union uiptr){ .num = num });
 }
 
 static inline void *uint2ptr(uintptr_t address)
 {
-	return (num2uiptr(address).ptr);
+        return (num2uiptr(address).ptr);
 }
 
 static inline uintptr_t ptr2uint(void *address)
 {
-	return (ptr2uiptr(address).num);
+        return (ptr2uiptr(address).num);
 }
 
 #endif // _KERNEL_CPPDEFS_H

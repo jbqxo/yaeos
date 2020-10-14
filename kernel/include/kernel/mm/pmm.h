@@ -11,15 +11,15 @@
 /// Describes a chunk of physical memory.
 ///
 struct pmm_chunk {
-	void *mem; //! Location of a chunk.
-	size_t length;
+        void *mem; //! Location of a chunk.
+        size_t length;
 
 #define MEM_TYPE_AVAIL    (0x1)
 #define MEM_TYPE_RESERVED (0x2)
 #define MEM_TYPE_ACPI     (0x3)
 #define MEM_TYPE_HIBER    (0x4)
 #define MEM_TYPE_UNAVAIL  (0x5)
-	uint8_t type;
+        uint8_t type;
 };
 
 ///
@@ -41,16 +41,16 @@ void pmm_arch_get_chunks(struct pmm_chunk *chunks);
 /// @note For internal usage between PMM and physical allocators.
 ///
 struct pmm_alloc_result {
-	uintptr_t paddr;
-	bool success;
+        uintptr_t paddr;
+        bool success;
 };
 
 ///
 /// Holds a result of physical memory allocation by PMM.
 ///
 struct pmm_page {
-	uintptr_t paddr;
-	struct pmm_allocator *alloc; //! Allocator that owns allocated memory.
+        uintptr_t paddr;
+        struct pmm_allocator *alloc; //! Allocator that owns allocated memory.
 };
 
 ///
@@ -60,18 +60,18 @@ struct pmm_page {
 /// find an allocator which suits given requirements (DMA, low memory, and so on).
 ///
 struct pmm_allocator {
-	const char *name;
+        const char *name;
 #define PMM_RESTRICT_DMA         (0x1 << 0)
 #define PMM_RESTRICT_SINGLE_ONLY (0x1 << 1)
-	int restrict_flags;
+        int restrict_flags;
 
-	/// Custom data pointer
-	void *data;
+        /// Custom data pointer
+        void *data;
 
-	struct pmm_alloc_result (*page_alloc)(void *data);
-	void (*page_free)(void *data, uintptr_t);
+        struct pmm_alloc_result (*page_alloc)(void *data);
+        void (*page_free)(void *data, uintptr_t);
 
-	SLIST_FIELD(struct pmm_allocator) allocators;
+        SLIST_FIELD(struct pmm_allocator) allocators;
 };
 
 ///

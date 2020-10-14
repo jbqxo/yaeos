@@ -11,19 +11,19 @@
 enum rbtree_colour { RBTREE_BLACK = 0, RBTREE_RED = 1 };
 
 struct rbtree_node {
-	void *data;
-	struct rbtree_node *left;
-	struct rbtree_node *right;
-	union uiptr parent;
+        void *data;
+        struct rbtree_node *left;
+        struct rbtree_node *right;
+        union uiptr parent;
 
 #ifndef NDEBUG
-	enum rbtree_colour colour : 1;
+        enum rbtree_colour colour : 1;
 #endif
 };
 
 struct rbtree {
-	struct rbtree_node *root;
-	int (*cmp)(void *, void *);
+        struct rbtree_node *root;
+        int (*cmp)(void *, void *);
 };
 
 void rbtree_init_tree(struct rbtree *rbt, int (*cmp)(void *, void *));
@@ -40,6 +40,6 @@ struct rbtree_node *rbtree_search_min(struct rbtree *rbt, void *limit);
 struct rbtree_node *rbtree_search_max(struct rbtree *rbt, void *limit);
 
 void rbtree_iter_range(struct rbtree *rbt, void *value_from, void *value_to,
-		       bool (*fn)(void *elem, void *data), void *data);
+                       bool (*fn)(void *elem, void *data), void *data);
 
 #endif // _KERNEL_DS_RBTREE_H
