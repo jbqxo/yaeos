@@ -68,6 +68,7 @@ COMPILEDB := compiledb
 GREP   := grep
 SED    := sed
 TR     := tr
+AWK    := awk
 
 # Do not remove intermediate files
 .SECONDARY:

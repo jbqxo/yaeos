@@ -1,6 +1,7 @@
 #ifndef _KERNEL_CPPDEFS_H
 #define _KERNEL_CPPDEFS_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #define __unused          __attribute__((__unused__))
@@ -20,6 +21,10 @@
 #define TO_SSTR_MACRO(X) TO_SSTR(X)
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
+#define STDOUTPRINT_OFFSET(_struct, member)                                 \
+        printf("offsetof__%s__%s %lu\n", TO_SSTR(_struct), TO_SSTR(member), \
+               offsetof(struct _struct, member))
 
 union uiptr {
         void *ptr;

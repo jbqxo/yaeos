@@ -5,6 +5,7 @@ CPPFLAGS_COMMON += -D__i686__ -DUNITY_INCLUDE_PRINT_FORMATTED -Wno-macro-redefin
 CPPFLAGS_COMMON += -DUNITY_OUTPUT_CHAR=""
 
 CC := clang
+HOST_CC := $(CC)
 LD := clang
 AS := gcc -xassembler-with-cpp -c
 AR := ar
