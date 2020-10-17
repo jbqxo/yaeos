@@ -1,4 +1,5 @@
 .ccls-cache/
+.cache/
 .clangd/
 .vscode/
 .DS_Store
