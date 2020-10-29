@@ -68,7 +68,8 @@ COMPILEDB := compiledb
 GREP   := grep
 SED    := sed
 TR     := tr
-AWK    := awk
+
+SCRIPT_GEN_OFFSET := $(ROOT)/scripts/gen_offsets.py
 
 # Do not remove intermediate files
 .SECONDARY:

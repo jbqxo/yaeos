@@ -30,18 +30,19 @@ FILES_TESTS_OBJ :=\
     $(addsuffix .o, \
     $(shell $(FIND) * -name '*_tests.c'))
 
-OFFSETS_SOURCES := $(shell $(FIND) * -type f -name '*_offsets.c')
-OFFSETS_HEADERS := $(patsubst %_offsets.c,$(BUILDDIR_KERNEL)/gen_include/offsets/%.h, $(OFFSETS_SOURCES))
+HEADERS := $(shell $(FIND) * -type f -name '*.h')
+# Strip headers paths up until the last "include/"
+STRIPPED_HEADERS := $(shell echo $(HEADERS) | sed -E 's/[^\ ]*include\/([^\ ]+)/\1/g')
+OFFSETS_HEADERS := $(addprefix $(BUILDDIR_KERNEL)/gen_include/offsets/, $(STRIPPED_HEADERS))
 
 # Generate options to ignore all architectures except for current TARGET
 FIND_IGNORE_ARCHS :=\
     $(patsubst %, -not \( -path % -prune \), \
     $(shell $(FIND) * -type d -path 'arch/*' -prune | $(GREP) -v $(ARCH)))
 FILES_OBJ :=\
-    $(filter-out $(OFFSETS_SOURCES), \
     $(filter-out $(FILES_TESTS_OBJ) test_fakes/%.c.o, \
     $(addsuffix .o, \
-    $(shell $(FIND) * $(FIND_IGNORE_ARCHS) -name '*.c' -or -name '*.asm'))))
+    $(shell $(FIND) * $(FIND_IGNORE_ARCHS) -name '*.c' -or -name '*.asm')))
 
 ###### Phony rules
 
@@ -102,18 +103,15 @@ $(BUILDDIR_KERNEL)/%_tests: $(BUILDDIR_KERNEL)/%_tests.c.o\
 	$(info [kernel.tests] LD $@)
 	@$(LD) $(CPPFLAGS_COMPLETE) $^ $(LDFLAGS_COMPLETE) -o $@
 
-###### Offset-files rules
+###### Rules to make offset-headers
 
 offsets: $(OFFSETS_HEADERS)
 
-$(BUILDDIR_KERNEL)/%_offsets: $(CWD)/%_offsets.c | prefix_dirs
-	$(info [kernel.offsets] CC $@)
-	@$(HOST_CC) $(CPPFLAGS_COMPLETE) $^ -o $@
-
-$(BUILDDIR_KERNEL)/gen_include/offsets/%.h: $(BUILDDIR_KERNEL)/%_offsets
+# Dependencies are searched in the "big" HEADERS variable.
+$(BUILDDIR_KERNEL)/gen_include/offsets/%.h: $$(shell echo $(HEADERS) | $(TR) " " "\n" | $(GREP) %)
 	$(info [kernel.offsets] GEN $@)
 	@$(MKDIRP) $(dir $@)
-	@$^ | $(AWK) '{print "#define " toupper($$1) " " $$2}' > $@
+	@$(SCRIPT_GEN_OFFSET) -c $(ROOT) -f $< -o $@
 
 ###### Dependencies rules
 
@@ -131,5 +129,4 @@ $(BUILDDIR_DEPS)/unity/unity.o:
 ifneq ($(MAKECMDGOALS),clean)
     include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ:.o=.d))
     include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_TESTS_OBJ:.o=.d))
-    include $(addprefix $(BUILDDIR_KERNEL)/, $(OFFSETS_SOURCES:.c=.c.d))
 endif
