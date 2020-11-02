@@ -63,16 +63,15 @@ def is_iterator_empty(it):
     return False, itertools.chain([first], it)
 
 
-def gen_offset_file(defs: [Definition], file_path: str) -> bool:
+def gen_offset_file(defs: [Definition], file) -> bool:
     # Do not create a file if there are no definitions to write.
     empty, defs = is_iterator_empty(defs)
     if empty:
         return False
 
-    with open(file_path, "w") as f:
-        for d in defs:
-            print("#define OFFSETS__{0}__{1} {2}".format(
-                d.struct.upper(), d.field.upper(), int(d.offset / 8)), file=f)
+    for d in defs:
+        print("#define OFFSETS__{0}__{1} {2}".format(
+            d.struct.upper(), d.field.upper(), int(d.offset / 8)), file=file)
 
     return True
 
@@ -87,7 +86,7 @@ def parse_args() -> argparse.Namespace:
                    help="Path to the clang's libraries.")
     a.add_argument("-p", dest="pattern", default="^\\s*ASM_EXPORT_OFFSET",
                    help="Regex expression to use for the search.")
-    a.add_argument("-o", "--output", dest="output", required=True,
+    a.add_argument("-o", "--output", dest="output", type=argparse.FileType("w"), default=sys.stdout,
                    help="Where to write the header file.")
 
     return a.parse_args()
