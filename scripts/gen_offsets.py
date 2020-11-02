@@ -11,6 +11,7 @@ from dataclasses import dataclass
 import itertools
 import argparse
 import re
+import sys
 
 
 @dataclass
@@ -62,16 +63,18 @@ def is_iterator_empty(it):
     return False, itertools.chain([first], it)
 
 
-def gen_offset_file(defs: [Definition], file_path: str):
+def gen_offset_file(defs: [Definition], file_path: str) -> bool:
     # Do not create a file if there are no definitions to write.
     empty, defs = is_iterator_empty(defs)
     if empty:
-        return
+        return False
 
     with open(file_path, "w") as f:
         for d in defs:
             print("#define OFFSETS__{0}__{1} {2}".format(
                 d.struct.upper(), d.field.upper(), int(d.offset / 8)), file=f)
+
+    return True
 
 
 def parse_args() -> argparse.Namespace:
@@ -102,7 +105,12 @@ def main():
 
     tu = index.parse(args.file, comp_args)
     definitions = find_exported_definitions(args.pattern, tu)
-    gen_offset_file(definitions, args.output)
+    file_created = gen_offset_file(definitions, args.output)
+
+    if file_created:
+        sys.exit(0)
+    else:
+        sys.exit(1)
 
 
 main()

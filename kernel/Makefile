@@ -109,9 +109,9 @@ offsets: $(OFFSETS_HEADERS)
 
 # Dependencies are searched in the "big" HEADERS variable.
 $(BUILDDIR_KERNEL)/gen_include/offsets/%.h: $$(shell echo $(HEADERS) | $(TR) " " "\n" | $(GREP) %)
-	$(info [kernel.offsets] GEN $@)
 	@$(MKDIRP) $(dir $@)
-	@$(SCRIPT_GEN_OFFSET) -c $(ROOT) -f $< -o $@
+# Print output only if a file was created, and ignore errors otherwise.
+	@$(SCRIPT_GEN_OFFSET) -c $(ROOT) -f $< -o $@ && echo [kernel.offsets] GEN $@ || true
 
 ###### Dependencies rules
 
