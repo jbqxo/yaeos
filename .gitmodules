@@ -2,3 +2,6 @@
 	path = deps/unity
 	url = https://github.com/ThrowTheSwitch/Unity
 	branch = master
+[submodule "deps/extract-offsets"]
+	path = deps/extract-offsets
+	url = https://github.com/mlyapin/gcc-extract-offsets.git

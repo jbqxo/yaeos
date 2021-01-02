@@ -2,9 +2,9 @@ export ROOT := $(shell pwd)
 
 include confmk/common.mk
 
-.PHONY: all build_dir kernel grub-iso test clean
+.PHONY: all build_dir kernel grub-iso tests clean
 
-all: kernel grub-iso test build_dir
+all: kernel grub-iso tests build_dir
 
 build_dir:
 	@$(MKDIRP) $(BUILDDIR_BUILD)
@@ -20,14 +20,17 @@ grub-iso: kernel | build_dir
 
 kernel: | build_dir
 	$(call log, [build] make kernel)
+	@$(MAKE) -C $(DIR_DEPS) extract-offsets
 	@$(MAKE) -C $(DIR_KERNEL)
 
 compile_commands:
 	$(call log, [build] make compile commands entries)
+	@$(MAKE) -C $(DIR_DEPS) extract-offsets
 	@$(MAKE) -C $(DIR_KERNEL) compile_commands
 
 # Add unity headers
 tests: | build_dir
 	$(call log, [build] make tests)
 	@$(MAKE) -C $(DIR_DEPS) unity
+	@$(MAKE) -C $(DIR_DEPS) extract-offsets
 	@$(MAKE) -C $(DIR_KERNEL) tests

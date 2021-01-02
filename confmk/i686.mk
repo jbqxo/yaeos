@@ -1,10 +1,12 @@
 # This file is not intended to be included directly.
 
-CPPFLAGS_COMMON += -D__i686__
-CC := clang -march=i686 --target=i686-pc-none-elf
+CC := i686-elf-gcc
 AS := $(CC) -xassembler-with-cpp -c
-LD := $(CC)
+LD := i686-elf-gcc
 AR := i686-elf-ar
-CFLAGS_COMMON += -m32
+
+CPPFLAGS_COMMON += -D__i686__
+CFLAGS_COMMON += -m32 -ffreestanding
+LDFLAGS_COMMON += 
 
 ARCH := i686

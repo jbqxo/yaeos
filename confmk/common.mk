@@ -50,8 +50,8 @@ CPPFLAGS_DEBUG   +=
 CPPFLAGS_RELEASE += -DNDEBUG
 
 LDFLAGS_COMMON  += -lgcc
-LDFLAGS_DEBUG   += -fno-lto -g
-LDFLAGS_RELEASE += -flto
+LDFLAGS_DEBUG   += -g
+LDFLAGS_RELEASE += -Wl,-O3 -flto
 
 # Compiler diagnostics
 # All of these diagnostics there for a reason right?
@@ -70,6 +70,14 @@ SED    := sed
 TR     := tr
 
 SCRIPT_GEN_OFFSET := $(ROOT)/scripts/gen_offsets.py
+
+TARGET_GCC ?= $(CC)
+GCC_GEN_OFFSET_CMD := $(TARGET_GCC) -S -o /dev/null \
+    -fplugin=$(BUILDDIR_DEPS)/extract-offsets/extract_offsets.so \
+    -fplugin-arg-extract_offsets-capitalize="true" \
+    -fplugin-arg-extract_offsets-separator="__" \
+    -fplugin-arg-extract_offsets-prefix="\#define OFFSETS__"
+
 
 # Do not remove intermediate files
 .SECONDARY:

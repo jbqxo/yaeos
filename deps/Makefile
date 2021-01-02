@@ -15,13 +15,20 @@ CPPFLAGS_COMPLETE := \
     $(if $(BUILD_DEBUG),$(CPPFLAGS_DEBUG),$(CPPFLAGS_RELEASE)) \
     $(CPPFLAGS)
 
-.PHONY: all unity prefix_dirs clean
+.PHONY: all unity extract-offsets prefix_dirs clean
 
-all: unity
+all: unity extract-offsets
+
+extract-offsets: $(BUILDDIR_DEPS)/extract-offsets/extract_offsets.so
+
+$(BUILDDIR_DEPS)/extract-offsets/extract_offsets.so: $(CWD)/extract-offsets
+	$(info [deps.extract_offsets] MAKE -C $< install)
+	@$(MAKE) -C $< DESTDIR=$(BUILDDIR_DEPS)/extract-offsets TARGET_GCC=$(CC) install
 
 unity: $(BUILDDIR_DEPS)/unity/unity.o
 
 prefix_dirs:
+	@$(MKDIRP) $(BUILDDIR_DEPS)/unity
 	@$(MKDIRP) $(BUILDDIR_DEPS)/unity
 
 $(BUILDDIR_DEPS)/unity/%.o: $(CWD)/unity/src/%.c | prefix_dirs

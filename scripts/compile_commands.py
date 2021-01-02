@@ -22,6 +22,7 @@ def parse_args() -> argparse.Namespace:
     a.add_argument("-p", dest="pattern", help="Cdb entry filename pattern", default="*.json")
     a.add_argument("-c", dest="command_style", help="Build command-styled database", action="store_true")
     a.add_argument("-C", dest="new_compiler", help="Change compiler", default=None)
+    a.add_argument("-e", dest="exclude", help="Space separated parameters to exclude", nargs=argparse.REMAINDER)
     return a.parse_args()
 
 
@@ -30,9 +31,12 @@ def transform_to_cmd(db: dict):
     db["command"] = " ".join(db["command"])
 
 
-def patch_compiler(db: dict, new_compiler: str) -> dict:
+def patch_compiler(db: dict, new_compiler: str):
     db["arguments"][0] = new_compiler
 
+
+def exclude_args(db: dict, to_exclude: [str]):
+    db["arguments"] = [a for a in db["arguments"] if a not in to_exclude]
 
 def main():
     args = parse_args()
@@ -44,6 +48,8 @@ def main():
                 patch_compiler(e, args.new_compiler)
             if args.command_style:
                 transform_to_cmd(e)
+            if len(args.exclude) > 0:
+                exclude_args(e, args.exclude)
             compilation_db.append(e)
 
     with open(args.output, "w+") as outf:

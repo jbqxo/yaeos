@@ -8,7 +8,7 @@ include $(ROOT)/confmk/common.mk
 DIR_ARCH := arch/$(ARCH)
 
 CFLAGS_COMPLETE := \
-    $(CFLAGS_COMMON) -ffreestanding \
+    $(CFLAGS_COMMON) \
     $(if $(BUILD_DEBUG),$(CFLAGS_DEBUG),$(CFLAGS_RELEASE)) \
     $(CFLAGS)
 
@@ -70,7 +70,7 @@ prefix_dirs:
 $(BUILDDIR_KERNEL)/kernel.bin: LDFLAGS_COMPLETE += -nostdlib
 $(BUILDDIR_KERNEL)/kernel.bin: $$(FILES_OBJ) $(DIR_ARCH)/linker.ld
 	$(info [kernel] LD $@)
-	@$(LD) -Wl,-T,$(DIR_ARCH)/linker.ld $(FILES_OBJ) $(LDFLAGS_COMPLETE) -o $@
+	@$(LD) -T $(DIR_ARCH)/linker.ld $(FILES_OBJ) $(LDFLAGS_COMPLETE) -o $@
 
 $(BUILDDIR_KERNEL)/%.c.o: $(CWD)/%.c | prefix_dirs
 	$(info [kernel] CC $@)
@@ -109,9 +109,9 @@ offsets: $(OFFSETS_HEADERS)
 
 # Dependencies are searched in the "big" HEADERS variable.
 $(BUILDDIR_KERNEL)/gen_include/offsets/%.h: $$(shell echo $(HEADERS) | $(TR) " " "\n" | $(GREP) %)
+	$(info [kernel.offsets] GEN $@)
 	@$(MKDIRP) $(dir $@)
-# Print output only if a file was created, and ignore errors otherwise.
-	@$(SCRIPT_GEN_OFFSET) -c $(ROOT) -f $< -o $@ && echo [kernel.offsets] GEN $@ || true
+	@$(GCC_GEN_OFFSET_CMD) $(CFLAGS_COMPLETE) $(CPPFLAGS_COMPLETE) $< -fplugin-arg-extract_offsets-output=$@
 
 ###### Dependencies rules
 
@@ -129,4 +129,5 @@ $(BUILDDIR_DEPS)/unity/unity.o:
 ifneq ($(MAKECMDGOALS),clean)
     include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_OBJ:.o=.d))
     include $(addprefix $(BUILDDIR_KERNEL)/, $(FILES_TESTS_OBJ:.o=.d))
+
 endif

@@ -17,6 +17,8 @@
 #define __likely(exp)     __builtin_expect((exp), 1)
 #define __unlikely(exp)   __builtin_expect((exp), 0)
 
+#define __asmexport       __attribute__((extract_offset))
+
 #define TO_SSTR(X)       #X
 #define TO_SSTR_MACRO(X) TO_SSTR(X)
 
