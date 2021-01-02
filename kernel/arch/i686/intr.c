@@ -17,11 +17,11 @@ static intr_handler_fn DEFAULT_HANDLER = NULL;
 // See: https://pdos.csail.mit.edu/6.828/2010/readings/hardware/8259A.pdf
 
 #define MASTER_PIC  (uint8_t)(0x20)
-#define MASTER_CMD  (uint8_t) MASTER_PIC
+#define MASTER_CMD  (uint8_t)(MASTER_PIC)
 #define MASTER_DATA (uint8_t)(MASTER_CMD + 1)
 
 #define SLAVE_PIC  (uint8_t)(0xA0)
-#define SLAVE_CMD  (uint8_t) SLAVE_PIC
+#define SLAVE_CMD  (uint8_t)(SLAVE_PIC)
 #define SLAVE_DATA (uint8_t)(SLAVE_PIC + 1)
 
 #define ICW1_INIT (uint8_t)(0x1 << 4)

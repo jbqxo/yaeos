@@ -6,7 +6,6 @@
 
 #include <stdarg.h>
 #include <stdint.h>
-#include <x86intrin.h>
 
 static const char *find_filename(const char *path)
 {
@@ -30,7 +29,7 @@ static int write(const char *msg, size_t len)
 void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, const char *restrict func,
                   const char *restrict line, const char *restrict format, ...)
 {
-        uint64_t cycle = __rdtsc();
+        uint64_t cycle = 0;
         kfprintf(write, "[%llu:%c] %s:%s:%s | ", cycle, lvl_to_char(lvl), find_filename(path), func,
                 line);
 

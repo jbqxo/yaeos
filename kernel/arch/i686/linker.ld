@@ -1,3 +1,4 @@
+OUTPUT_FORMAT(elf32-i386)
 ENTRY(_start)
 
 SECTIONS
@@ -19,6 +20,7 @@ SECTIONS
 	{
 		__kernel_rodata_start = .;
 		*(.rodata)
+		*(.rodata.*)
 		__kernel_rodata_end = .;
 	}
 
@@ -26,9 +28,8 @@ SECTIONS
 	{
 		__kernel_data_start = .;
 		*(.data)
-		__kernel_data_end = .;
-
 		*(SORT_BY_NAME(.elflist_*));
+		__kernel_data_end = .;
 	}
 
 	.bss ALIGN(4K): AT (ADDR(.bss) - 0xC0000000)

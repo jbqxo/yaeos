@@ -8,8 +8,8 @@
 #include <stddef.h>
 
 #define PIT_FREQUENCY (1193182)
-#define PIT_CH0       (0x40)
-#define PIT_CMD       (0x43)
+#define PIT_CH0       (uint8_t)(0x40)
+#define PIT_CMD       (uint8_t)(0x43)
 #define PIT_TCOUNT    (0x30)
 
 static callback_fn CALLBACK = NULL;
