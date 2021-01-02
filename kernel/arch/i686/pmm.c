@@ -7,6 +7,7 @@
 #include "kernel/cppdefs.h"
 #include "kernel/klog.h"
 #include "kernel/utils.h"
+#include "kernel/mm/kmm.h"
 
 #include <multiboot.h>
 #include <stdbool.h>
@@ -157,4 +158,12 @@ void pmm_arch_get_chunks(struct pmm_chunk *chunks)
 {
         struct availmem_data d = (struct availmem_data){ .fn = find, .fn_data = &chunks };
         chunks_iter(availmem_iter, &d);
+}
+
+void pmm_arch_get_allocators(struct pmm_allocator *allocators)
+{
+        struct pmm_allocator *normal_alloc = kmalloc(sizeof(struct pmm_allocator));
+        normal_alloc->name = "Normal Memory";
+        normal_alloc->restrict_flags = 0;
+        SLIST_CLEAR(&normal_alloc->allocators);
 }

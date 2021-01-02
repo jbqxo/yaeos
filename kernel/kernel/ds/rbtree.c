@@ -314,7 +314,7 @@ static void rbt_insert_fix(struct rbtree *rbt, struct rbtree_node *new)
                         // How did we get here?
                         kassert(false);
                 }
-                // Grandparent becomes a child of the parent. Strange times.
+                // Grandparent becomes the parent's child. Strange times.
                 rbt_set_colour(parent, RBTREE_BLACK);
                 rbt_set_colour(grandparent, RBTREE_RED);
 

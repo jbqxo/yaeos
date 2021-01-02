@@ -20,16 +20,16 @@ void setUp(void)
 void tearDown(void)
 {}
 
-static bool rbt_empty(struct vm_space *vms)
+static bool rbt_empty(struct vmm_space *vms)
 {
         return (vms->vmappings.tree.root == NULL);
 }
 
-static int vmspace_mappings_count(struct vm_space *vms)
+static int vmspace_mappings_count(struct vmm_space *vms)
 {
         int counter = 0;
-        struct vm_mapping *it;
-        VM_SPACE_MAPPINGS_FOREACH (vms, it) {
+        struct vmm_mapping *it;
+        VMM_SPACE_MAPPINGS_FOREACH (vms, it) {
                 TEST_ASSERT_NOT_NULL(it->start);
                 TEST_ASSERT_GREATER_THAN_INT(0, it->length);
                 counter++;
@@ -37,15 +37,15 @@ static int vmspace_mappings_count(struct vm_space *vms)
         return (counter);
 }
 
-static bool vmspace_empty(struct vm_space *vms)
+static bool vmspace_empty(struct vmm_space *vms)
 {
         return (rbt_empty(vms) && vmspace_mappings_count(vms) == 0);
 }
 
 static void allocate_single_page(void)
 {
-        struct vm_space vspace = vm_space_new(0x0);
-        struct vm_mapping *m = vmm_alloc_pages(&vspace, 1);
+        struct vmm_space vspace = vmm_space_new(0x0);
+        struct vmm_mapping *m = vmm_alloc_pages(&vspace, 1);
         TEST_ASSERT_NOT_NULL_MESSAGE(m, "Allocated mapping doesn't point anywhere");
 
         vmm_free_mapping(&vspace, m);
@@ -56,8 +56,8 @@ static void allocate_single_page(void)
 
 static void free_single_by_ptr(void)
 {
-        struct vm_space vspace = vm_space_new(0x0);
-        struct vm_mapping *m = vmm_alloc_pages(&vspace, 1);
+        struct vmm_space vspace = vmm_space_new(0x0);
+        struct vmm_mapping *m = vmm_alloc_pages(&vspace, 1);
         TEST_ASSERT_NOT_NULL(m);
         vmm_free_pages(&vspace, m->start, 1);
         TEST_ASSERT_EQUAL_INT(0, vmspace_mappings_count(&vspace));
@@ -65,8 +65,8 @@ static void free_single_by_ptr(void)
 
 static void allocate_many_pages(void)
 {
-        struct vm_space vspace = vm_space_new(0x0);
-        struct vm_mapping *m = vmm_alloc_pages(&vspace, 10);
+        struct vmm_space vspace = vmm_space_new(0x0);
+        struct vmm_mapping *m = vmm_alloc_pages(&vspace, 10);
         TEST_ASSERT_NOT_NULL(m);
         vmm_free_mapping(&vspace, m);
         TEST_ASSERT_EQUAL_INT(0, vmspace_mappings_count(&vspace));

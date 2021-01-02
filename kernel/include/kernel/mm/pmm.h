@@ -23,6 +23,30 @@ struct pmm_chunk {
 };
 
 ///
+/// Describes a physical allocator that can be used by PMM.
+///
+/// When PMM is requested to allocate some memory, it will try to
+/// find an allocator which suits given requirements (DMA, low memory, and so on).
+///
+struct pmm_allocator {
+        const char *name;
+#define PMM_RESTRICT_DMA         (0x1 << 0)
+        int restrict_flags;
+
+        /// Custom data pointer
+        void *data;
+
+        struct pmm_alloc_result (*page_alloc)(void *data);
+        void (*page_free)(void *data, uintptr_t);
+
+        SLIST_FIELD(struct pmm_allocator) allocators;
+};
+
+size_t pmm_arch_allocators_count(void);
+
+void pmm_arch_get_allocators(struct pmm_allocator *allocators);
+
+///
 /// Get the number of available chunks of physical memory.
 ///
 int pmm_arch_chunks_len(void);
@@ -51,27 +75,6 @@ struct pmm_alloc_result {
 struct pmm_page {
         uintptr_t paddr;
         struct pmm_allocator *alloc; //! Allocator that owns allocated memory.
-};
-
-///
-/// Describes a physical allocator that can be used by PMM.
-///
-/// When PMM is requested to allocate some memory, it will try to
-/// find an allocator which suits given requirements (DMA, low memory, and so on).
-///
-struct pmm_allocator {
-        const char *name;
-#define PMM_RESTRICT_DMA         (0x1 << 0)
-#define PMM_RESTRICT_SINGLE_ONLY (0x1 << 1)
-        int restrict_flags;
-
-        /// Custom data pointer
-        void *data;
-
-        struct pmm_alloc_result (*page_alloc)(void *data);
-        void (*page_free)(void *data, uintptr_t);
-
-        SLIST_FIELD(struct pmm_allocator) allocators;
 };
 
 ///

@@ -3,6 +3,7 @@
 #include "kernel/klog.h"
 #include "kernel/mm/kmm.h"
 #include "kernel/mm/vmm.h"
+#include "kernel/cppdefs.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -86,10 +87,10 @@ void vmm_arch_init(void)
                          NULL);
 }
 
-static void patch_pagetree(struct vmm_arch_page_tree *pt, struct vm_space *vspace)
+static void patch_pagetree(struct vmm_arch_page_tree *pt, struct vmm_space *vspace)
 {
-        struct vm_mapping *it;
-        VM_SPACE_MAPPINGS_FOREACH (vspace, it) {
+        struct vmm_mapping *it;
+        VMM_SPACE_MAPPINGS_FOREACH (vspace, it) {
                 kassert(pt->pagedirs[0] != NULL);
                 kassert(pt->pagedirs_lengths[0] > 0);
 
@@ -114,8 +115,8 @@ static void patch_pagetree(struct vmm_arch_page_tree *pt, struct vm_space *vspac
         }
 }
 
-struct vmm_arch_page_tree *vmm_arch_create_pt(struct vm_space *userspace,
-                                              struct vm_space *kernelspace)
+struct vmm_arch_page_tree *vmm_arch_create_pt(struct vmm_space *userspace,
+                                              struct vmm_space *kernelspace)
 {
         // TODO: Use same page directories for a kernel space in all vm spaces.
 
@@ -180,4 +181,16 @@ uintptr_t vm_get_cr2(void)
         asm("mov %%cr2, %0" : "=r"(vaddr));
 
         return (vaddr);
+}
+
+void *vmm_virtual_to_physical(struct vmm_arch_page_tree *pt, void *vaddr)
+{
+        void *pde = vm_dir_entry_addr(&pt->pagedirs[0], vaddr);
+        kassert(pde != NULL);
+        void *pte = vm_table_entry_addr(pde, vaddr);
+        uintptr_t p = ptr2uint(pte);
+        p &= 0xFFFFF000;
+        p += ptr2uint(vaddr) & 0xFFF;
+
+        return (uint2ptr(p));
 }

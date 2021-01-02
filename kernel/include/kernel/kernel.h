@@ -8,6 +8,6 @@
 #include "arch_i686/kernel.h"
 #endif // __i686__
 
-struct vm_space kvm_space;
+extern struct vmm_space kvm_space;
 
 #endif // _KERNEL_KERNEL_H

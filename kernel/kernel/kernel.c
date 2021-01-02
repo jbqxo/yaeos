@@ -4,15 +4,25 @@
 #include "kernel/console.h"
 #include "kernel/cppdefs.h"
 #include "kernel/klog.h"
+#include "kernel/mm/kmm.h"
 
 #include "lib/stdio.h"
 
-struct vm_space kvm_space __section(".bss");
+struct vmm_space kvm_space;
 
 void kernel_init()
 {
         console_init();
         LOGF_I("Platform layer has been initialized\n");
+
+        kvm_space = vmm_space_new(KERNEL_VMA);
+        kmm_init();
+        vmm_init();
+        kmm_init_kmalloc();
+        LOGF_I("Kernel Memory Manager has been initialized\n");
+
+        void *somemem = kmalloc(PLATFORM_PAGE_SIZE - 0x100);
+        kassert(somemem);
 }
 
 #if 0

@@ -6,6 +6,7 @@
 #include "kernel/mm/kmm.h"
 
 #include "lib/assert.h"
+#include "lib/string.h"
 
 #include <stdbool.h>
 
@@ -27,14 +28,14 @@ static void copy_alloc(struct pmm_allocator *src, struct pmm_allocator *restrict
         kassert(dest);
         kassert(src != dest);
 
-        dest->name = src->name;
-        dest->restrict_flags = src->restrict_flags;
-        dest->page_alloc = src->page_alloc;
-        dest->page_free = src->page_free;
+        kmemcpy(dest, src, sizeof(*dest));
+        SLIST_CLEAR(&dest->allocators);
 }
 
 void pmm_init(struct pmm_allocator *allocators, size_t alloc_length)
 {
+        // TODO: Replace linked list with a simple array, when general purpose allocator will be implemented.
+
         kassert(allocators);
 
         CACHES.allocators = kmm_cache_create("pmm_allocators_cache", sizeof(struct pmm_allocator),
@@ -91,7 +92,7 @@ struct pmm_page *pmm_alloc_page(int flags)
                 if (__likely(p != NULL)) {
                         return (p);
                 }
-                LOGF_W("Out of zone::normal physical memory. Trying DMA.");
+                LOGF_W("Out of zone::normal physical memory. Trying DMA.\n");
         }
 
         struct pmm_page *p = try_allocate_from_zone(ZONES.dma);

@@ -15,6 +15,7 @@
 #define SLIST_FIRST(head)           ((head)->first)
 #define SLIST_EMPTY(head)           (SLIST_FIRST(head) == NULL)
 
+#define SLIST_CLEAR(node) ((node)->next = NULL)
 #define SLIST_INIT(head)                  \
         do {                              \
                 SLIST_FIRST(head) = NULL; \

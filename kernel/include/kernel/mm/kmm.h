@@ -18,7 +18,7 @@ struct kmm_cache {
         unsigned colour_off;
         unsigned colour_next;
 
-#define KMM_CACHE_STATIC (0x1 << 0) //! Can use reserved static storage.
+#define KMM_CACHE_STATIC (0x1 << 0) //! Can use reserved static storage as the last resort.
 #define KMM_CACHE_LARGE  (0x1 << 1)
         unsigned flags;
 
@@ -71,5 +71,11 @@ void *kmm_cache_alloc(struct kmm_cache *);
 /// Free given object.
 ///
 void kmm_cache_free(struct kmm_cache *, void *mem);
+
+void kmm_init_kmalloc(void);
+
+void *kmalloc(size_t size);
+
+void kfree(void *);
 
 #endif // _KERNEL_MM_KMM_H

@@ -5,5 +5,7 @@
 #define CONF_BUDDY_BITMAP_SIZE  (2 << 20)
 #define CONF_TIMER_QUEUE_LENGTH (100)
 #define CONF_STATIC_SLAB_PAGES  (4)
+#define CONF_MALLOC_MIN_POW     (5)
+#define CONF_MALLOC_MAX_POW     (12)
 
 #endif // _KERNEL_CONFIG_H

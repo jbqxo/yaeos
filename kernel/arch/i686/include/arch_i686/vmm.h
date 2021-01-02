@@ -4,6 +4,7 @@
 #include "arch_i686/intr.h"
 #include "arch_i686/platform.h"
 
+#include "kernel/mm/vmm.h"
 #include "kernel/cppdefs.h"
 
 #define VM_TABLE_FLAG_PRESENT   (0x1 << 0)
@@ -97,5 +98,7 @@ void vm_register_pagefault_handler(void);
 /// The register containst the linear address that caused a page fault.
 ///
 uintptr_t vm_get_cr2(void);
+
+void *vmm_virtual_to_physical(struct vmm_arch_page_tree *, void *vaddr);
 
 #endif // _KERNEL_ARCH_I686_VM_H

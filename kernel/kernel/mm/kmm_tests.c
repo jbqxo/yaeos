@@ -4,6 +4,7 @@
 
 #include "kernel/mm/kmm.h"
 
+#include "kernel/kernel.h"
 #include "kernel/config.h"
 #include "kernel/cppdefs.h"
 #include "kernel/mm/vmm.h"
@@ -16,13 +17,15 @@
 #include <string.h>
 #include <unity.h>
 
+// TODO Add actual memory assertions.
+
 #define TESTVAL (0xAB)
 
 #define VMM_MEM_LIMIT (6 * PLATFORM_PAGE_SIZE)
 static size_t VMM_MEM_USAGE = 0;
-struct vm_space kvm_space = (struct vm_space){};
+struct vmm_space kvm_space = (struct vmm_space){};
 
-struct vm_mapping *vmm_alloc_pages(struct vm_space *space, size_t count)
+struct vmm_mapping *vmm_alloc_pages(struct vmm_space *space, size_t count)
 {
         size_t s = PLATFORM_PAGE_SIZE * count;
         if (VMM_MEM_USAGE + s > VMM_MEM_LIMIT) {
@@ -30,19 +33,19 @@ struct vm_mapping *vmm_alloc_pages(struct vm_space *space, size_t count)
         }
         VMM_MEM_USAGE += s;
 
-        struct vm_mapping *m = calloc(1, sizeof(*m));
+        struct vmm_mapping *m = calloc(1, sizeof(*m));
         m->start = aligned_alloc(PLATFORM_PAGE_SIZE, PLATFORM_PAGE_SIZE * count);
         return (m);
 }
 
-void vmm_free_pages(struct vm_space *space, void *address, size_t count)
+void vmm_free_pages(struct vmm_space *space, void *address, size_t count)
 {
         TEST_ASSERT_NOT_NULL(address);
         VMM_MEM_USAGE -= PLATFORM_PAGE_SIZE;
         free(address);
 }
 
-void *vm_mapping_addr(struct vm_mapping *mapping)
+void *vm_mapping_addr(struct vmm_mapping *mapping)
 {
         if (!mapping) {
                 return (NULL);
@@ -354,7 +357,7 @@ static void cache_coloring(void)
         free(ptrs);
 }
 
-static void static_reserves(void)
+static void test_cache_static(void)
 {
         typedef uint32_t elem_t;
 
@@ -389,6 +392,20 @@ static void static_reserves(void)
         free(ptrs);
 }
 
+static void kmalloc_various_sizes(void)
+{
+        kmm_init_kmalloc();
+
+        for(int i = CONF_MALLOC_MIN_POW; i < CONF_MALLOC_MAX_POW; i++) {
+                const size_t req_size = 1 << i;
+
+                void *mem = kmalloc(req_size);
+                TEST_ASSERT_NOT_NULL(mem);
+
+                kfree(mem);
+        }
+}
+
 int main(void)
 {
         UNITY_BEGIN();
@@ -399,7 +416,8 @@ int main(void)
         RUN_TEST(ctor_and_dtor);
         RUN_TEST(reclaiming);
         RUN_TEST(cache_coloring);
-        RUN_TEST(static_reserves);
+        RUN_TEST(test_cache_static);
+        RUN_TEST(kmalloc_various_sizes);
         UNITY_END();
         return (0);
 }
