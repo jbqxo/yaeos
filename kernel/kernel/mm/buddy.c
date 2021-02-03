@@ -5,80 +5,27 @@
 #include "kernel/platform.h"
 #include "kernel/utils.h"
 
+#include "lib/assert.h"
+#include "lib/nonstd.h"
 #include "lib/string.h"
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-// TODO: Reimplement with free lists.
-// https://hammertux.github.io/slab-allocator
-
-struct chunk {
-        uintptr_t addr;
-        size_t size;
-        // The value of 1 denotes FREE page
-        // The value of 0 denotes OCCUPIED page
-        unsigned **bitmaps;
-#define BITMAP_SET_SIZE (sizeof((((struct chunk *)NULL)->bitmaps[0][0])))
-};
-
-/**
- * @brief Perform division and round the result up.
- */
-static unsigned div_roundup(unsigned dividend, unsigned divisor)
-{
-        return ((dividend + (divisor - 1)) / divisor);
-}
-
-/**
- * @brief Take the base 2 logarithm of x and round the result down.
- */
-static unsigned log2_down(unsigned x)
-{
-        unsigned tmp = 0;
-        while (x >>= 1) {
-                tmp++;
-        }
-        return (tmp);
-}
-
-static union uiptr intern_alloc(struct buddy_allocator *alloc, size_t size)
+static void *intern_alloc(struct buddy_manager *alloc, size_t size)
 {
         union uiptr pos = num2uiptr(alloc->internp + alloc->intern_sz);
 
-        // Assert chunk space.
-        if (__unlikely(pos.num + size > alloc->internp_lim)) {
-                // TODO: Panic!
-                return (ptr2uiptr(NULL));
-        }
+        /* Assert chunk space. */
+        kassert(pos.num + size > alloc->internp_lim);
         alloc->intern_sz += size;
 
-        return (pos);
-}
-
-static bool get_bit(struct chunk *ch, unsigned lvl, unsigned pos)
-{
-        unsigned bitpos_mask = BITMAP_SET_SIZE * 8 - 1;
-        unsigned bitmap_idx = (pos & ~bitpos_mask) >> log2_down(BITMAP_SET_SIZE * 8);
-        return (ch->bitmaps[lvl][bitmap_idx] & (1U << (pos & bitpos_mask)));
-}
-
-static void free_bit(struct chunk *ch, unsigned lvl, unsigned pos)
-{
-        unsigned bitpos_mask = BITMAP_SET_SIZE * 8 - 1;
-        unsigned bitmap_idx = (pos & ~bitpos_mask) >> log2_down(BITMAP_SET_SIZE * 8);
-        ch->bitmaps[lvl][bitmap_idx] |= (1U << (pos & bitpos_mask));
-}
-
-static void occupy_bit(struct chunk *ch, unsigned lvl, unsigned pos)
-{
-        unsigned bitpos_mask = BITMAP_SET_SIZE * 8 - 1;
-        unsigned bitmap_idx = (pos & ~bitpos_mask) >> log2_down(BITMAP_SET_SIZE * 8);
-        ch->bitmaps[lvl][bitmap_idx] &= ~(1U << (pos & bitpos_mask));
+        return (pos.ptr);
 }
 
 /**
+ *
  * @brief Calculate the maximum bit index on the level for the given chunk.
  *
  */
@@ -87,96 +34,28 @@ static unsigned max_index(size_t chunk_size, unsigned lvl)
         return (chunk_size / PLATFORM_PAGE_SIZE) >> lvl;
 }
 
-static struct chunk *init_chunks(struct buddy_allocator *alloc, void **mem_chunks,
-                                 const size_t *sizes, unsigned chnum)
-{
-        struct chunk *chunks = intern_alloc(alloc, chnum * sizeof(*chunks)).ptr;
-        unsigned levels = alloc->max_lvl + 1;
-
-        for (int c = 0; c < chnum; c++) {
-                uintptr_t aligned = align_roundup(ptr2uint(mem_chunks[c]), PLATFORM_PAGE_SIZE);
-                chunks[c].addr = aligned;
-                chunks[c].size = sizes[c] - (aligned - ptr2uint(mem_chunks[c]));
-                chunks[c].bitmaps = intern_alloc(alloc, sizeof(*chunks[c].bitmaps) * levels).ptr;
-        }
-
-        // Initialize bitmaps for every chunk.
-        for (int lvl = 0; lvl < levels; lvl++) {
-                for (int ch = 0; ch < chnum; ch++) {
-                        // Round the required space to prevent overlapping.
-                        size_t space = div_roundup(max_index(chunks[ch].size, lvl), 8);
-                        size_t pad = 0;
-                        if (space % BITMAP_SET_SIZE) {
-                                pad = BITMAP_SET_SIZE - (space % BITMAP_SET_SIZE);
-                        }
-                        union uiptr bitmap = intern_alloc(alloc, space + pad);
-                        chunks[ch].bitmaps[lvl] = bitmap.ptr;
-
-                        // Mark all pages as FREE.
-                        kmemset(bitmap.ptr, 0xFF, space);
-                        // Mark all padding space as OCCUPIED.
-                        union uiptr bitmap_end = num2uiptr(bitmap.num + space);
-                        kmemset(bitmap_end.ptr, 0x0, pad);
-                }
-        }
-
-        return (chunks);
-}
-
-void buddy_init(struct buddy_allocator *alloc, void **mem_chunks, const size_t *sizes,
-                unsigned chnum, void *intern_data, size_t intern_len)
+uint32_t buddy_init(struct buddy_manager *bmgr, const size_t size, void *intern_data,
+                    size_t intern_len)
 {
         union uiptr internd = ptr2uiptr(intern_data);
-        alloc->internp = internd.num;
-        alloc->intern_sz = 0;
-        alloc->internp_lim = internd.num + intern_len;
-        {
-                alloc->max_lvl = 0;
-                for (int i = 0; i < chnum; i++) {
-                        unsigned region_max = log2_down(sizes[i] / PLATFORM_PAGE_SIZE);
-                        if (alloc->max_lvl < region_max) {
-                                alloc->max_lvl = region_max;
-                        }
-                }
+        bmgr->internp = internd.num;
+        bmgr->intern_sz = 0;
+        bmgr->internp_lim = internd.num + intern_len;
+
+        bmgr->lvls = log2_floor(size / PLATFORM_PAGE_SIZE);
+
+        bmgr->lvl_bitmaps = intern_alloc(bmgr, bmgr->lvls * sizeof(*bmgr->lvl_bitmaps));
+
+        for (int lvl = 0; lvl < bmgr->lvls; lvl++) {
+                size_t max_ndx = max_index(size, lvl);
+                void *space = intern_alloc(bmgr, div_ceil(max_ndx, 8));
+                bitmap_init(&bmgr->lvl_bitmaps[lvl], space, max_ndx);
         }
-        alloc->chunks_num = chnum;
-        alloc->chunks = init_chunks(alloc, mem_chunks, sizes, chnum);
+
+        return (max_index(size, 0));
 }
 
-/**
- * @brief Find the first free bit among the level in the chunk.
- *
- * @return An index of the bit, or -1 if there are no free bits.
- */
-static int find_free(struct chunk *ch, unsigned lvl)
-{
-        unsigned *bitmap = ch->bitmaps[lvl];
-        // The last index of the element that contains the last bit.
-        unsigned max_bitmap_idx = max_index(ch->size, lvl) / BITMAP_SET_SIZE;
-        int free_idx = -1;
-        for (unsigned i = 0; i <= max_bitmap_idx; i++) {
-                // If at least 1 bit in the whole set isn't 0,
-                // then there is a free page here.
-                if (bitmap[i] != 0) {
-                        free_idx = (int)(i * BITMAP_SET_SIZE);
-                        break;
-                }
-        }
-
-        if (free_idx == -1) {
-                return (-1);
-        }
-
-        for (int i = free_idx; i < max_index(ch->size, lvl); i++) {
-                if (get_bit(ch, lvl, i) != 0) {
-                        return (i);
-                }
-        }
-
-        return (-1);
-}
-
-static void occupy_buddys_children(struct chunk *ch, unsigned lvl, unsigned bit)
+static void occupy_buddys_descendants(struct buddy_manager *bmgr, unsigned lvl, unsigned bit)
 {
         if (lvl == 0) {
                 return;
@@ -184,42 +63,43 @@ static void occupy_buddys_children(struct chunk *ch, unsigned lvl, unsigned bit)
         bit <<= 1;
         lvl--;
 
-        occupy_bit(ch, lvl, bit);
-        occupy_bit(ch, lvl, bit + 1);
-        occupy_buddys_children(ch, lvl, bit);
-        occupy_buddys_children(ch, lvl, bit + 1);
+        bitmap_set_true(&bmgr->lvl_bitmaps[lvl], bit);
+        bitmap_set_true(&bmgr->lvl_bitmaps[lvl], bit + 1);
+        occupy_buddys_descendants(bmgr, lvl, bit);
+        occupy_buddys_descendants(bmgr, lvl, bit + 1);
 }
 
-static void occupy_buddy(struct chunk *ch, unsigned max_lvl, unsigned lvl, unsigned bit)
+static void occupy_buddy(struct buddy_manager *bmgr, unsigned lvl, unsigned bit)
 {
-        // Occupy buddy.
-        occupy_bit(ch, lvl, bit);
-        occupy_buddys_children(ch, lvl, bit);
+        /* Occupy buddy. */
+        bitmap_set_true(&bmgr->lvl_bitmaps[lvl], bit);
+        occupy_buddys_descendants(bmgr, lvl, bit);
 
-        // Occupy buddy's ancestors.
-        while (lvl < max_lvl) {
+        /* Occupy buddy's ancestors. */
+        while (lvl < bmgr->lvls) {
                 lvl++;
                 bit >>= 1;
-                occupy_bit(ch, lvl, bit);
+                bitmap_set_true(&bmgr->lvl_bitmaps[lvl], bit);
         }
 }
 
-static void free_buddys_ancestors(struct chunk *ch, unsigned max_lvl, unsigned lvl, unsigned bit)
+static void free_buddys_ancestors(struct buddy_manager *bmgr, unsigned lvl, unsigned bit)
 {
-        while (lvl <= max_lvl) {
+        while (lvl <= bmgr->lvls) {
                 lvl++;
                 bit >>= 1;
-                bool left_child_free = get_bit(ch, lvl - 1, bit << 1);
-                bool right_child_free = get_bit(ch, lvl - 1, (bit << 1) + 1);
+
+                bool left_child_free = bitmap_get(&bmgr->lvl_bitmaps[lvl - 1], bit << 1);
+                bool right_child_free = bitmap_get(&bmgr->lvl_bitmaps[lvl - 1], (bit << 1) + 1);
                 if (!left_child_free || !right_child_free) {
                         return;
                 }
 
-                free_bit(ch, lvl, bit);
+                bitmap_set_false(&bmgr->lvl_bitmaps[lvl], bit);
         }
 }
 
-static void free_buddys_children(struct chunk *ch, unsigned lvl, unsigned bit)
+static void free_buddys_children(struct buddy_manager *bmgr, unsigned lvl, unsigned bit)
 {
         if (lvl == 0) {
                 return;
@@ -227,70 +107,48 @@ static void free_buddys_children(struct chunk *ch, unsigned lvl, unsigned bit)
         bit <<= 1;
         lvl--;
 
-        free_bit(ch, lvl, bit);
-        free_bit(ch, lvl, bit + 1);
-        free_buddys_children(ch, lvl, bit);
-        free_buddys_children(ch, lvl, bit + 1);
+        bitmap_set_false(&bmgr->lvl_bitmaps[lvl], bit);
+        bitmap_set_false(&bmgr->lvl_bitmaps[lvl], bit + 1);
+        free_buddys_children(bmgr, lvl, bit);
+        free_buddys_children(bmgr, lvl, bit + 1);
 }
 
-static void free_buddy(struct chunk *ch, unsigned max_lvl, unsigned lvl, unsigned bit)
+static void free_buddy(struct buddy_manager *bmgr, unsigned lvl, unsigned bit)
 {
-        free_bit(ch, lvl, bit);
-        free_buddys_children(ch, lvl, bit);
-        free_buddys_ancestors(ch, max_lvl, lvl, bit);
+        bitmap_set_false(&bmgr->lvl_bitmaps[lvl], bit);
+        free_buddys_children(bmgr, lvl, bit);
+        free_buddys_ancestors(bmgr, lvl, bit);
 }
 
-void *buddy_alloc(struct buddy_allocator *a, unsigned order)
+bool buddy_alloc(struct buddy_manager *bmgr, unsigned order, uint32_t *result)
 {
-        if (order > a->max_lvl) {
-                return (NULL);
+        if (order > bmgr->lvls) {
+                return (false);
         }
 
-        // Find bit index of a free buddy
-        struct chunk *chunk;
-        int idx = -1;
-        for (unsigned ch = 0; ch < a->chunks_num; ch++) {
-                chunk = &a->chunks[ch];
-                idx = find_free(chunk, order);
-                if (idx != -1) {
+        /* Find bit index of a free buddy */
+        struct bitmap *bitmap = NULL;
+        uint32_t ndx = 0;
+        bool found = false;
+
+        for (unsigned lvl = order; lvl < bmgr->lvls; lvl++) {
+                bitmap = &bmgr->lvl_bitmaps[lvl];
+
+                if (bitmap_search_false(bitmap, &ndx)) {
+                        found = true;
                         break;
                 }
         }
-
-        if (idx == -1) {
-                return (NULL);
+        if (!found) {
+                return (false);
         }
 
-        occupy_buddy(chunk, a->max_lvl, order, idx);
-        union uiptr allocated = num2uiptr(chunk->addr + (idx << order) * PLATFORM_PAGE_SIZE);
-        return (allocated.ptr);
+        occupy_buddy(bmgr, order, ndx);
+        *result = ndx;
+        return (true);
 }
 
-void buddy_free(struct buddy_allocator *a, void *_mem, unsigned order)
+void buddy_free(struct buddy_manager *bmgr, uint32_t page_ndx, unsigned order)
 {
-        union uiptr mem = ptr2uiptr(_mem);
-        // Find buddy's chunk.
-        struct chunk *chunk = NULL;
-        for (unsigned c = 0; c < a->chunks_num; c++) {
-                struct chunk *ch = &a->chunks[c];
-                union uiptr block_start = num2uiptr(ch->addr);
-                union uiptr block_end = num2uiptr(ch->addr + ch->size);
-                if (mem.num > block_start.num && mem.num < block_end.num) {
-                        chunk = ch;
-                        break;
-                }
-        }
-
-        if (!chunk) {
-                return;
-        }
-
-        // Calculate buddys index.
-        unsigned index;
-        {
-                uintptr_t offset = mem.num - chunk->addr;
-                index = (offset / PLATFORM_PAGE_SIZE) >> order;
-        }
-
-        free_buddy(chunk, a->max_lvl, order, index);
+        free_buddy(bmgr, order, page_ndx);
 }

@@ -1,51 +1,51 @@
 #ifndef _KERNEL_MM_BUDDY_H
 #define _KERNEL_MM_BUDDY_H
 
+#include "kernel/ds/bitmap.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
+struct buddy_mem {
+        void *source_zone;
+        int page_ndx; /**< Index inside of the */
+};
+
 /**
- * @brief Somewhat space and speed efficient page frame allocator.
- *
- * Don't quote this comment on the part of space and speed efficiency.
+ * @brief Buddy allocator.
  */
-struct buddy_allocator {
+struct buddy_manager {
         uintptr_t internp;     /**< Address of allocator's control information. Page aligned. */
         size_t intern_sz;      /**< Length of the allocator's control information. */
         uintptr_t internp_lim; /**< Last address that we can use for our purposes. */
 
-        struct chunk *chunks; /**< Pointer at the memory chunks' structures. */
-        unsigned chunks_num;
-        unsigned max_lvl;
+        struct bitmap *lvl_bitmaps; /**< Each buddy level has it's own bitmap. */
+        size_t lvls;
 };
 
 /**
  * @brief Initialize the buddy allocator.
  * @param alloc Buddy allocator structure.
- * @param mem_chunks Array of memory chunks to manage.
  * @param sizes Array of sizes of those chunks.
- * @param chnum Number of the chunks.
  * @param intern_data Pointer to a block of memory where the allocator's data can be stored.
  * @param intern_len Length of the memory for the allocator's data.
+ * @return Number of free pages.
  */
-void buddy_init(struct buddy_allocator *alloc, void **mem_chunks, const size_t *sizes,
-                unsigned chnum, void *intern_data, size_t intern_len);
+uint32_t buddy_init(struct buddy_manager *bmgr, size_t size, void *intern_data, size_t intern_len);
 
 /**
  * @brief Allocate specified number of pages.
  * @param order 2^(order) of required pages.
- * @note Return pointer is page aligned.
- * @return Pointer at the beginning of the allocated space.
+ * @param result An index of the allocated page/pages.
+ * @return Indicates success of the operation.
  */
-void *buddy_alloc(struct buddy_allocator *allocator, unsigned order);
+bool buddy_alloc(struct buddy_manager *bmgr, unsigned order, uint32_t *result);
 
 /**
  * @brief Free specified memory space.
- * @param mem Pointer to the space to free.
+ * @param page_ndx Index of the allocated page to free.
  * @param order 2^(order) of pages that was requested.
- * @note It's important to specify the same number of pages that was received from the allocator.
- * Bad things will happen otherwise.
  */
-void buddy_free(struct buddy_allocator *allocator, void *mem, unsigned order);
+void buddy_free(struct buddy_manager *bmgr, uint32_t page_ndx, unsigned order);
 
-#endif // _KERNEL_MM_BUDDY_H
+#endif /* _KERNEL_MM_BUDDY_H */
