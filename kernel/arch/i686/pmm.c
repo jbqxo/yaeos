@@ -1,4 +1,4 @@
-#include "kernel/mm/pmm.h"
+#include "kernel/mm/mm.h"
 
 #include "arch_i686/kernel.h"
 #include "arch_i686/platform.h"
@@ -8,6 +8,8 @@
 #include "kernel/klog.h"
 #include "kernel/utils.h"
 #include "kernel/mm/kmm.h"
+
+#include "lib/nonstd.h"
 
 #include <multiboot.h>
 #include <stdbool.h>
@@ -135,8 +137,8 @@ static void count(uintptr_t start __unused, uintptr_t end __unused, uint32_t typ
 
 static void find(uintptr_t start, uintptr_t end, uint32_t type, void *data)
 {
-        struct pmm_chunk **chunks = data;
-        struct pmm_chunk *chunk = *chunks;
+        struct mem_chunk **chunks = data;
+        struct mem_chunk *chunk = *chunks;
         size_t length = end - start;
 
         chunk->mem = (void *)start;
@@ -146,7 +148,7 @@ static void find(uintptr_t start, uintptr_t end, uint32_t type, void *data)
         (*chunks)++;
 }
 
-int pmm_arch_chunks_len(void)
+int mm_arch_chunks_len(void)
 {
         int counter = 0;
         struct availmem_data d = (struct availmem_data){ .fn = count, .fn_data = &counter };
@@ -154,16 +156,8 @@ int pmm_arch_chunks_len(void)
         return (counter);
 }
 
-void pmm_arch_get_chunks(struct pmm_chunk *chunks)
+void mm_arch_get_chunks(struct mem_chunk *chunks)
 {
         struct availmem_data d = (struct availmem_data){ .fn = find, .fn_data = &chunks };
         chunks_iter(availmem_iter, &d);
-}
-
-void pmm_arch_get_allocators(struct pmm_allocator *allocators)
-{
-        struct pmm_allocator *normal_alloc = kmalloc(sizeof(struct pmm_allocator));
-        normal_alloc->name = "Normal Memory";
-        normal_alloc->restrict_flags = 0;
-        SLIST_CLEAR(&normal_alloc->allocators);
 }

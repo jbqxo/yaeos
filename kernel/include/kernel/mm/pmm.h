@@ -7,58 +7,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-///
-/// Describes a chunk of physical memory.
-///
-struct pmm_chunk {
-        void *mem; //! Location of a chunk.
-        size_t length;
-
-#define MEM_TYPE_AVAIL    (0x1)
-#define MEM_TYPE_RESERVED (0x2)
-#define MEM_TYPE_ACPI     (0x3)
-#define MEM_TYPE_HIBER    (0x4)
-#define MEM_TYPE_UNAVAIL  (0x5)
-        uint8_t type;
-};
-
-///
-/// Describes a physical allocator that can be used by PMM.
-///
-/// When PMM is requested to allocate some memory, it will try to
-/// find an allocator which suits given requirements (DMA, low memory, and so on).
-///
-struct pmm_allocator {
-        const char *name;
-#define PMM_RESTRICT_DMA         (0x1 << 0)
-        int restrict_flags;
-
-        /// Custom data pointer
-        void *data;
-
-        struct pmm_alloc_result (*page_alloc)(void *data);
-        void (*page_free)(void *data, uintptr_t);
-
-        SLIST_FIELD(struct pmm_allocator) allocators;
-};
-
-size_t pmm_arch_allocators_count(void);
-
-void pmm_arch_get_allocators(struct pmm_allocator *allocators);
-
-///
-/// Get the number of available chunks of physical memory.
-///
-int pmm_arch_chunks_len(void);
-
-///
-/// Fill the given array of chunks with the information about available chunks of physical memory.
-///
-/// @param chunks An array of chunks where the information will be stored.
-/// @note it's expected that chunks array is of sufficient size to hold info about all chunks.
-/// You can get the number of available chunks with the `pmm_arch_chunks_len` function.
-///
-void pmm_arch_get_chunks(struct pmm_chunk *chunks);
 
 ///
 /// Holds a result of physical memory allocation by some physical allocator.

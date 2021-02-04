@@ -13,17 +13,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static void *intern_alloc(struct buddy_manager *alloc, size_t size)
-{
-        union uiptr pos = num2uiptr(alloc->internp + alloc->intern_sz);
-
-        /* Assert chunk space. */
-        kassert(pos.num + size > alloc->internp_lim);
-        alloc->intern_sz += size;
-
-        return (pos.ptr);
-}
-
 /**
  *
  * @brief Calculate the maximum bit index on the level for the given chunk.
@@ -34,21 +23,16 @@ static unsigned max_index(size_t chunk_size, unsigned lvl)
         return (chunk_size / PLATFORM_PAGE_SIZE) >> lvl;
 }
 
-uint32_t buddy_init(struct buddy_manager *bmgr, const size_t size, void *intern_data,
-                    size_t intern_len)
+uint32_t buddy_init(struct buddy_manager *bmgr, const size_t size, struct linear_alloc *alloc)
 {
-        union uiptr internd = ptr2uiptr(intern_data);
-        bmgr->internp = internd.num;
-        bmgr->intern_sz = 0;
-        bmgr->internp_lim = internd.num + intern_len;
-
         bmgr->lvls = log2_floor(size / PLATFORM_PAGE_SIZE);
+        bmgr->alloc = alloc;
 
-        bmgr->lvl_bitmaps = intern_alloc(bmgr, bmgr->lvls * sizeof(*bmgr->lvl_bitmaps));
+        bmgr->lvl_bitmaps = linear_alloc_alloc(bmgr->alloc, bmgr->lvls * sizeof(*bmgr->lvl_bitmaps));
 
         for (int lvl = 0; lvl < bmgr->lvls; lvl++) {
                 size_t max_ndx = max_index(size, lvl);
-                void *space = intern_alloc(bmgr, div_ceil(max_ndx, 8));
+                void *space = linear_alloc_alloc(bmgr->alloc, div_ceil(max_ndx, 8));
                 bitmap_init(&bmgr->lvl_bitmaps[lvl], space, max_ndx);
         }
 
@@ -151,4 +135,16 @@ bool buddy_alloc(struct buddy_manager *bmgr, unsigned order, uint32_t *result)
 void buddy_free(struct buddy_manager *bmgr, uint32_t page_ndx, unsigned order)
 {
         free_buddy(bmgr, order, page_ndx);
+}
+
+uint32_t buddy_reduce_size(struct buddy_manager *bmgr, size_t new_size)
+{
+        kassert(bmgr != NULL);
+        kassert(new_size < bmgr->lvl_bitmaps->length);
+
+        bmgr->lvls = log2_floor(new_size / PLATFORM_PAGE_SIZE);
+        for (int lvl = 0; lvl < bmgr->lvls; lvl++) {
+                size_t max_ndx = max_index(new_size, lvl);
+                bitmap_resize(&bmgr->lvl_bitmaps[lvl], max_ndx);
+        }
 }
