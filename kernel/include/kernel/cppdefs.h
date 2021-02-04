@@ -5,12 +5,11 @@
 
 #define __unused          __attribute__((__unused__))
 #define __used            __attribute__((__used__))
-#define __dead_code       __attribute__((__noreturn__))
 #define __packed          __attribute__((__packed__))
 #define __weak            __attribute__((__weak__))
 #define __noinline        __attribute__((noinline))
 #define __noreturn        __attribute__((noreturn))
-#define __force_inline    __attribute__((always_inline))
+#define __force_inline    inline __attribute__((always_inline))
 #define __naked           __attribute__((naked))
 #define __section(target) __attribute__((__section__(target)))
 #define __aligned(b)      __attribute__((__aligned__(b)))

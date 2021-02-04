@@ -13,7 +13,7 @@ struct bitmap {
         size_t length;     /**< This one specifies the number of bits in the bitmap. */
 };
 
-void bitmap_init(struct bitmap *bitmap, void *space, size_t length);
+void bitmap_init(struct bitmap *bitmap, void *space, size_t length_bits);
 
 bool bitmap_get(struct bitmap *bitmap, uint32_t index);
 
@@ -22,5 +22,7 @@ void bitmap_set_false(struct bitmap *bitmap, uint32_t index);
 void bitmap_set_true(struct bitmap *bitmap, uint32_t index);
 
 bool bitmap_search_false(struct bitmap *bitmap, uint32_t *result);
+
+void bitmap_resize(struct bitmap *bitmap, size_t new_length_bits);
 
 #endif /* _KERNEL_DS_BITMAP_H */

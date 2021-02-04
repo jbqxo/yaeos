@@ -75,16 +75,16 @@ void bitmap_set_false(struct bitmap *bitmap, uint32_t index)
         bitmap->bitsets[bitset_ndx] &= ~(1U << bitndx);
 }
 
-void bitmap_init(struct bitmap *bitmap, void *space, size_t length)
+void bitmap_init(struct bitmap *bitmap, void *space, size_t length_bits)
 {
         kassert(bitmap != NULL);
         kassert(space != NULL);
-        kassert(length > 0);
+        kassert(length_bits > 0);
 
         bitmap->bitsets = space;
-        bitmap->length = length;
+        bitmap->length = length_bits;
 
-        bitmap->sets_count = div_ceil(length, BITMAP_SET_SIZE * 8);
+        bitmap->sets_count = div_ceil(length_bits, BITMAP_SET_SIZE * 8);
 
         /* Init entire bitmap to false. */
         kmemset(bitmap->bitsets, 0, bitmap->sets_count);
