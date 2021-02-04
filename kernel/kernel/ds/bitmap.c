@@ -89,3 +89,19 @@ void bitmap_init(struct bitmap *bitmap, void *space, size_t length_bits)
         /* Init entire bitmap to false. */
         kmemset(bitmap->bitsets, 0, bitmap->sets_count);
 }
+
+void bitmap_resize(struct bitmap *bitmap, size_t new_length_bits)
+{
+        kassert(bitmap != NULL);
+        kassert(new_length_bits > 0);
+
+        size_t old_sets_count = bitmap->sets_count;
+
+        bitmap->length = new_length_bits;
+        bitmap->sets_count = div_ceil(new_length_bits, BITMAP_SET_SIZE * 8);
+
+        int64_t sets_count_diff = bitmap->sets_count - old_sets_count;
+        if (sets_count_diff > 0) {
+                kmemset(bitmap->bitsets + old_sets_count, 0x00, sets_count_diff);
+        }
+}
