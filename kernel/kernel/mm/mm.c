@@ -48,7 +48,6 @@ struct mm_zone *mm_zone_create_from(struct mem_chunk *chunk)
 
         for (int i = 0; i < used_pages; i++) {
                 zone->pages[i].state = PAGESTATE_SYSTEM_IMPORTANT;
-                zone->pages[i].flags |= PAGEFLAG_WRITE | PAGEFLAG_KERNEL;
         }
 
         return (zone);
@@ -61,8 +60,8 @@ void mm_page_init_free(struct mm_page *p, void *phys_addr)
         kassert(phys_addr != NULL);
 
         p->paddr = phys_addr;
-        p->flags = 0;
         p->state = PAGESTATE_FREE;
+        ownership_init(&p->owners);
 }
 
 void mm_zone_register(struct mm_zone *zone)
@@ -102,4 +101,36 @@ struct mm_page *mm_alloc_page(void)
 
         p->state = PAGESTATE_OCCUPIED;
         return (p);
+}
+
+struct mm_page *mm_get_page_by_paddr(void *phys_addr)
+{
+        union uiptr paddr = ptr2uiptr(phys_addr);
+        struct mm_zone *zone = NULL;
+        struct mm_zone *i = NULL;
+        SLIST_FOREACH(i, &MM_ZONES , list) {
+                uintptr_t zstart = ptr2uint(i->start);
+                uintptr_t zend = zstart + i->length;
+                if (paddr.num >= zstart && paddr.num < zend) {
+                        zone = i;
+                        break;
+                }
+        }
+
+        if (__unlikely(zone == NULL)) {
+                /* Passed a virtual address?
+                 * What a silly person. */
+                return (NULL);
+        }
+
+        paddr.num &= -PLATFORM_PAGE_SIZE;
+        paddr.num -= ptr2uint(zone->start);
+        paddr.num /= PLATFORM_PAGE_SIZE;
+        size_t page_ndx = paddr.num;
+
+        kassert(page_ndx < zone->pages_count);
+        struct mm_page *page = &zone->pages[page_ndx];
+        kassert(ptr2uint(page->paddr) == (ptr2uint(phys_addr) & -PLATFORM_PAGE_SIZE));
+
+        return (&zone->pages[page_ndx]);
 }

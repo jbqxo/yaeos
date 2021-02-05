@@ -1,13 +1,13 @@
 .section .text
 
-.global vm_paging_set
-.type   vm_paging_set, @function
+.global vm_set_active_pt
+.type   vm_set_active_pt, @function
 
-vm_paging_set:
+vm_set_active_pt:
         movl 4(%esp), %edi
         movl %edi, %cr3
         ret
-.size vm_paging_set, . - vm_paging_set
+.size vm_set_active_pt, . - vm_set_active_pt
 
 .global vm_paging_enable
 .type   vm_paging_enable, @function

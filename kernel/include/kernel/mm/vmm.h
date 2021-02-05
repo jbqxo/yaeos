@@ -1,97 +1,40 @@
 #ifndef _KERNEL_MM_VMM_H
 #define _KERNEL_MM_VMM_H
 
-#include "kernel/ds/rbtree.h"
-#include "kernel/ds/slist.h"
-#include "kernel/platform.h"
+#include "kernel/mm/mm.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 
-struct vmm_region {
-        void *paddr;
-        size_t length;
+enum vm_flags {
+        VM_WRITE = 0x1 << 0,
+        VM_USER = 0x1 << 1,
 };
 
-struct vmm_mapping {
-        void *start;
-        size_t length;
+struct vm_arch_page_entry;
 
-#define VMMM_FLAGS_WRITE     (0x1 << 0)
-#define VMMM_FLAGS_USERSPACE (0x1 << 1)
-
-///
-/// Ensure that a mapping is always backed by physical memory.
-/// When the flag is not set, physical memory will be allocated lazily (during page faults).
-///
-#define VMMM_FLAGS_EAGER (0x1 << 2)
-        int flags;
-
-        struct vmm_region *region;
-        size_t region_offset;
-
-        /* Store mappings in both, a RBT and a linked list.
-         * Generally, we use RBT to create, find a mapping.
-         * But in cases when order is important (to allocate or free continuous space, for example),
-         * we will be able to quickly find consequent pages with a linked list. */
-        struct rbtree_node process_mappings;
-        SLIST_FIELD(struct vmm_mapping) sorted_list;
-};
-void vmm_mapping_new(struct vmm_mapping *mapping, void *start, size_t length, int flags,
-                     struct vmm_region *region, size_t region_offset);
-int vmm_mapping_cmp(void *_x, void *_y);
-
-struct vmm_space {
-        size_t offset;
-        struct {
-                struct rbtree tree;
-                SLIST_HEAD(, struct vmm_mapping) sorted_list;
-        } vmappings;
+struct vm_space {
+        struct vm_arch_page_entry *space_dir;
+        void *space_dir_paddr;
 };
 
-///
-/// Initialize new virtual memory space.
-///
-/// @param addr_offset An offset starting from which all allocations should be made.
-///
-struct vmm_space vmm_space_new(size_t addr_offset);
-
-#define VMM_SPACE_MAPPINGS_FOREACH(_vmmspace, _it_mapping) \
-        SLIST_FOREACH ((_it_mapping), &(_vmmspace)->vmappings.sorted_list, sorted_list)
-
-void vmm_init(void);
-
-struct vmm_mapping *vmm_alloc_pages(struct vmm_space *, size_t count);
-struct vmm_mapping *vmm_alloc_pages_at(struct vmm_space *, void *vaddr, size_t count);
-
-void vmm_free_mapping(struct vmm_space *, struct vmm_mapping *);
-void vmm_free_pages(struct vmm_space *, void *vaddress, size_t count);
-
-///
-/// Page directory of which a page tree consists.
-///
-typedef char vmm_arch_page_dir[PLATFORM_PAGEDIR_SIZE];
-
-///
-/// Contains information required for maintaining and using a page tree.
-///
-struct vmm_arch_page_tree {
-        // Store it to free resources occupied by pagedirs.
-        vmm_arch_page_dir *pagedirs
-                [PLATFORM_PAGEDIR_COUNT]; //! A set of pagedirs of which the page tree consists.
-        size_t pagedirs_lengths[PLATFORM_PAGEDIR_COUNT];
+struct vm_region {
+        struct vm_arch_page_entry *region_dir;
+        void *region_dir_paddr;
 };
 
-void vmm_arch_init(void);
+bool vm_arch_space_map_region(struct vm_region *, struct vm_space *, void *map_point,
+                              enum vm_flags);
 
-///
-/// Create a page tree from a userspace and a kernelspace.
-///
-struct vmm_arch_page_tree *vmm_arch_create_pt(struct vmm_space *userspace,
-                                              struct vmm_space *kernelspace);
+bool vm_arch_region_map_page(struct mm_page *, struct vm_region *, void *map_point, enum vm_flags);
 
-///
-/// Free resources occupied by a page tree.
-///
-void vmm_arch_free_pt(struct vmm_arch_page_tree *);
+/* This one is rediculously expensive. (I think) */
+void *vm_space_get_paddr(struct vm_space *, void *vaddr);
+
+void vm_arch_change_space(struct vm_space *);
+
+struct vm_space *vm_arch_dir_get_space(struct vm_arch_page_entry *dir);
+
+struct vm_region *vm_arch_dir_get_region(struct vm_arch_page_entry *dir);
 
 #endif // _KERNEL_MM_VMM_H

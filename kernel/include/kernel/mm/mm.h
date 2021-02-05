@@ -5,6 +5,7 @@
 #include "kernel/ds/slist.h"
 #include "kernel/mm/buddy.h"
 #include "kernel/mm/pmm.h"
+#include "kernel/ownership.h"
 
 #include <stdint.h>
 
@@ -24,12 +25,7 @@ struct mem_chunk {
 
 struct mm_page {
         void *paddr;
-
-        enum page_flags {
-                PAGEFLAG_WRITE = 0x1 << 0,
-                PAGEFLAG_USERSPACE = 0x1 << 1,
-                PAGEFLAG_KERNEL = 0x1 << 2,
-        } flags;
+        struct ownership owners;
 
         enum page_state {
                 PAGESTATE_FREE,
@@ -60,6 +56,8 @@ void mm_zone_register(struct mm_zone *);
 struct mm_page *mm_alloc_page_from(struct mm_zone *zone);
 
 struct mm_page *mm_alloc_page(void);
+
+struct mm_page *mm_get_page_by_paddr(void *phys_addr);
 
 void mm_init(void);
 
