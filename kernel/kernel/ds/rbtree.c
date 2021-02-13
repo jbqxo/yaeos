@@ -208,11 +208,10 @@ static void rbt_swap_nodes(struct rbtree *rbt, struct rbtree_node *x, struct rbt
         }
 }
 
-void rbtree_init_tree(struct rbtree *rbt, int (*cmp)(void *, void *))
+void rbtree_init_tree(struct rbtree *rbt)
 {
         kassert(rbt);
         rbt->root = NULL;
-        rbt->cmp = cmp;
 }
 
 void rbtree_init_node(struct rbtree_node *node)
@@ -322,7 +321,7 @@ static void rbt_insert_fix(struct rbtree *rbt, struct rbtree_node *new)
         }
 }
 
-void rbtree_insert(struct rbtree *rbt, struct rbtree_node *new)
+void rbtree_insert(struct rbtree *rbt, struct rbtree_node *new, rbtree_cmp_fn cmpf)
 {
         kassert(rbt);
         kassert(new);
@@ -335,7 +334,7 @@ void rbtree_insert(struct rbtree *rbt, struct rbtree_node *new)
         int cmp_result = 0;
         while (cursor != NULL) {
                 parent = cursor;
-                cmp_result = rbt->cmp(cursor->data, new->data);
+                cmp_result = cmpf(cursor->data, new->data);
                 if (cmp_result >= 0) {
                         cursor = cursor->left;
                 } else {
@@ -471,19 +470,19 @@ void rbtree_delete(struct rbtree *rbt, struct rbtree_node *deletee)
         rbt_replace_subtree(rbt, deletee, child);
 }
 
-struct rbtree_node *rbtree_search(struct rbtree *rbt, void *value)
+struct rbtree_node *rbtree_search(struct rbtree *rbt, void *value, rbtree_cmp_fn cmpf)
 {
         kassert(rbt);
 
         struct rbtree_node *node = rbt->root;
         while (node) {
-                int c = rbt->cmp(value, node->data);
+                int c = cmpf(node->data, value);
                 if (c == 0) {
                         break;
-                } else if (c < 0) {
+                } else if (c > 0) {
                         node = node->left;
                 } else {
-                        kassert(c > 0);
+                        kassert(c < 0);
                         node = node->right;
                 }
         }
@@ -491,26 +490,25 @@ struct rbtree_node *rbtree_search(struct rbtree *rbt, void *value)
         return (node);
 }
 
-struct rbtree_node *rbtree_search_min(struct rbtree *rbt, void *limit)
+struct rbtree_node *rbtree_search_min(struct rbtree *rbt, void *limit, rbtree_cmp_fn cmpf)
 {
         kassert(rbt);
-        kassert(rbt->cmp);
         kassert(limit);
 
         struct rbtree_node *cursor = rbt->root;
 
         while (cursor) {
-                int cmp_result = rbt->cmp(cursor->data, limit);
+                int cmp_result = cmpf(cursor->data, limit);
 
                 while (cmp_result > 0 && cursor->left != NULL) {
                         cursor = cursor->left;
-                        cmp_result = rbt->cmp(cursor->data, limit);
+                        cmp_result = cmpf(cursor->data, limit);
                 }
 
                 while (cmp_result < 0 && cursor->right != NULL) {
                         // We could overstep the limit, so try to return to the limit's boundaries.
                         cursor = cursor->right;
-                        cmp_result = rbt->cmp(cursor->data, limit);
+                        cmp_result = cmpf(cursor->data, limit);
                 }
 
                 if (cmp_result == 0) {
@@ -520,7 +518,7 @@ struct rbtree_node *rbtree_search_min(struct rbtree *rbt, void *limit)
                 if (cmp_result < 0 && cursor->right == NULL) {
                         while (cmp_result < 0) {
                                 cursor = rbt_get_parent(cursor);
-                                cmp_result = rbt->cmp(cursor->data, limit);
+                                cmp_result = cmpf(cursor->data, limit);
                         }
                         break;
                 }
@@ -533,26 +531,25 @@ struct rbtree_node *rbtree_search_min(struct rbtree *rbt, void *limit)
         return (cursor);
 }
 
-struct rbtree_node *rbtree_search_max(struct rbtree *rbt, void *limit)
+struct rbtree_node *rbtree_search_max(struct rbtree *rbt, void *limit, rbtree_cmp_fn cmpf)
 {
         kassert(rbt);
-        kassert(rbt->cmp);
         kassert(limit);
 
         struct rbtree_node *cursor = rbt->root;
 
         while (cursor != NULL) {
-                int cmp_result = rbt->cmp(cursor->data, limit);
+                int cmp_result = cmpf(cursor->data, limit);
 
                 while (cmp_result < 0 && cursor->right != NULL) {
                         cursor = cursor->right;
-                        cmp_result = rbt->cmp(cursor->data, limit);
+                        cmp_result = cmpf(cursor->data, limit);
                 }
 
                 while (cmp_result > 0 && cursor->left != NULL) {
                         // We could overstep the limit, so try to return to the limit's boundaries.
                         cursor = cursor->left;
-                        cmp_result = rbt->cmp(cursor->data, limit);
+                        cmp_result = cmpf(cursor->data, limit);
                 }
 
                 if (cmp_result == 0) {
@@ -562,7 +559,7 @@ struct rbtree_node *rbtree_search_max(struct rbtree *rbt, void *limit)
                 if (cmp_result > 0 && cursor->left == NULL) {
                         while (cmp_result > 0) {
                                 cursor = rbt_get_parent(cursor);
-                                cmp_result = rbt->cmp(cursor->data, limit);
+                                cmp_result = cmpf(cursor->data, limit);
                         }
                         break;
                 }
@@ -575,14 +572,13 @@ struct rbtree_node *rbtree_search_max(struct rbtree *rbt, void *limit)
         return (cursor);
 }
 
-void rbtree_iter_range(struct rbtree *rbt, void *value_from, void *value_to,
+void rbtree_iter_range(struct rbtree *rbt, void *value_from, void *value_to, rbtree_cmp_fn cmpf,
                        bool (*fn)(void *elem, void *data), void *data)
 {
         kassert(rbt);
-        kassert(rbt->cmp);
-        kassert(rbt->cmp(value_from, value_to) < 0);
+        kassert(cmpf(value_from, value_to) < 0);
 
-        struct rbtree_node *cursor = rbtree_search_min(rbt, value_from);
+        struct rbtree_node *cursor = rbtree_search_min(rbt, value_from, cmpf);
 
         // TODO: Rewrite. It's working fine but it's ugly.
         // A hacky way to start from the current node and not to iterate over
@@ -590,7 +586,7 @@ void rbtree_iter_range(struct rbtree *rbt, void *value_from, void *value_to,
         struct rbtree_node *prev = cursor->left;
         while (cursor) {
                 if (prev == cursor->left) {
-                        int c = rbt->cmp(cursor->data, value_to);
+                        int c = cmpf(cursor->data, value_to);
                         if (c > 0) {
                                 return;
                         }

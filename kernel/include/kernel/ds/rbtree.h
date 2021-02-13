@@ -8,6 +8,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef int (*rbtree_cmp_fn)(const void *tree_val, const void *external_val);
+
 enum rbtree_colour { RBTREE_BLACK = 0, RBTREE_RED = 1 };
 
 struct rbtree_node {
@@ -23,23 +25,22 @@ struct rbtree_node {
 
 struct rbtree {
         struct rbtree_node *root;
-        int (*cmp)(void *, void *);
 };
 
-void rbtree_init_tree(struct rbtree *rbt, int (*cmp)(void *, void *));
+void rbtree_init_tree(struct rbtree *rbt);
 
 void rbtree_init_node(struct rbtree_node *node);
 
-void rbtree_insert(struct rbtree *rbt, struct rbtree_node *new);
+void rbtree_insert(struct rbtree *rbt, struct rbtree_node *new, rbtree_cmp_fn cmpf);
 
 void rbtree_delete(struct rbtree *rbt, struct rbtree_node *deletee);
 
-struct rbtree_node *rbtree_search(struct rbtree *rbt, void *value);
+struct rbtree_node *rbtree_search(struct rbtree *rbt, void *value, rbtree_cmp_fn cmpf);
 
-struct rbtree_node *rbtree_search_min(struct rbtree *rbt, void *limit);
-struct rbtree_node *rbtree_search_max(struct rbtree *rbt, void *limit);
+struct rbtree_node *rbtree_search_min(struct rbtree *rbt, void *limit, rbtree_cmp_fn cmpf);
+struct rbtree_node *rbtree_search_max(struct rbtree *rbt, void *limit, rbtree_cmp_fn cmpf);
 
-void rbtree_iter_range(struct rbtree *rbt, void *value_from, void *value_to,
+void rbtree_iter_range(struct rbtree *rbt, void *value_from, void *value_to, rbtree_cmp_fn cmpf,
                        bool (*fn)(void *elem, void *data), void *data);
 
 #endif // _KERNEL_DS_RBTREE_H
