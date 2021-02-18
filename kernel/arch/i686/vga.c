@@ -5,6 +5,7 @@
 #include "kernel/console.h"
 #include "kernel/cppdefs.h"
 #include "kernel/elflist.h"
+#include "kernel/kernel.h"
 
 #include "lib/ctype.h"
 #include "lib/string.h"
@@ -90,10 +91,13 @@ static void break_line(void)
 
 static int vga_init(struct console *c __unused)
 {
+        union uiptr buffer_addr = uint2uiptr(VGA_BUFFER_ADDR);
+        buffer_addr.ptr = kernel_arch_to_high(buffer_addr.ptr);
+
         STATE.row = 0;
         STATE.col = 0;
         STATE.color = vga_mix_color(VGA_DEFAULT_FG, VGA_DEFAULT_BG);
-        STATE.buffer = (uint16_t *)HIGH(VGA_BUFFER_ADDR);
+        STATE.buffer = buffer_addr.ptr;
 
         for (uint_fast16_t y = 0; y < VGA_HEIGHT; y++) {
                 for (uint_fast16_t x = 0; x < VGA_WIDTH; x++) {

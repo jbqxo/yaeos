@@ -46,7 +46,7 @@ static struct rbtree_node *rbt_get_parent(struct rbtree_node *node)
 #ifndef NDEBUG
         return (node->parent.ptr);
 #else
-        return (num2uiptr(node->parent.num & -2L).ptr);
+        return (uint2uiptr(node->parent.num & -2L).ptr);
 #endif
 }
 
@@ -537,38 +537,47 @@ struct rbtree_node *rbtree_search_max(struct rbtree *rbt, void *limit, rbtree_cm
         kassert(limit);
 
         struct rbtree_node *cursor = rbt->root;
+        int cmp_result = 0;
 
         while (cursor != NULL) {
-                int cmp_result = cmpf(cursor->data, limit);
+                cmp_result = cmpf(cursor->data, limit);
 
+                /* Find rightmost node within the limit. */
                 while (cmp_result < 0 && cursor->right != NULL) {
                         cursor = cursor->right;
                         cmp_result = cmpf(cursor->data, limit);
                 }
 
+                /* We could overstep the limit, so try to return to the limit's boundaries. */
                 while (cmp_result > 0 && cursor->left != NULL) {
-                        // We could overstep the limit, so try to return to the limit's boundaries.
                         cursor = cursor->left;
                         cmp_result = cmpf(cursor->data, limit);
                 }
 
+                /* Found exact match. Just return it. */
                 if (cmp_result == 0) {
                         break;
                 }
 
+                /* We want to step back to the parent if we've overstepped the limit
+                 * and there is no left subtree. */
                 if (cmp_result > 0 && cursor->left == NULL) {
-                        while (cmp_result > 0) {
+                        while (cmp_result > 0 && rbt_get_parent(cursor) != NULL) {
                                 cursor = rbt_get_parent(cursor);
                                 cmp_result = cmpf(cursor->data, limit);
                         }
                         break;
                 }
 
+                /* It seems that we've found the closest possible match. */
                 if (cmp_result < 0 && cursor->right == NULL) {
                         break;
                 }
         }
 
+        if (cmp_result > 0) {
+                return (NULL);
+        }
         return (cursor);
 }
 
