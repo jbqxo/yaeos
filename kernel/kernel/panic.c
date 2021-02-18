@@ -2,7 +2,7 @@
 
 #include "kernel/console.h"
 
-#include "lib/stdio.h"
+#include "lib/cstd/stdio.h"
 
 static int conwrite(const char *msg, size_t len)
 {

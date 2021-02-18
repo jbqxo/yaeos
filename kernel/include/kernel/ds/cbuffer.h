@@ -1,7 +1,7 @@
 #ifndef _KERNEL_DS_CBUFFER_H
 #define _KERNEL_DS_CBUFFER_H
 
-#include "lib/string.h"
+#include "lib/cstd/string.h"
 
 #include <stdint.h>
 

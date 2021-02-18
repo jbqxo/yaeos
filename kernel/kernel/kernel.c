@@ -9,8 +9,8 @@
 #include "kernel/mm/vmm.h"
 #include "kernel/utils.h"
 
-#include "lib/nonstd.h"
-#include "lib/stdio.h"
+#include "lib/cstd/nonstd.h"
+#include "lib/cstd/stdio.h"
 
 struct vm_area KERNELBIN_AREAS[KSEGMENT_COUNT] = { 0 };
 struct vm_area KHEAP_AREA = { 0 };

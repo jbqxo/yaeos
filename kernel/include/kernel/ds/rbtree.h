@@ -3,7 +3,7 @@
 
 #include "kernel/cppdefs.h"
 
-#include "lib/assert.h"
+#include "lib/cstd/assert.h"
 
 #include <stddef.h>
 #include <stdint.h>

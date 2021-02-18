@@ -1,4 +1,4 @@
-#include "lib/string.h"
+#include "lib/cstd/string.h"
 
 char *kstrchr(char *s, int c)
 {

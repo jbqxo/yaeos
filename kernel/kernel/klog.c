@@ -2,7 +2,7 @@
 
 #include "kernel/kernel.h"
 
-#include "lib/stdio.h"
+#include "lib/cstd/stdio.h"
 
 #include <stdarg.h>
 #include <stdint.h>

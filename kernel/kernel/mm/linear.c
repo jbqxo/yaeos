@@ -4,7 +4,7 @@
 #include "kernel/utils.h"
 #include "kernel/cppdefs.h"
 
-#include "lib/assert.h"
+#include "lib/cstd/assert.h"
 
 void linear_alloc_init(struct linear_alloc *a, void *mem, size_t len)
 {

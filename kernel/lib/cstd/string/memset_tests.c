@@ -1,6 +1,6 @@
 // UNITY_TEST DEPENDS ON: kernel/lib/string/memset.c
 
-#include "lib/string.h"
+#include "lib/cstd/string.h"
 
 #include <stdbool.h>
 #include <stddef.h>

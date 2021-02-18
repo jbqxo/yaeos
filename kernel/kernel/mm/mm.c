@@ -7,8 +7,8 @@
 #include "kernel/platform.h"
 #include "kernel/utils.h"
 
-#include "lib/assert.h"
-#include "lib/string.h"
+#include "lib/cstd/assert.h"
+#include "lib/cstd/string.h"
 
 static struct kmm_cache ZONES_CACHE;
 

@@ -11,7 +11,7 @@
 #include "kernel/platform.h"
 #include "kernel/utils.h"
 
-#include "lib/string.h"
+#include "lib/cstd/string.h"
 
 #include <multiboot.h>
 #include <stdbool.h>

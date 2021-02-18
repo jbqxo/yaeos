@@ -7,8 +7,8 @@
 #include "kernel/elflist.h"
 #include "kernel/kernel.h"
 
-#include "lib/ctype.h"
-#include "lib/string.h"
+#include "lib/cstd/ctype.h"
+#include "lib/cstd/string.h"
 
 #include <stddef.h>
 #include <stdint.h>

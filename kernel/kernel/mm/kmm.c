@@ -10,9 +10,9 @@
 #include "kernel/platform.h"
 #include "kernel/utils.h"
 
-#include "lib/assert.h"
-#include "lib/nonstd.h"
-#include "lib/string.h"
+#include "lib/cstd/assert.h"
+#include "lib/cstd/nonstd.h"
+#include "lib/cstd/string.h"
 
 #include <stdalign.h>
 #include <stdbool.h>

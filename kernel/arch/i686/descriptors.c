@@ -2,7 +2,7 @@
 
 #include "kernel/cppdefs.h"
 
-#include "lib/string.h"
+#include "lib/cstd/string.h"
 
 #include <stdbool.h>
 #include <stddef.h>

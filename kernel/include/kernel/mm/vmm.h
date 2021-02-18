@@ -5,7 +5,7 @@
 #include "kernel/ds/rbtree.h"
 #include "kernel/ds/slist.h"
 
-#include "lib/assert.h"
+#include "lib/cstd/assert.h"
 
 #include <stdbool.h>
 #include <stddef.h>

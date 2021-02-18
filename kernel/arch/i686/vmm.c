@@ -9,7 +9,7 @@
 #include "kernel/klog.h"
 #include "kernel/mm/vmm.h"
 
-#include "lib/assert.h"
+#include "lib/cstd/assert.h"
 
 #include <stdbool.h>
 #include <stdint.h>

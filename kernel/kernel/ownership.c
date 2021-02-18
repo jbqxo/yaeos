@@ -1,5 +1,6 @@
 #include "kernel/ownership.h"
-#include "lib/assert.h"
+
+#include "lib/cstd/assert.h"
 
 #include <stddef.h>
 

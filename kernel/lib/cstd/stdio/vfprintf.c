@@ -4,8 +4,8 @@
 #include "kernel/console.h"
 #include "kernel/cppdefs.h"
 
-#include "lib/stdio.h"
-#include "lib/string.h"
+#include "lib/cstd/stdio.h"
+#include "lib/cstd/string.h"
 
 #include <limits.h>
 #include <stdarg.h>

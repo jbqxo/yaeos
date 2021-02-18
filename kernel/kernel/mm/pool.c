@@ -4,8 +4,8 @@
 #include "kernel/ds/slist.h"
 #include "kernel/utils.h"
 
-#include "lib/assert.h"
-#include "lib/nonstd.h"
+#include "lib/cstd/assert.h"
+#include "lib/cstd/nonstd.h"
 
 #include <stddef.h>
 

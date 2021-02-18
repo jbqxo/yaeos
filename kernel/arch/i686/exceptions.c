@@ -4,7 +4,7 @@
 
 #include "kernel/kernel.h"
 
-#include "lib/stdio.h"
+#include "lib/cstd/stdio.h"
 
 static char DESCRIPTION_BUFFER[64];
 static int DESCBUFFER_POS = 0;

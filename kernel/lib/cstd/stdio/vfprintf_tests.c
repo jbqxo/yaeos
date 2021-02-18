@@ -4,7 +4,7 @@
 
 #include "kernel/cppdefs.h"
 
-#include "lib/stdio.h"
+#include "lib/cstd/stdio.h"
 
 #include <stdio.h>
 #include <string.h>

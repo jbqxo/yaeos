@@ -5,7 +5,7 @@
 
 #include "kernel/klog.h"
 
-#include "lib/assert.h"
+#include "lib/cstd/assert.h"
 
 #include <stdint.h>
 
