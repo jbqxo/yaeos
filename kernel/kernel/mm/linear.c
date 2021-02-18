@@ -1,10 +1,10 @@
 #include "kernel/mm/linear.h"
 
 #include "kernel/klog.h"
-#include "kernel/utils.h"
-#include "kernel/cppdefs.h"
 
+#include "lib/cppdefs.h"
 #include "lib/cstd/assert.h"
+#include "lib/align.h"
 
 void linear_alloc_init(struct linear_alloc *a, void *mem, size_t len)
 {

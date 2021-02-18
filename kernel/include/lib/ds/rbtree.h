@@ -1,8 +1,7 @@
 #ifndef _KERNEL_DS_RBTREE_H
 #define _KERNEL_DS_RBTREE_H
 
-#include "kernel/cppdefs.h"
-
+#include "lib/cppdefs.h"
 #include "lib/cstd/assert.h"
 
 #include <stddef.h>

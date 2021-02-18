@@ -2,8 +2,9 @@
 #define _KERNEL_KERNEL_H
 
 #include "kernel/config.h"
-#include "kernel/cppdefs.h"
 #include "kernel/mm/vmm.h"
+
+#include "lib/cppdefs.h"
 
 enum kernel_segments {
         KSEGMENT_TEXT,
@@ -17,7 +18,6 @@ extern struct vm_area KERNELBIN_AREAS[KSEGMENT_COUNT];
 extern struct vm_area KHEAP_AREA;
 
 void kernel_arch_get_segment(enum kernel_segments seg, void **start, void **end);
-
 
 /* TODO: This two belong to process context. */
 extern struct vm_space CURRENT_KERNEL;

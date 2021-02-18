@@ -8,8 +8,7 @@
 #define PLATFORM_PAGEDIR_PAGES   (1024)
 
 #ifndef __ASSEMBLER__
-#include "kernel/cppdefs.h"
-
+#include "lib/cppdefs.h"
 #include "lib/cstd/assert.h"
 
 #include <multiboot.h>

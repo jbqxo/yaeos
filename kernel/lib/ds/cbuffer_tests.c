@@ -2,7 +2,7 @@
 
 #include "lib/ds/cbuffer.h"
 
-#include "kernel/cppdefs.h"
+#include "lib/cppdefs.h"
 
 #include <stdbool.h>
 #include <unity.h>

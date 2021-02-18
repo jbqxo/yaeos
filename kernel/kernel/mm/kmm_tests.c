@@ -4,11 +4,12 @@
 
 #include "kernel/mm/kmm.h"
 
-#include "kernel/kernel.h"
 #include "kernel/config.h"
-#include "kernel/cppdefs.h"
+#include "kernel/kernel.h"
 #include "kernel/mm/vmm.h"
 #include "kernel/platform.h"
+
+#include "lib/cppdefs.h"
 
 #include <assert.h>
 #include <stddef.h>
@@ -396,7 +397,7 @@ static void kmalloc_various_sizes(void)
 {
         kmm_init_kmalloc();
 
-        for(int i = CONF_MALLOC_MIN_POW; i < CONF_MALLOC_MAX_POW; i++) {
+        for (int i = CONF_MALLOC_MIN_POW; i < CONF_MALLOC_MAX_POW; i++) {
                 const size_t req_size = 1 << i;
 
                 void *mem = kmalloc(req_size);

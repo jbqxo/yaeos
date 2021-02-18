@@ -1,8 +1,7 @@
-#ifndef _KERNEL_UTILS_H
-#define _KERNEL_UTILS_H
+#ifndef _LIB_ALIGN_H
+#define _LIB_ALIGN_H
 
-#include "kernel/cppdefs.h"
-
+#include "lib/cppdefs.h"
 #include "lib/cstd/assert.h"
 
 #include <stdbool.h>
@@ -33,4 +32,4 @@ static inline bool check_align(uintptr_t value, uintptr_t alignment)
         return (value == align_rounddown(value, alignment));
 }
 
-#endif // _KERNEL_UTILS_H
+#endif // _LIB_ALIGN_H

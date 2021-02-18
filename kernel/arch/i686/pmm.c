@@ -1,15 +1,14 @@
-#include "kernel/mm/mm.h"
-
 #include "arch_i686/kernel.h"
 #include "arch_i686/platform.h"
 #include "arch_i686/vmm.h"
 
-#include "kernel/cppdefs.h"
-#include "kernel/klog.h"
-#include "kernel/utils.h"
-#include "kernel/mm/kmm.h"
 #include "kernel/kernel.h"
+#include "kernel/klog.h"
+#include "kernel/mm/kmm.h"
+#include "kernel/mm/mm.h"
 
+#include "lib/align.h"
+#include "lib/cppdefs.h"
 #include "lib/cstd/nonstd.h"
 
 #include <multiboot.h>

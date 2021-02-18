@@ -6,11 +6,11 @@
 #include "arch_i686/vmm.h"
 
 #include "kernel/config.h"
-#include "kernel/cppdefs.h"
 #include "kernel/kernel.h"
 #include "kernel/platform.h"
-#include "kernel/utils.h"
 
+#include "lib/align.h"
+#include "lib/cppdefs.h"
 #include "lib/cstd/string.h"
 
 #include <multiboot.h>

@@ -1,6 +1,6 @@
 #include "lib/ds/bitmap.h"
 
-#include "kernel/cppdefs.h"
+#include "lib/cppdefs.h"
 
 #include <unity.h>
 

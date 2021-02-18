@@ -2,15 +2,14 @@
 
 #include "kernel/config.h"
 #include "kernel/console.h"
-#include "kernel/cppdefs.h"
 #include "kernel/klog.h"
 #include "kernel/mm/kmm.h"
 #include "kernel/mm/mm.h"
 #include "kernel/mm/vmm.h"
-#include "kernel/utils.h"
 
+#include "lib/align.h"
+#include "lib/cppdefs.h"
 #include "lib/cstd/nonstd.h"
-#include "lib/cstd/stdio.h"
 
 struct vm_area KERNELBIN_AREAS[KSEGMENT_COUNT] = { 0 };
 struct vm_area KHEAP_AREA = { 0 };

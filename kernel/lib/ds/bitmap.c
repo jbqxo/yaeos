@@ -1,8 +1,7 @@
 #include "lib/ds/bitmap.h"
 
-#include "kernel/cppdefs.h"
-#include "kernel/utils.h"
-
+#include "lib/align.h"
+#include "lib/cppdefs.h"
 #include "lib/cstd/assert.h"
 #include "lib/cstd/nonstd.h"
 #include "lib/cstd/string.h"

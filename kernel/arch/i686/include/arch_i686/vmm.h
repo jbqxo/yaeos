@@ -4,8 +4,9 @@
 #include "arch_i686/intr.h"
 #include "arch_i686/platform.h"
 
-#include "kernel/cppdefs.h"
 #include "kernel/mm/vmm.h"
+
+#include "lib/cppdefs.h"
 
 enum vm_table_flags {
         VM_TABLE_FLAG_RW = 0x1 << 0,

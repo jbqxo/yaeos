@@ -5,8 +5,9 @@
 #include "kernel/mm/buddy.h"
 
 #include "kernel/config.h"
-#include "kernel/cppdefs.h"
 #include "kernel/platform.h"
+
+#include "lib/cppdefs.h"
 
 #include <stdlib.h>
 #include <string.h>

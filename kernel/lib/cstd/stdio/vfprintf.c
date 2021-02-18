@@ -2,8 +2,8 @@
 // UNITY_TEST DEPENDS ON: kernel/lib/string/strlen.c
 
 #include "kernel/console.h"
-#include "kernel/cppdefs.h"
 
+#include "lib/cppdefs.h"
 #include "lib/cstd/stdio.h"
 #include "lib/cstd/string.h"
 

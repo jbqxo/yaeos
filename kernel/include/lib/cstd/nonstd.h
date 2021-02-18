@@ -1,7 +1,7 @@
 #ifndef _LIB_NONSTD_H
 #define _LIB_NONSTD_H
 
-#include "kernel/cppdefs.h"
+#include "lib/cppdefs.h"
 
 #include <stdint.h>
 

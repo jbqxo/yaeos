@@ -2,8 +2,9 @@
 
 #include "arch_i686/kernel.h"
 
-#include "kernel/cppdefs.h"
 #include "kernel/klog.h"
+
+#include "lib/cppdefs.h"
 
 void *kernel_arch_vm_offset(void)
 {

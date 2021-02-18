@@ -1,8 +1,7 @@
 #ifndef _KERNEL_DS_KVSTORE_H
 #define _KERNEL_DS_KVSTORE_H
 
-#include "kernel/cppdefs.h"
-
+#include "lib/cppdefs.h"
 #include "lib/cstd/string.h"
 
 #include <stdbool.h>

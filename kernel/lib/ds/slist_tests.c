@@ -1,6 +1,6 @@
 #include "lib/ds/slist.h"
 
-#include "kernel/cppdefs.h"
+#include "lib/cppdefs.h"
 
 #include <stddef.h>
 #include <unity.h>

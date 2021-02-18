@@ -1,5 +1,5 @@
-#ifndef _KERNEL_OWNERSHIP_H
-#define _KERNEL_OWNERSHIP_H
+#ifndef _LIB_OWNERSHIP_H
+#define _LIB_OWNERSHIP_H
 
 /* Certainly, there is ought to be a better name.
  * TODO: Rename "Ownership" to something better. */
@@ -15,4 +15,4 @@ void ownership_add(struct ownership *, void *owner);
 
 void *ownership_get(struct ownership *);
 
-#endif /* _KERNEL_OWNERSHIP_H */
+#endif /* _LIB_OWNERSHIP_H */

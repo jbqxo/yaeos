@@ -2,8 +2,9 @@
 #define _LIB_ASSERT_H
 #undef kassert
 
-#include "kernel/cppdefs.h"
 #include "kernel/panic.h"
+
+#include "lib/cppdefs.h"
 
 #ifdef NDEBUG
 #define kassert(exp) ((void)0)

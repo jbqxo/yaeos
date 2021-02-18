@@ -1,5 +1,5 @@
-#ifndef _KERNEL_CPPDEFS_H
-#define _KERNEL_CPPDEFS_H
+#ifndef _LIB_CPPDEFS_H
+#define _LIB_CPPDEFS_H
 
 #include <stdint.h>
 
@@ -55,4 +55,4 @@ static inline uintptr_t ptr2uint(const void *address)
         return (ptr2uiptr(address).num);
 }
 
-#endif // _KERNEL_CPPDEFS_H
+#endif // _LIB_CPPDEFS_H

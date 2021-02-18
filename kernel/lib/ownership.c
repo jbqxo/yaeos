@@ -1,4 +1,4 @@
-#include "kernel/ownership.h"
+#include "lib/ownership.h"
 
 #include "lib/cstd/assert.h"
 

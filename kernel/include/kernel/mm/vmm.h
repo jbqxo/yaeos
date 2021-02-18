@@ -1,8 +1,7 @@
 #ifndef _KERNEL_MM_VMM_H
 #define _KERNEL_MM_VMM_H
 
-#include "kernel/cppdefs.h"
-
+#include "lib/cppdefs.h"
 #include "lib/cstd/assert.h"
 #include "lib/ds/rbtree.h"
 #include "lib/ds/slist.h"

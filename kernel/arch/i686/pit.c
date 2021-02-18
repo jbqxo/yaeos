@@ -1,9 +1,10 @@
 #include "arch_i686/intr.h"
 #include "arch_i686/io.h"
 
-#include "kernel/cppdefs.h"
-#include "kernel/elflist.h"
 #include "kernel/timer.h"
+
+#include "lib/cppdefs.h"
+#include "lib/elflist.h"
 
 #include <stddef.h>
 

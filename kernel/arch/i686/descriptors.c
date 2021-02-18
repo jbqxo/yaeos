@@ -1,7 +1,6 @@
 #include "arch_i686/descriptors.h"
 
-#include "kernel/cppdefs.h"
-
+#include "lib/cppdefs.h"
 #include "lib/cstd/string.h"
 
 #include <stdbool.h>

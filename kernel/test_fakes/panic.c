@@ -1,7 +1,8 @@
-#include "kernel/cppdefs.h"
 #include "kernel/kernel.h"
 #include "kernel/klog.h"
 #include "kernel/mm/vmm.h"
+
+#include "lib/cppdefs.h"
 
 #include <assert.h>
 #include <stdarg.h>

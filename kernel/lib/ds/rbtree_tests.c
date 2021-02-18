@@ -3,8 +3,7 @@
 // TODO: Is it good idea for unit testing?
 #include "rbtree.c"
 
-#include "kernel/cppdefs.h"
-
+#include "lib/cppdefs.h"
 #include "lib/ds/rbtree.h"
 
 #include <stdint.h>

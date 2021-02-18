@@ -1,8 +1,7 @@
 #ifndef _KERNEL_MM_POOL_H
 #define _KERNEL_MM_POOL_H
 
-#include "kernel/cppdefs.h"
-
+#include "lib/cppdefs.h"
 #include "lib/ds/slist.h"
 
 #include <stddef.h>

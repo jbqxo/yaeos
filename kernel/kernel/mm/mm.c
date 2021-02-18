@@ -5,8 +5,8 @@
 #include "kernel/mm/kmm.h"
 #include "kernel/mm/linear.h"
 #include "kernel/platform.h"
-#include "kernel/utils.h"
 
+#include "lib/align.h"
 #include "lib/cstd/assert.h"
 #include "lib/cstd/string.h"
 

@@ -2,7 +2,8 @@
 #define _KERNEL_KLOG_H
 
 #include "kernel/console.h"
-#include "kernel/cppdefs.h"
+
+#include "lib/cppdefs.h"
 
 #include <stdarg.h>
 
