@@ -2,7 +2,8 @@
 #define _KERNEL_MM_POOL_H
 
 #include "kernel/cppdefs.h"
-#include "kernel/ds/slist.h"
+
+#include "lib/ds/slist.h"
 
 #include <stddef.h>
 

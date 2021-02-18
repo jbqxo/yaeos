@@ -1,4 +1,4 @@
-#include "kernel/ds/bitmap.h"
+#include "lib/ds/bitmap.h"
 
 #include "kernel/cppdefs.h"
 #include "kernel/utils.h"

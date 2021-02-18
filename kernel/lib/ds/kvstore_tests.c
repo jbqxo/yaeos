@@ -1,4 +1,4 @@
-#include "kernel/ds/kvstore.h"
+#include "lib/ds/kvstore.h"
 
 #include <stddef.h>
 #include <string.h>

@@ -2,7 +2,6 @@
 
 #include "kernel/config.h"
 #include "kernel/cppdefs.h"
-#include "kernel/ds/slist.h"
 #include "kernel/kernel.h"
 #include "kernel/klog.h"
 #include "kernel/mm/pool.h"
@@ -13,6 +12,7 @@
 #include "lib/cstd/assert.h"
 #include "lib/cstd/nonstd.h"
 #include "lib/cstd/string.h"
+#include "lib/ds/slist.h"
 
 #include <stdalign.h>
 #include <stdbool.h>

@@ -1,4 +1,4 @@
-#include "kernel/ds/slist.h"
+#include "lib/ds/slist.h"
 
 #include "kernel/cppdefs.h"
 

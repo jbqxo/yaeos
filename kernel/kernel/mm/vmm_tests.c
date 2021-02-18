@@ -2,7 +2,7 @@
 // UNITY_TEST DEPENDS ON: kernel/test_fakes/kmm.c
 
 // UNITY_TEST DEPENDS ON: kernel/kernel/mm/vmm.c
-// UNITY_TEST DEPENDS ON: kernel/kernel/ds/rbtree.c
+// UNITY_TEST DEPENDS ON: kernel/lib/ds/rbtree.c
 
 #include "kernel/mm/vmm.h"
 

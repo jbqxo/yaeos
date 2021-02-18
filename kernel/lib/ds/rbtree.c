@@ -1,4 +1,4 @@
-#include "kernel/ds/rbtree.h"
+#include "lib/ds/rbtree.h"
 
 static void rbt_set_colour(struct rbtree_node *n, enum rbtree_colour c)
 {

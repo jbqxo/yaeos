@@ -4,7 +4,8 @@
 #include "rbtree.c"
 
 #include "kernel/cppdefs.h"
-#include "kernel/ds/rbtree.h"
+
+#include "lib/ds/rbtree.h"
 
 #include <stdint.h>
 #include <stdlib.h>

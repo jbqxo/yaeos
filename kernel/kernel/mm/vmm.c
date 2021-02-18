@@ -1,11 +1,12 @@
 #include "kernel/mm/vmm.h"
 
 #include "kernel/cppdefs.h"
-#include "kernel/ds/rbtree.h"
-#include "kernel/ds/slist.h"
 #include "kernel/kernel.h"
 #include "kernel/klog.h"
 #include "kernel/utils.h"
+
+#include "lib/ds/rbtree.h"
+#include "lib/ds/slist.h"
 
 void vm_pgfault_handle_default(struct vm_area *area, void *addr)
 {
@@ -44,7 +45,6 @@ void *vm_space_find_gap(struct vm_space *space,
                 }
 
                 next_after_last_area_end.num = ptr2uint(it->base_vaddr) + it->length;
-
         }
 
         const uintptr_t LAST_AVAILABLE_ADDR =
@@ -140,8 +140,7 @@ void vm_space_remove_area(struct vm_space *space, struct vm_area *area)
         SLIST_REMOVE(&space->sorted_areas, area, sorted_areas);
 }
 
-void vm_area_init(struct vm_area *area, void *vaddr, size_t length,
-                  const struct vm_space *owner)
+void vm_area_init(struct vm_area *area, void *vaddr, size_t length, const struct vm_space *owner)
 {
         kassert(area != NULL);
         kassert(check_align(ptr2uint(vaddr), PLATFORM_PAGE_SIZE));

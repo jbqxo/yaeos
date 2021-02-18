@@ -1,12 +1,11 @@
 #ifndef _KERNEL_MM_PMM_H
 #define _KERNEL_MM_PMM_H
 
-#include "kernel/ds/slist.h"
+#include "lib/ds/slist.h"
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
 
 ///
 /// Holds a result of physical memory allocation by some physical allocator.

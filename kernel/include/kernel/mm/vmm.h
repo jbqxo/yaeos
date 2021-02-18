@@ -2,10 +2,10 @@
 #define _KERNEL_MM_VMM_H
 
 #include "kernel/cppdefs.h"
-#include "kernel/ds/rbtree.h"
-#include "kernel/ds/slist.h"
 
 #include "lib/cstd/assert.h"
+#include "lib/ds/rbtree.h"
+#include "lib/ds/slist.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -61,8 +61,7 @@ struct vm_area {
         void *data;
 };
 
-void vm_area_init(struct vm_area *area, void *vaddr, size_t length,
-                  const struct vm_space *owner);
+void vm_area_init(struct vm_area *area, void *vaddr, size_t length, const struct vm_space *owner);
 
 void vm_pgfault_handle_default(struct vm_area *area, void *addr);
 void vm_pgfault_handle_direct(struct vm_area *area, void *addr);

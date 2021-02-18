@@ -1,8 +1,9 @@
 #ifndef _KERNEL_MM_BUDDY_H
 #define _KERNEL_MM_BUDDY_H
 
-#include "kernel/ds/bitmap.h"
 #include "kernel/mm/linear.h"
+
+#include "lib/ds/bitmap.h"
 
 #include <stddef.h>
 #include <stdint.h>

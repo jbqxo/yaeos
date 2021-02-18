@@ -1,7 +1,7 @@
 #ifndef _KERNEL_TIMER_H
 #define _KERNEL_TIMER_H
 
-#include "kernel/ds/slist.h"
+#include "lib/ds/slist.h"
 
 typedef void (*callback_fn)(void);
 

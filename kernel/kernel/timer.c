@@ -1,8 +1,9 @@
 #include "kernel/timer.h"
 
 #include "kernel/config.h"
-#include "kernel/ds/cbuffer.h"
 #include "kernel/elflist.h"
+
+#include "lib/ds/cbuffer.h"
 
 ELFLIST_EXTERN(struct int_timer, timers);
 

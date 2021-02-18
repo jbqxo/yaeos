@@ -1,11 +1,11 @@
 #include "kernel/mm/pool.h"
 
 #include "kernel/cppdefs.h"
-#include "kernel/ds/slist.h"
 #include "kernel/utils.h"
 
 #include "lib/cstd/assert.h"
 #include "lib/cstd/nonstd.h"
+#include "lib/ds/slist.h"
 
 #include <stddef.h>
 

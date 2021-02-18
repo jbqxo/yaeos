@@ -1,4 +1,5 @@
-#include "kernel/ds/bitmap.h"
+#include "lib/ds/bitmap.h"
+
 #include "kernel/cppdefs.h"
 
 #include <unity.h>
@@ -50,7 +51,7 @@ static void search_false(void)
         }
 
         uint32_t result = 0;
-        if(!bitmap_search_false(&bitmap, &result)){
+        if (!bitmap_search_false(&bitmap, &result)) {
                 TEST_FAIL();
         }
         TEST_ASSERT_EQUAL_UINT32(expected, result);

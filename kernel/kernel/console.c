@@ -1,6 +1,6 @@
 #include "kernel/console.h"
 
-#include "kernel/ds/slist.h"
+#include "lib/ds/slist.h"
 #include "kernel/elflist.h"
 
 ELFLIST_EXTERN(struct console, consoles);
