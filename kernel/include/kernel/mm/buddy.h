@@ -18,11 +18,11 @@ struct buddy_manager {
 
 /**
  * @brief Initialize the buddy allocator.
- * @param size Size of the memory chunk.
+ * @param pages Number of pages to manage.
  * @param alloc Allocator to use for internal data.
  * @return Number of free pages.
  */
-uint32_t buddy_init(struct buddy_manager *bmgr, size_t size, struct linear_alloc *alloc);
+uint32_t buddy_init(struct buddy_manager *bmgr, size_t pages, struct linear_alloc *alloc);
 
 /**
  * @brief Allocate specified number of pages.
@@ -33,16 +33,23 @@ uint32_t buddy_init(struct buddy_manager *bmgr, size_t size, struct linear_alloc
 bool buddy_alloc(struct buddy_manager *bmgr, unsigned order, uint32_t *result);
 
 /**
+ * @brief Try to allocate specified page.
+ * @param page_ndx Index of the page to allocate.
+ * @return Indicates success of the operation. */
+bool buddy_try_alloc(struct buddy_manager *bmgr, uint32_t page_ndx);
+
+/**
  * @brief Free specified memory space.
  * @param page_ndx Index of the allocated page to free.
  * @param order 2^(order) of pages that was requested.
  */
 void buddy_free(struct buddy_manager *bmgr, uint32_t page_ndx, unsigned order);
 
+bool buddy_is_free(struct buddy_manager *bmgr, uint32_t page_ndx);
+
 /**
- * @brief Reduce the size of the manageable space.
- * @return Number of managed pages.
+ * @brief Predict space required by a buddy manager for a specified number of pages.
  */
-uint32_t buddy_reduce_size(struct buddy_manager *bmgr, size_t new_size);
+size_t buddy_predict_req_space(size_t pages);
 
 #endif /* _KERNEL_MM_BUDDY_H */

@@ -5,9 +5,12 @@
 #define PLATFORM_REGISTERS_COUNT (20)
 #define PLATFORM_PAGEDIR_SIZE    PLATFORM_PAGE_SIZE
 #define PLATFORM_PAGEDIR_COUNT   (2)
+#define PLATFORM_PAGEDIR_PAGES   (1024)
 
 #ifndef __ASSEMBLER__
 #include "kernel/cppdefs.h"
+
+#include "lib/assert.h"
 
 #include <multiboot.h>
 #include <stdbool.h>

@@ -16,34 +16,41 @@
 #define __likely(exp)     __builtin_expect((exp), 1)
 #define __unlikely(exp)   __builtin_expect((exp), 0)
 
-#define __asmexport       __attribute__((extract_offset))
+#define __asmexport __attribute__((extract_offset))
 
 #define TO_SSTR(X)       #X
 #define TO_SSTR_MACRO(X) TO_SSTR(X)
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
+/* Shamelessly took the idea from the Linux. It's so cool actually...  */
+#define container_of(ptr, type, field_name)                    \
+        ({                                                     \
+                void *__fptr = (void *)(ptr);                  \
+                (type *)(__fptr - offsetof(type, field_name)); \
+        })
+
 union uiptr {
         void *ptr;
         uintptr_t num;
 };
 
-static inline union uiptr ptr2uiptr(void *ptr)
+static inline union uiptr ptr2uiptr(const void *ptr)
 {
         return ((union uiptr){ .ptr = ptr });
 }
 
-static inline union uiptr num2uiptr(uintptr_t num)
+static inline union uiptr uint2uiptr(uintptr_t num)
 {
         return ((union uiptr){ .num = num });
 }
 
 static inline void *uint2ptr(uintptr_t address)
 {
-        return (num2uiptr(address).ptr);
+        return (uint2uiptr(address).ptr);
 }
 
-static inline uintptr_t ptr2uint(void *address)
+static inline uintptr_t ptr2uint(const void *address)
 {
         return (ptr2uiptr(address).num);
 }

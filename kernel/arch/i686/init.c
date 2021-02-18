@@ -9,6 +9,7 @@
 #include "kernel/cppdefs.h"
 #include "kernel/kernel.h"
 #include "kernel/platform.h"
+#include "kernel/utils.h"
 
 #include "lib/string.h"
 
@@ -39,43 +40,60 @@
  * @param page_dir Page Directory to modify
  * @param flags Flags to apply to every page.
  */
-static void map_addr_range(void *page_dir, const void *start, const void *end, int flags)
+static void map_addr_range(union vm_arch_page_dir *page_dir, const void *start, const void *end,
+                           enum vm_table_flags flags)
 {
-        // TODO: Enforce page boundary checks
-        uintptr_t paddr = (uintptr_t)start;
-        while (paddr < (uintptr_t)end) {
-                uintptr_t vaddr = KERNEL_VMA + paddr;
-                vm_map(page_dir, (void *)vaddr, (void *)paddr, flags);
-                paddr += PLATFORM_PAGE_SIZE;
+        union uiptr page_addr = uint2uiptr(align_rounddown(ptr2uint(start), PLATFORM_PAGE_SIZE));
+        union uiptr upto_page = uint2uiptr(align_roundup(ptr2uint(end), PLATFORM_PAGE_SIZE));
+
+        while (page_addr.num < upto_page.num) {
+                const union uiptr virt_addr = uint2uiptr(KERNEL_VM_OFFSET + page_addr.num);
+
+                struct vm_arch_page_entry *pde = vm_dir_entry(page_dir, virt_addr.ptr);
+                union vm_arch_page_dir *pt = vm_pt_get_addr(pde);
+                struct vm_arch_page_entry *pte = vm_table_entry(pt, virt_addr.ptr);
+
+                vm_pt_set_addr(pte, page_addr.ptr);
+                pte->is_present = true;
+                pte->present.table.flags = flags;
+
+                page_addr.num += PLATFORM_PAGE_SIZE;
         }
+}
+
+static void map_segment(enum kernel_segments seg, union vm_arch_page_dir *pdir,
+                        enum vm_table_flags flags)
+{
+        union uiptr start = ptr2uiptr(NULL);
+        union uiptr end = ptr2uiptr(NULL);
+        kernel_arch_get_segment(seg, &start.ptr, &end.ptr);
+
+        start.ptr = kernel_arch_to_low(start.ptr);
+        end.ptr = kernel_arch_to_low(end.ptr);
+
+        map_addr_range(pdir, start.ptr, end.ptr, flags);
 }
 
 /**
  * @brief Map kernel sections from low memory to high memory.
  */
-static void map_kernel(void *page_dir)
+static void map_kernel(union vm_arch_page_dir *page_dir)
 {
-        map_addr_range(page_dir, (void *)LOW(&kernel_text_start[0]),
-                       (void *)LOW(&kernel_text_end[0]), VM_TABLE_FLAG_PRESENT);
-        map_addr_range(page_dir, (void *)LOW(&kernel_rodata_start[0]),
-                       (void *)LOW(&kernel_rodata_end[0]), VM_TABLE_FLAG_PRESENT);
-        map_addr_range(page_dir, (void *)LOW(&kernel_data_start[0]),
-                       (void *)LOW(&kernel_data_end[0]), VM_TABLE_FLAG_RW | VM_TABLE_FLAG_PRESENT);
-        map_addr_range(page_dir, (void *)LOW(&kernel_bss_start[0]), (void *)LOW(&kernel_bss_end[0]),
-                       VM_TABLE_FLAG_PRESENT | VM_TABLE_FLAG_RW);
+        map_segment(KSEGMENT_TEXT, page_dir, 0);
+        map_segment(KSEGMENT_DATA, page_dir, VM_TABLE_FLAG_RW);
+        map_segment(KSEGMENT_RODATA, page_dir, 0);
+        map_segment(KSEGMENT_BSS, page_dir, VM_TABLE_FLAG_RW);
 }
 
 /**
  * @brief Map platform specific regions from low memory to high memory.
  */
-static void map_platform(void *page_dir)
+static void map_platform(union vm_arch_page_dir *page_dir)
 {
         // Map low 1MiB
-        const uintptr_t start = 0x0;
-        const uintptr_t end = 1 * 1024 * 1024;
-
-        map_addr_range(page_dir, (void *)start, (void *)end,
-                       VM_TABLE_FLAG_PRESENT | VM_TABLE_FLAG_RW);
+        const union uiptr start = uint2uiptr(0x0);
+        const union uiptr end = uint2uiptr(1 * 1024 * 1024);
+        map_addr_range(page_dir, start.ptr, end.ptr, VM_TABLE_FLAG_RW);
 }
 
 /**
@@ -83,30 +101,40 @@ static void map_platform(void *page_dir)
  */
 static __noinline void setup_boot_paging(void)
 {
-        void *boot_pt = (void *)LOW(&boot_paging_pt[0]);
-        void *boot_pd = (void *)LOW(&boot_paging_pd[0]);
+        union uiptr pt_addr = ptr2uiptr(&boot_paging_pt);
+        union uiptr pd_addr = ptr2uiptr(&boot_paging_pd);
+
+        pt_addr.ptr = kernel_arch_to_low(pt_addr.ptr);
+        pd_addr.ptr = kernel_arch_to_low(pd_addr.ptr);
+
+        union vm_arch_page_dir *pd = pd_addr.ptr;
+        union vm_arch_page_dir *pt = pt_addr.ptr;
 
         // Identity mapping
-        void *identity = vm_dir_entry_addr(boot_pd, 0x0);
-        vm_set_dir_entry(identity, boot_pt, VM_DIR_FLAG_PRESENT | VM_DIR_FLAG_RW);
+        struct vm_arch_page_entry *pde_low = vm_dir_entry(pd, 0x0);
+        pde_low->is_present = true;
+        vm_pt_set_addr(pde_low, pt);
+        pde_low->present.dir.flags = VM_DIR_FLAG_RW;
 
         // Map the kernel to higher half of address space
-        void *hh = vm_dir_entry_addr(boot_pd, (void *)KERNEL_VMA);
-        vm_set_dir_entry(hh, boot_pt, VM_DIR_FLAG_PRESENT | VM_DIR_FLAG_RW);
+        struct vm_arch_page_entry *pde_high = vm_dir_entry(pd, uint2ptr(KERNEL_VM_OFFSET));
+        pde_high->is_present = true;
+        vm_pt_set_addr(pde_high, pt);
+        pde_high->present.dir.flags = VM_DIR_FLAG_RW;
 
-        map_kernel(boot_pd);
-        map_platform(boot_pd);
+        map_kernel(pd);
+        map_platform(pd);
 
-        vm_paging_set(boot_pd);
-        vm_paging_enable(KERNEL_VMA);
+        vm_set_active_pt(pd);
+        vm_paging_enable(KERNEL_VM_OFFSET);
 
         // Patch i686_init(...)
-        PATCH_FRAME(1, KERNEL_VMA);
+        PATCH_FRAME(1, KERNEL_VM_OFFSET);
         // Patch setup_boot_paging(...)
-        PATCH_FRAME(0, KERNEL_VMA);
+        PATCH_FRAME(0, KERNEL_VM_OFFSET);
 
         // Undo identity mapping
-        vm_set_dir_entry(boot_pd, 0x0, 0x0);
+        pde_low->is_present = false;
         vm_tlb_flush();
 }
 
@@ -117,7 +145,9 @@ static __noinline void setup_boot_paging(void)
  */
 static void patch_multiboot_info(multiboot_info_t *info)
 {
-        info->mmap_addr = HIGH(info->mmap_addr);
+        union uiptr addr = uint2uiptr(info->mmap_addr);
+        addr.ptr = kernel_arch_to_high(addr.ptr);
+        info->mmap_addr = addr.num;
 }
 
 struct arch_info_i686 I686_INFO;
@@ -133,8 +163,11 @@ void i686_init(multiboot_info_t *info, uint32_t magic)
         boot_setup_idt();
         intr_init();
         i686_setup_exception_handlers();
+        intr_handler_cpu(INTR_CPU_PAGEFAULT, vm_i686_pg_fault_handler);
 
-        I686_INFO.multiboot = (void *)HIGH(info);
+        union uiptr info_addr = ptr2uiptr(info);
+        info_addr.ptr = kernel_arch_to_high(info_addr.ptr);
+        I686_INFO.multiboot = info_addr.ptr;
         patch_multiboot_info(I686_INFO.multiboot);
 
         kernel_init();

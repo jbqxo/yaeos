@@ -16,6 +16,10 @@ void *linear_alloc_alloc(struct linear_alloc *, size_t len);
 
 void linear_alloc_free(struct linear_alloc *, size_t len);
 
-size_t linear_alloc_occupied_mem(struct linear_alloc *a);
+size_t linear_alloc_occupied(struct linear_alloc *a);
+
+void linear_forbid_further_alloc(struct linear_alloc *alloc);
+
+void linear_alloc_used_mem_range(struct linear_alloc *alloc, void **start, void **end);
 
 #endif /* _KERNEL_MM_LINEAR_H */

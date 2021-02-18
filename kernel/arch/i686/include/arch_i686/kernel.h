@@ -3,31 +3,28 @@
 
 #include <stdint.h>
 
-extern uint32_t boot_paging_pt[] asm("boot_paging_pt");
-extern uint32_t boot_paging_pd[] asm("boot_paging_pd");
+extern union vm_arch_page_dir boot_paging_pd asm("boot_paging_pd");
+extern union vm_arch_page_dir boot_paging_pt asm("boot_paging_pt");
 
-extern char bootstack_top[] asm("bootstack_top");
-extern char bootstack_bottom[] asm("bootstack_bottom");
+extern char kernel_bootstack_start[] asm("bootstack_top");
+extern char kernel_bootstack_end[] asm("bootstack_bottom");
 
-extern const char kernel_vma[] asm("__kernel_vma");
-extern const char kernel_start[] asm("__kernel_start");
-extern const char kernel_end[] asm("__kernel_end");
+extern char kernel_vma[] asm("__kernel_vma");
+#define KERNEL_VM_OFFSET (ptr2uint(kernel_vma))
 
-extern const char kernel_text_start[] asm("__kernel_text_start");
-extern const char kernel_text_end[] asm("__kernel_text_end");
+extern char kernel_start[] asm("__kernel_start");
+extern char kernel_end[] asm("__kernel_end");
 
-extern const char kernel_rodata_start[] asm("__kernel_rodata_start");
-extern const char kernel_rodata_end[] asm("__kernel_rodata_end");
+extern char kernel_text_start[] asm("__kernel_text_start");
+extern char kernel_text_end[] asm("__kernel_text_end");
+
+extern char kernel_rodata_start[] asm("__kernel_rodata_start");
+extern char kernel_rodata_end[] asm("__kernel_rodata_end");
 
 extern char kernel_data_start[] asm("__kernel_data_start");
 extern char kernel_data_end[] asm("__kernel_data_end");
 
 extern char kernel_bss_start[] asm("__kernel_bss_start");
 extern char kernel_bss_end[] asm("__kernel_bss_end");
-
-#define KERNEL_VMA ((uintptr_t)&kernel_vma[0])
-
-#define HIGH(addr) ((uintptr_t)(KERNEL_VMA + (uintptr_t)(addr)))
-#define LOW(addr)  ((uintptr_t)((uintptr_t)(addr)-KERNEL_VMA))
 
 #endif // _KERNEL_ARCH_I686_KERNEL_H

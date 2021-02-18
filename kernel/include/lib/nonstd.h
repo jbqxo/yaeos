@@ -31,41 +31,24 @@ static uint32_t div_near(uint32_t x, uint32_t y)
         return ((x + y / 2) / y);
 }
 
-/* Find First Zero bit
- * Beware, couldn't tell the difference between 0xFFFFFFFF and 0x7FFFFFFF */
-static uint32_t ffz(uint32_t x)
+/* Find First One bit */
+static int find_first_one(unsigned x)
 {
-        if (x == 0) {
-                return (0);
-        }
-        uint32_t result = 1;
+        int ndx = 0;
 
-        if ((x & 0xFFFF) == 0xFFFF) {
-                result += 16;
-                x >>= 16;
-        }
+        /* Turn all of the trailing 0s to 1s. Zero the rest of a word. */
+        x = (x ^ (x - 1)) >> 1;
 
-        if ((x & 0xFF) == 0xFF) {
-                result += 8;
-                x >>= 8;
-        }
-
-        if ((x & 0xF) == 0xF) {
-                result += 4;
-                x >>= 4 ;
-        }
-
-        if ((x & 0x3) == 0x3) {
-                result += 2;
-                x >>= 2;
-        }
-
-        if ((x & 0x1) == 0x1) {
-                result += 1;
+        /* Count leading 1s. */
+        for (ndx = 0; x != 0; ndx++) {
                 x >>= 1;
         }
+        return (ndx);
+}
 
-        return (result);
+static int find_first_zero(unsigned x)
+{
+        return (find_first_one(~x));
 }
 
 #define MAX(x, y) ((x) < (y) ? (y) : (x))

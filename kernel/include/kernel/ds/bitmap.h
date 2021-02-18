@@ -25,4 +25,7 @@ bool bitmap_search_false(struct bitmap *bitmap, uint32_t *result);
 
 void bitmap_resize(struct bitmap *bitmap, size_t new_length_bits);
 
+size_t bitmap_predict_size(uint32_t length_bits);
+
+
 #endif /* _KERNEL_DS_BITMAP_H */

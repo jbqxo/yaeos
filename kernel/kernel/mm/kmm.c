@@ -11,6 +11,7 @@
 #include "kernel/utils.h"
 
 #include "lib/assert.h"
+#include "lib/nonstd.h"
 #include "lib/string.h"
 
 #include <stdalign.h>
@@ -112,7 +113,7 @@ static void page_free(struct page *p)
 {
         kassert(p);
         if (p->dynamic) {
-                vmm_free_pages(&kvm_space, p, 1);
+                vm_area_unregister_page(&KHEAP_AREA, p);
         } else {
                 mem_pool_free(&STATIC_PAGE_POOL, p);
         }
@@ -189,6 +190,42 @@ static unsigned caches_try_reclaim(unsigned reclaim)
         return (reclaimed);
 }
 
+static struct page *page_alloc_dynamic(void)
+{
+        const size_t to_allocate = 1;
+        struct page *page = vm_area_register_page(&KHEAP_AREA, NULL);
+        if (page == NULL) {
+                LOGF_W("System is running out of memory. Trying to reclaim some...\n");
+                if (caches_try_reclaim(to_allocate) >= to_allocate) {
+                        page = vm_area_register_page(&KHEAP_AREA, NULL);
+                        if (page == NULL) {
+                                LOGF_P("Can't allocate new page, but we've successfully reclaimed some.\n");
+                        }
+                } else {
+                        LOGF_W("Failed to reclaim required amount of memory.\n");
+                }
+        }
+
+        page->dynamic = true;
+
+        return (page);
+}
+
+static struct page *page_alloc_static(struct kmm_cache *cache)
+{
+        struct page *page = NULL;
+
+        page = mem_pool_alloc(&STATIC_PAGE_POOL);
+        if (__unlikely(page == NULL)) {
+                LOGF_E("Couldn't allocate a page from static memory for %s cache.\n", cache->name);
+                return (NULL);
+        }
+        LOGF_I("A page has been allocated from static memory for %s cache.\n", cache->name);
+        page->dynamic = false;
+
+        return (page);
+}
+
 ///
 /// Allocates a new page from VMM.
 /// If the allocation fails, it will try to reclaim some memory from other caches.
@@ -199,46 +236,18 @@ static struct page *page_alloc(struct kmm_cache *cache)
 {
         kassert(cache);
 
-        const size_t to_allocate = 1;
-        struct vmm_mapping *mapping = vmm_alloc_pages(&kvm_space, to_allocate);
-        if (mapping == NULL) {
-                LOGF_W("System is running out of memory. Trying to reclaim some...\n");
-                if (caches_try_reclaim(to_allocate) >= to_allocate) {
-                        mapping = vmm_alloc_pages(&kvm_space, to_allocate);
-                        if (mapping == NULL) {
-                                LOGF_E("Can't allocate new page, but we've successfully reclaimed some.\n");
-                        }
-                } else {
-                        LOGF_W("Failed to reclaim required amount of memory.\n");
-                }
+        struct page *page = page_alloc_dynamic();
+
+        if (__unlikely(page == NULL) && cache->flags & KMM_CACHE_STATIC) {
+                LOGF_W("Couldn't allocate a page from a dynamic memory.\n");
+                page = page_alloc_static(cache);
         }
 
-        struct page *page = mapping != NULL ? mapping->start : NULL;
-
-        if (__unlikely(page == NULL)) {
-                if (cache->flags & KMM_CACHE_STATIC) {
-                        LOGF_W("Couldn't allocate a page from dynamic memory for %s cache. Trying "
-                               "static...\n",
-                               cache->name);
-
-                        page = mem_pool_alloc(&STATIC_PAGE_POOL);
-                        if (__unlikely(page == NULL)) {
-                                LOGF_E("Couldn't allocate a page from static memory for %s cache.\n",
-                                       cache->name);
-                                return (NULL);
-                        }
-                        LOGF_I("A page has been allocated from static memory for %s cache.\n",
-                               cache->name);
-                        page->dynamic = false;
-                } else {
-                        LOGF_E("Couldn't allocate a page for %s cache.\n", cache->name);
-                        return (NULL);
-                }
+        if (page == NULL) {
+                LOGF_E("Couldn't allocate a page for the %s cache\n", cache->name);
         } else {
-                page->dynamic = true;
+                kassert(ptr2uint(page) == align_roundup(ptr2uint(page), PLATFORM_PAGE_SIZE));
         }
-
-        kassert(ptr2uint(page) == align_roundup(ptr2uint(page), PLATFORM_PAGE_SIZE));
 
         return (page);
 }
@@ -412,8 +421,8 @@ static size_t cache_get_wasted(struct kmm_cache *cache)
         return (cache_get_avail_space(cache) - cache->slab_capacity * cache->stride);
 }
 
-static void cache_init(struct kmm_cache *restrict cache, const char *name, size_t size,
-                       size_t align, unsigned flags, void (*ctor)(void *), void (*dtor)(void *))
+void kmm_cache_init(struct kmm_cache *restrict cache, const char *name, size_t size, size_t align,
+                    unsigned flags, void (*ctor)(void *), void (*dtor)(void *))
 {
         kassert(cache);
 
@@ -431,7 +440,11 @@ static void cache_init(struct kmm_cache *restrict cache, const char *name, size_
                 cache->alignment = MAX(sizeof(struct bufctl_small), cache->alignment);
         }
 
-        cache->stride = align_roundup(obj_space, cache->alignment);
+        if (cache->alignment != 0) {
+                cache->stride = align_roundup(obj_space, cache->alignment);
+        } else {
+                cache->stride = obj_space;
+        }
         cache->slab_capacity = cache_get_capacity(cache);
 
         cache->colour_max = cache_get_wasted(cache) & (sizeof(void *) * -1);
@@ -445,6 +458,11 @@ static void cache_init(struct kmm_cache *restrict cache, const char *name, size_
         SLIST_INIT(&cache->slabs_full);
 }
 
+void kmm_cache_register(struct kmm_cache *cache)
+{
+        SLIST_INSERT_HEAD(&ALLOCATED_CACHES, cache, caches);
+}
+
 void kmm_init(void)
 {
         mem_pool_init(&STATIC_PAGE_POOL, STATIC_STORAGE, sizeof(STATIC_STORAGE), PLATFORM_PAGE_SIZE,
@@ -455,12 +473,12 @@ void kmm_init(void)
         SLIST_INSERT_HEAD(&ALLOCATED_CACHES, &CACHES.slabs, caches);
         SLIST_INSERT_HEAD(&ALLOCATED_CACHES, &CACHES.large_bufctls, caches);
 
-        cache_init(&CACHES.caches, "slab_alloc_caches", sizeof(struct kmm_cache), 0,
-                   KMM_CACHE_STATIC, NULL, NULL);
-        cache_init(&CACHES.slabs, "slab_alloc_slabs", sizeof(struct kmm_slab), 0, KMM_CACHE_STATIC,
-                   NULL, NULL);
-        cache_init(&CACHES.large_bufctls, "slab_alloc_bufctls", sizeof(struct bufctl_large), 0,
-                   KMM_CACHE_STATIC, NULL, NULL);
+        kmm_cache_init(&CACHES.caches, "slab_alloc_caches", sizeof(struct kmm_cache), 0,
+                       KMM_CACHE_STATIC, NULL, NULL);
+        kmm_cache_init(&CACHES.slabs, "slab_alloc_slabs", sizeof(struct kmm_slab), 0,
+                       KMM_CACHE_STATIC, NULL, NULL);
+        kmm_cache_init(&CACHES.large_bufctls, "slab_alloc_bufctls", sizeof(struct bufctl_large), 0,
+                       KMM_CACHE_STATIC, NULL, NULL);
 }
 
 struct kmm_cache *kmm_cache_create(const char *name, size_t size, size_t align,
@@ -470,9 +488,9 @@ struct kmm_cache *kmm_cache_create(const char *name, size_t size, size_t align,
         if (!cache) {
                 return (NULL);
         }
-        cache_init(cache, name, size, align, cache_flags, ctor, dtor);
+        kmm_cache_init(cache, name, size, align, cache_flags, ctor, dtor);
 
-        SLIST_INSERT_HEAD(&ALLOCATED_CACHES, cache, caches);
+        kmm_cache_register(cache);
 
         return (cache);
 }
@@ -511,11 +529,9 @@ void kmm_cache_destroy(struct kmm_cache *cache)
         kmm_cache_free(&CACHES.caches, cache);
 }
 
-void *kmm_cache_alloc(struct kmm_cache *cache)
+static struct kmm_slab *find_existing_slab(struct kmm_cache *cache)
 {
-        if (cache == NULL) {
-                return (NULL);
-        }
+        kassert(cache != NULL);
 
         struct kmm_slab *slab = NULL;
         if (!SLIST_EMPTY(&cache->slabs_partial)) {
@@ -532,25 +548,46 @@ void *kmm_cache_alloc(struct kmm_cache *cache)
                 // Becomes partial.
                 SLIST_REMOVE(&cache->slabs_empty, slab, slabs_list);
                 SLIST_INSERT_HEAD(&cache->slabs_partial, slab, slabs_list);
+        }
+
+        return (slab);
+}
+
+static struct kmm_slab *get_new_slab(struct kmm_cache *cache)
+{
+        kassert(cache != NULL);
+
+        struct kmm_slab *slab = NULL;
+        if (cache->flags & KMM_CACHE_LARGE) {
+                slab = slab_create_large(cache, cache->colour_next);
         } else {
-                if (cache->flags & KMM_CACHE_LARGE) {
-                        slab = slab_create_large(cache, cache->colour_next);
-                } else {
-                        slab = slab_create_small(cache, cache->colour_next);
-                }
-                if (cache->colour_max > 0) {
-                        cache->colour_next =
-                                (cache->colour_next + cache->colour_off) % cache->colour_max;
-                }
+                slab = slab_create_small(cache, cache->colour_next);
+        }
+        kassert(cache->colour_max > 0);
+        cache->colour_next = (cache->colour_next + cache->colour_off) % cache->colour_max;
 
-                if (__unlikely(!slab)) {
+        if (__unlikely(slab == NULL)) {
+                return (NULL);
+        }
+
+        if (cache->slab_capacity == 1) {
+                SLIST_INSERT_HEAD(&cache->slabs_full, slab, slabs_list);
+        } else {
+                SLIST_INSERT_HEAD(&cache->slabs_partial, slab, slabs_list);
+        }
+
+        return (slab);
+}
+
+void *kmm_cache_alloc(struct kmm_cache *cache)
+{
+        kassert(cache != NULL);
+
+        struct kmm_slab *slab = find_existing_slab(cache);
+        if (slab == NULL) {
+                slab = get_new_slab(cache);
+                if (__unlikely(slab == NULL)) {
                         return (NULL);
-                }
-
-                if (cache->slab_capacity == 1) {
-                        SLIST_INSERT_HEAD(&cache->slabs_full, slab, slabs_list);
-                } else {
-                        SLIST_INSERT_HEAD(&cache->slabs_partial, slab, slabs_list);
                 }
         }
 
@@ -603,16 +640,16 @@ void kmm_init_kmalloc(void)
                        "KMALLOC_CACHES length exceeds maximum length");
 
         const char *const heap_names[13] = {
-                "kmalloc_1",    "kmalloc_2",    "kmalloc_4",    "kmalloc_8",   "kmalloc_16",
-                "kmalloc_32",   "kmalloc_64",   "kmalloc_128",  "kmalloc_256", "kmalloc_512",
-                "kmalloc_1024", "kmalloc_2048", "kmalloc_4096",
+                "kmalloc_1",   "kmalloc_2",   "kmalloc_4",    "kmalloc_8",
+                "kmalloc_16",  "kmalloc_32",  "kmalloc_64",   "kmalloc_128",
+                "kmalloc_256", "kmalloc_512", "kmalloc_1024", "kmalloc_2048",
         };
 
         kstatic_assert(ARRAY_SIZE(heap_names) >= ARRAY_SIZE(KMALLOC_CACHES),
                        "Some kmalloc caches don't have names");
         kstatic_assert(ARRAY_SIZE(heap_names) >= CONF_MALLOC_MAX_POW, "Missing heap names");
 
-        const size_t count = CONF_MALLOC_MAX_POW - CONF_MALLOC_MIN_POW;
+        const size_t count = CONF_MALLOC_MAX_POW - CONF_MALLOC_MIN_POW + 1;
         for (int i = 0; i < count; i++) {
                 const char *heap_name = heap_names[i + CONF_MALLOC_MIN_POW];
                 const size_t obj_size =
@@ -625,10 +662,7 @@ void kmm_init_kmalloc(void)
 
 void *kmalloc(size_t size)
 {
-        int pow = LOG2(size);
-        if (2 << pow < size) {
-                pow++;
-        }
+        int pow = log2_ceil(size);
 
         const int cache_index = pow - CONF_MALLOC_MIN_POW;
         if (cache_index >= ARRAY_SIZE(KMALLOC_CACHES)) {

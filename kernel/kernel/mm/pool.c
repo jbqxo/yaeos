@@ -5,6 +5,7 @@
 #include "kernel/utils.h"
 
 #include "lib/assert.h"
+#include "lib/nonstd.h"
 
 #include <stddef.h>
 
@@ -28,7 +29,7 @@ void mem_pool_init(struct mem_pool *pool, void *mem, size_t mem_size, size_t ele
         SLIST_INIT(&pool->list);
 #ifndef NDEBUG
         pool->mem_start = ptr2uiptr(pool);
-        pool->mem_end = num2uiptr(limit);
+        pool->mem_end = uint2uiptr(limit);
 #endif
 
         kassert(mblock + elem_size <= limit);
@@ -36,7 +37,7 @@ void mem_pool_init(struct mem_pool *pool, void *mem, size_t mem_size, size_t ele
 
         while (mblock + stride + elem_size <= limit) {
                 union node *current = uint2ptr(mblock);
-                union node *next = num2uiptr(mblock + stride).ptr;
+                union node *next = uint2uiptr(mblock + stride).ptr;
                 mblock = ptr2uint(next);
 
                 SLIST_INSERT_AFTER(current, next, list);

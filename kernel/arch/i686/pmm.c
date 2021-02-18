@@ -8,6 +8,7 @@
 #include "kernel/klog.h"
 #include "kernel/utils.h"
 #include "kernel/mm/kmm.h"
+#include "kernel/kernel.h"
 
 #include "lib/nonstd.h"
 
@@ -62,8 +63,8 @@ static void availmem_iter(struct multiboot_mmap_entry *mmap, void *_data)
         }
 
         struct availmem_data *data = _data;
-        uintptr_t kstart = LOW((uintptr_t)&kernel_start[0]);
-        uintptr_t kend = LOW((uintptr_t)&kernel_end[0]);
+        uintptr_t kstart = ptr2uint(kernel_arch_to_low(kernel_start));
+        uintptr_t kend = ptr2uint(kernel_arch_to_low(kernel_end));
         uintptr_t memstart = mmap->addr;
         uintptr_t memend = memstart + mmap->len;
 
@@ -131,6 +132,11 @@ static void availmem_iter(struct multiboot_mmap_entry *mmap, void *_data)
 static void count(uintptr_t start __unused, uintptr_t end __unused, uint32_t type __unused,
                   void *data)
 {
+        const size_t length = end - start;
+        if (length <= PLATFORM_PAGE_SIZE) {
+                return;
+        }
+
         int *counter = data;
         (*counter)++;
 }
@@ -139,7 +145,11 @@ static void find(uintptr_t start, uintptr_t end, uint32_t type, void *data)
 {
         struct mem_chunk **chunks = data;
         struct mem_chunk *chunk = *chunks;
-        size_t length = end - start;
+        const size_t length = end - start;
+
+        if (length <= PLATFORM_PAGE_SIZE) {
+                return;
+        }
 
         chunk->mem = (void *)start;
         // ... if we can address some part of the chunk, cut remainders out.

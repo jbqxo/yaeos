@@ -5,248 +5,181 @@
 #include "kernel/ds/slist.h"
 #include "kernel/kernel.h"
 #include "kernel/klog.h"
-#include "kernel/mm/kmm.h"
 #include "kernel/utils.h"
 
-static struct {
-        struct kmm_cache *mappings;
-        struct kmm_cache *regions;
-} CACHES;
-
-void vmm_mapping_new(struct vmm_mapping *mapping, void *start, size_t length, int flags,
-                     struct vmm_region *region, size_t region_offset)
+void vm_pgfault_handle_default(struct vm_area *area, void *addr)
 {
-        // TODO: Implement eager mappings.
-        kassert(!(flags & VMMM_FLAGS_EAGER));
-        kassert(check_align(length, PLATFORM_PAGE_SIZE));
-        kassert(region_offset + length <= region->length);
-
-        mapping->start = start;
-        mapping->length = length;
-        mapping->region = region;
-        mapping->region_offset = region_offset;
-        mapping->flags = flags;
-
-        SLIST_FIELD_INIT(mapping, sorted_list);
-
-        rbtree_init_node(&mapping->process_mappings);
-        mapping->process_mappings.data = mapping;
+        LOGF_P("Page fault at the address %p inside area %p-%p!\n", addr, area->base_vaddr,
+               uint2ptr(ptr2uint(area->base_vaddr) + area->length - 1));
 }
 
-int vmm_mapping_cmp(void *_x, void *_y)
+void vm_pgfault_handle_direct(struct vm_area *area, void *addr)
 {
-        uintptr_t xstart = ptr2uint(((struct vmm_mapping *)_x)->start);
-        uintptr_t ystart = ptr2uint(((struct vmm_mapping *)_y)->start);
+        kassert(area != NULL);
 
-        if (xstart == ystart) {
-                return (0);
-        } else if (xstart < ystart) {
-                return (-1);
-        } else {
+        const union uiptr fault_addr = ptr2uiptr(addr);
+
+        const void *virt_page_addr = uint2ptr(align_rounddown(fault_addr.num, PLATFORM_PAGE_SIZE));
+        const void *phys_page_addr = kernel_arch_to_low(virt_page_addr);
+
+        vm_arch_ptree_map(area->owner->root_dir, phys_page_addr, virt_page_addr, area->flags);
+}
+
+void *vm_space_find_gap(struct vm_space *space,
+                        bool (*predicate)(void *base, size_t len, void *data), void *pred_data)
+{
+        kassert(space != NULL);
+        kassert(predicate != NULL);
+
+        union uiptr next_after_last_area_end = space->offset;
+        struct vm_area *it = NULL;
+
+        SLIST_FOREACH (it, &space->sorted_areas, sorted_areas) {
+                union uiptr current_base = next_after_last_area_end;
+                size_t current_length = ptr2uint(it->base_vaddr) - current_base.num;
+
+                bool hit = predicate(current_base.ptr, current_length, pred_data);
+                if (hit) {
+                        return (current_base.ptr);
+                }
+
+                next_after_last_area_end.num = ptr2uint(it->base_vaddr) + it->length;
+
+        }
+
+        const uintptr_t LAST_AVAILABLE_ADDR =
+                UINTPTR_MAX - (PLATFORM_PAGEDIR_PAGES - CONF_VM_LAST_PAGE - 1) * PLATFORM_PAGE_SIZE;
+        const size_t length_til_space_end = LAST_AVAILABLE_ADDR - next_after_last_area_end.num + 1;
+
+        bool hit = predicate(next_after_last_area_end.ptr, length_til_space_end, pred_data);
+        if (hit) {
+                return (next_after_last_area_end.ptr);
+        }
+
+        return (NULL);
+}
+
+int vm_area_rbtcmpfn_area_to_addr(const void *area, const void *addr)
+{
+        kassert(area != NULL);
+
+        const struct vm_area *a = area;
+        const uintptr_t address = ptr2uint(addr);
+        const uintptr_t area_base = ptr2uint(a->base_vaddr);
+        const uintptr_t area_end = area_base + a->length - 1;
+
+        if (address < area_base) {
                 return (1);
         }
-}
 
-struct vmm_space vmm_space_new(size_t offset)
-{
-        struct vmm_space new;
-        new.offset = offset;
-        rbtree_init_tree(&new.vmappings.tree, vmm_mapping_cmp);
-        SLIST_INIT(&new.vmappings.sorted_list);
-
-        return (new);
-}
-
-void vmm_init(void)
-{
-        CACHES.mappings = kmm_cache_create("vmm_mappings", sizeof(struct vmm_mapping), 0,
-                                           KMM_CACHE_STATIC, NULL, NULL);
-        CACHES.regions = kmm_cache_create("vmm_regions", sizeof(struct vmm_region), 0,
-                                          KMM_CACHE_STATIC, NULL, NULL);
-
-        kassert(CACHES.mappings);
-        kassert(CACHES.regions);
-}
-
-///
-/// Checks if there are occupied pages in the given range.
-///
-static bool space_occupied(struct vmm_space *s, void *start_vaddr, void *end_vaddr)
-{
-        kassert(s);
-
-        uintptr_t left_edge = ptr2uint(start_vaddr);
-        uintptr_t right_edge = ptr2uint(end_vaddr);
-        kassert(right_edge - left_edge > 0);
-
-        struct rbtree_node *prior_node =
-                rbtree_search_max(&s->vmappings.tree, uint2ptr(left_edge - 1));
-        if (prior_node == NULL) {
-                // The tree is empty.
-                return (false);
+        if (address <= area_end) {
+                return (0);
         }
 
-        struct vmm_mapping *prior = prior_node->data;
-
-        if (ptr2uint(prior->start) + prior->length >= left_edge) {
-                return (true);
-        }
-
-        // Next mapping can't start before left_edge. See \rbtree_search_max.
-        struct vmm_mapping *next = SLIST_NEXT(prior, sorted_list);
-
-        return (ptr2uint(next->start) <= right_edge);
+        return (-1);
 }
 
-struct vmm_mapping *vmm_alloc_pages_at(struct vmm_space *s, void *vaddr, size_t count)
+void vm_space_init(struct vm_space *space, union vm_arch_page_dir *root_pdir, union uiptr offset)
 {
-        // TODO: Return error codes.
-        // There is no way for the caller to know why the operation failed.
-        // Is it because the system is ran out of memory, or because the desired range is occupied?
-        kassert(s);
+        kassert(space != NULL);
+        kassert(root_pdir != NULL);
 
-        size_t mem_length = count * PLATFORM_PAGE_SIZE;
+        SLIST_INIT(&space->sorted_areas);
+        rbtree_init_tree(&space->rb_areas);
+        space->root_dir = root_pdir;
+        space->offset = offset;
+}
 
-        void *end_vaddr = uint2ptr(ptr2uint(vaddr) + mem_length);
-        if (space_occupied(s, vaddr, end_vaddr)) {
-                return (NULL);
-        }
+int vm_area_rbtcmpfn(const void *area_x, const void *area_y)
+{
+        kassert(area_x != NULL);
+        kassert(area_y != NULL);
 
-        struct vmm_mapping *map = kmm_cache_alloc(CACHES.mappings);
-        if (map == NULL) {
-                return (NULL);
-        }
-        vmm_mapping_new(map, vaddr, mem_length, 0, NULL, 0);
+        const struct vm_area *x = area_x;
+        const uintptr_t x_start = ptr2uint(x->base_vaddr);
+        const uintptr_t x_end = x_start + x->length - 1;
 
-        struct rbtree_node *rbt_prior_node = rbtree_search_max(&s->vmappings.tree, vaddr);
+        const struct vm_area *y = area_y;
+        const uintptr_t y_start = ptr2uint(y->base_vaddr);
+        const uintptr_t y_end = y_start + y->length - 1;
 
-        if (rbt_prior_node != NULL) {
-                struct vmm_mapping *prior_mapping = rbt_prior_node->data;
-                kassert(prior_mapping);
-
-                SLIST_INSERT_AFTER(prior_mapping, map, sorted_list);
+        if (x_start < y_start) {
+                kassert(x_end < y_start);
+                return (-1);
+        } else if (x_start > y_start) {
+                kassert(y_end < x_start);
+                return (1);
         } else {
-                SLIST_INSERT_HEAD(&s->vmappings.sorted_list, map, sorted_list);
+                return (0);
         }
-
-        rbtree_insert(&s->vmappings.tree, &map->process_mappings);
-
-        // TODO: Configure page tree
-
-        return (map);
 }
 
-// Return the number of free pages at a resulted address.
-// We can't just return an address because there would be no way to indicate failure.
-// Any value from 0 to UINTPTR_MAX may be valid.
-static size_t find_free_space(struct vmm_space *s, size_t pg_count, uintptr_t *result)
+void vm_space_append_area(struct vm_space *space, struct vm_area *area)
 {
-        // Search for free space before the list, then after, then in the middle
+        kassert(space != NULL);
 
-        // TODO: Implement circular doubly linked list?
-        kassert(pg_count > 0);
+        struct rbtree_node *left_neigh_node =
+                rbtree_search_max(&space->rb_areas, area, vm_area_rbtcmpfn);
+        struct vm_area *left_neigh = left_neigh_node != NULL ? left_neigh_node->data : NULL;
 
-        // TODO: Calculate actual platform's address spaces' limits.
-        // Skip the first page to not occupy 0x0.
-        static const uintptr_t platform_lowest = PLATFORM_PAGE_SIZE;
-        static const uintptr_t platform_highest = UINTPTR_MAX;
-        const size_t required = pg_count * PLATFORM_PAGE_SIZE;
+        rbtree_insert(&space->rb_areas, &area->rb_areas, vm_area_rbtcmpfn);
 
-        if (SLIST_FIRST(&s->vmappings.sorted_list) != NULL) {
-                struct vmm_mapping *first = SLIST_FIRST(&s->vmappings.sorted_list);
-                size_t space_before_first = ptr2uint(first->start) - platform_lowest;
-                kassert(ptr2uint(first->start) - platform_lowest > 0);
-
-                if (space_before_first >= required) {
-                        *result = ptr2uint(first->start) - required;
-                        const size_t pages_available = space_before_first / PLATFORM_PAGE_SIZE;
-                        return (pages_available);
-                }
-        }
-
-        struct vmm_mapping *prev = NULL;
-        struct vmm_mapping *current;
-        SLIST_FOREACH (current, &s->vmappings.sorted_list, sorted_list) {
-                if (prev != NULL) {
-                        uintptr_t current_start = ptr2uint(current->start);
-                        uintptr_t prev_end = ptr2uint(prev->start) + prev->length;
-
-                        kassert(current_start > prev_end);
-                        kassert(check_align(prev_end, PLATFORM_PAGE_SIZE));
-                        kassert(check_align(current_start, PLATFORM_PAGE_SIZE));
-
-                        const size_t free_space = current_start - prev_end;
-                        if (free_space >= required) {
-                                *result = prev_end;
-                                const size_t pages_available = free_space / PLATFORM_PAGE_SIZE;
-                                return (pages_available);
-                        }
-                }
-                prev = current;
-        }
-
-        if (prev != NULL) {
-                size_t space_after_last = platform_highest - (ptr2uint(prev->start) + prev->length);
-                if (space_after_last >= required) {
-                        *result = ptr2uint(prev->start) + prev->length;
-                        const size_t pages_available = space_after_last / PLATFORM_PAGE_SIZE;
-                        return (pages_available);
-                }
+        if (left_neigh == NULL) {
+                SLIST_INSERT_HEAD(&space->sorted_areas, area, sorted_areas);
         } else {
-                // If prev == NULL, the list is empty, so whole address space is empty.
-                *result = 0;
-                const size_t platform_pages =
-                        (platform_highest - platform_lowest) / PLATFORM_PAGE_SIZE;
-                return (platform_pages);
+                SLIST_INSERT_AFTER(left_neigh, area, sorted_areas);
         }
-
-        *result = 0;
-        return (0);
 }
 
-struct vmm_mapping *vmm_alloc_pages(struct vmm_space *s, size_t count)
+void vm_space_remove_area(struct vm_space *space, struct vm_area *area)
 {
-        uintptr_t location;
-        if (find_free_space(s, count, &location) < count) {
+        kassert(space != NULL);
+        kassert(area != NULL);
+
+        rbtree_delete(&space->rb_areas, &area->rb_areas);
+        SLIST_REMOVE(&space->sorted_areas, area, sorted_areas);
+}
+
+void vm_area_init(struct vm_area *area, void *vaddr, size_t length,
+                  const struct vm_space *owner)
+{
+        kassert(area != NULL);
+        kassert(check_align(ptr2uint(vaddr), PLATFORM_PAGE_SIZE));
+        kassert(check_align(length, PLATFORM_PAGE_SIZE));
+
+        kmemset(area, 0x0, sizeof(*area));
+
+        area->base_vaddr = vaddr;
+        area->length = length;
+        area->owner = owner;
+
+        rbtree_init_node(&area->rb_areas);
+        area->rb_areas.data = area;
+        SLIST_FIELD_INIT(area, sorted_areas);
+}
+
+void *vm_area_register_page(struct vm_area *area, void *page_addr)
+{
+        kassert(area != NULL);
+
+        if (__unlikely(area->ops.register_page == NULL)) {
+                LOGF_P("Tried to register page at address %p but register function is undefined!\n",
+                       page_addr);
+                /* Although, the kernel should panic at this point. */
                 return (NULL);
         }
-
-        return (vmm_alloc_pages_at(s, uint2ptr(location), count));
+        return (area->ops.register_page(area, page_addr));
 }
 
-void vmm_free_mapping(struct vmm_space *s, struct vmm_mapping *mapping)
+void vm_area_unregister_page(struct vm_area *area, void *page_addr)
 {
-        kassert(s);
+        kassert(area != NULL);
+        kassert(area->ops.unregister_page != NULL);
 
-        SLIST_REMOVE(&s->vmappings.sorted_list, mapping, sorted_list);
-        rbtree_delete(&s->vmappings.tree, &mapping->process_mappings);
-        kmm_cache_free(CACHES.mappings, mapping);
-
-        // TODO: Free region if it's reference counter is 0.
-}
-
-void vmm_free_pages(struct vmm_space *s, void *vaddress, size_t count)
-{
-        kassert(s);
-
-        // TODO: Make an appropriate mapping search by a virtual address.
-        struct rbtree_node dummy_node;
-        dummy_node.data = vaddress;
-
-        struct vmm_mapping *current = rbtree_search(&s->vmappings.tree, &dummy_node)->data;
-        struct vmm_mapping *next = NULL;
-
-        for (int i = 0; i < count; i++) {
-                if (current == NULL) {
-                        LOGF_E("Tried to free too many pages\n");
-                        break;
-                }
-
-                // BUG: Won't work correctly if mapping's length isn't equal to PAGE_SIZE.
-                kassert(current->length == PLATFORM_PAGE_SIZE);
-
-                next = SLIST_NEXT(current, sorted_list);
-                vmm_free_mapping(s, current);
-                current = next;
+        if (__unlikely(area->ops.unregister_page == NULL)) {
+                LOGF_P("Tried to register page at address %p but register function is undefined!\n",
+                       page_addr);
+                /* Although, the kernel should panic at this point. */
         }
+        return (area->ops.unregister_page(area, page_addr));
 }
