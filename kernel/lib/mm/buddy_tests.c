@@ -1,13 +1,11 @@
-// UNITY_TEST DEPENDS ON: kernel/kernel/mm/buddy.c
+// UNITY_TEST DEPENDS ON: kernel/lib/mm/buddy.c
 // UNITY_TEST DEPENDS ON: kernel/lib/string/memset.c
 // UNITY_TEST DEPENDS ON: kernel/lib/string/strchr.c
 
-#include "kernel/mm/buddy.h"
-
-#include "kernel/config.h"
-#include "kernel/platform.h"
+#include "lib/mm/buddy.h"
 
 #include "lib/cppdefs.h"
+#include "lib/platform_consts.h"
 
 #include <stdlib.h>
 #include <string.h>

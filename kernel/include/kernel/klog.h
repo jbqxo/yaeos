@@ -1,8 +1,7 @@
 #ifndef _KERNEL_KLOG_H
 #define _KERNEL_KLOG_H
 
-#include "kernel/console.h"
-
+#include "lib/console.h"
 #include "lib/cppdefs.h"
 
 #include <stdarg.h>

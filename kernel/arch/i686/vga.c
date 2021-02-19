@@ -1,10 +1,9 @@
 #include "arch_i686/kernel.h"
-#include "arch_i686/platform.h"
 #include "arch_i686/vmm.h"
 
-#include "kernel/console.h"
 #include "kernel/kernel.h"
 
+#include "lib/console.h"
 #include "lib/cppdefs.h"
 #include "lib/cstd/ctype.h"
 #include "lib/cstd/string.h"

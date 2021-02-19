@@ -1,4 +1,4 @@
-#include "kernel/console.h"
+#include "lib/console.h"
 
 #include "lib/ds/slist.h"
 #include "lib/elflist.h"

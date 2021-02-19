@@ -1,12 +1,12 @@
 #ifndef _KERNEL_MM_H
 #define _KERNEL_MM_H
 
-#include "kernel/mm/buddy.h"
 #include "kernel/mm/pmm.h"
 #include "kernel/mm/vmm.h"
 
 #include "lib/cppdefs.h"
 #include "lib/ds/slist.h"
+#include "lib/mm/buddy.h"
 
 #include <stdint.h>
 

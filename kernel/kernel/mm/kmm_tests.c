@@ -1,5 +1,5 @@
 // UNITY_TEST DEPENDS ON: kernel/kernel/mm/kmm.c
-// UNITY_TEST DEPENDS ON: kernel/kernel/mm/pool.c
+// UNITY_TEST DEPENDS ON: kernel/lib/mm/pool.c
 // UNITY_TEST DEPENDS ON: kernel/test_fakes/panic.c
 
 #include "kernel/mm/kmm.h"
@@ -7,9 +7,9 @@
 #include "kernel/config.h"
 #include "kernel/kernel.h"
 #include "kernel/mm/vmm.h"
-#include "kernel/platform.h"
 
 #include "lib/cppdefs.h"
+#include "lib/platform_consts.h"
 
 #include <assert.h>
 #include <stddef.h>

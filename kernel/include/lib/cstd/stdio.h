@@ -1,9 +1,8 @@
 #ifndef _LIB_STDIO_H
 #define _LIB_STDIO_H
 
-#include "kernel/console.h"
-
 #include <stdarg.h>
+#include <stddef.h>
 
 typedef int (*fprintf_fn)(const char *data, size_t len);
 

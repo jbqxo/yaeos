@@ -1,4 +1,4 @@
-#include "kernel/mm/pool.h"
+#include "lib/mm/pool.h"
 
 #include "lib/align.h"
 #include "lib/cppdefs.h"

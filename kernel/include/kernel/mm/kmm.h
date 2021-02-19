@@ -1,7 +1,6 @@
 #ifndef _KERNEL_MM_KMM_H
 #define _KERNEL_MM_KMM_H
 
-#include "kernel/mm/flags.h"
 #include "kernel/mm/vmm.h"
 
 #include "lib/ds/slist.h"

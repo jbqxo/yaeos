@@ -2,11 +2,11 @@
 #define _KERNEL_ARCH_I686_VM_H
 
 #include "arch_i686/intr.h"
-#include "arch_i686/platform.h"
 
 #include "kernel/mm/vmm.h"
 
 #include "lib/cppdefs.h"
+#include "lib/platform_consts.h"
 
 enum vm_table_flags {
         VM_TABLE_FLAG_RW = 0x1 << 0,
@@ -62,26 +62,14 @@ struct vm_arch_page_entry {
         };
 };
 
-/* TODO: Delete vm_arch_pd_info if there would be no need in
- * storing additional info inside of page directories. */
-struct vm_arch_pd_info {
-        void *owner;
-        void *phys_addr;
-} __packed;
-#define PAGE_ENTRIES (PLATFORM_PAGEDIR_SIZE / sizeof(struct vm_arch_page_entry))
+#define PAGE_ENTRIES (1024)
 union vm_arch_page_dir {
         struct {
-#define PD_INFO_ENTRIES (sizeof(struct vm_arch_pd_info) / sizeof(struct vm_arch_page_entry))
-                struct vm_arch_page_entry entries[PAGE_ENTRIES - PD_INFO_ENTRIES - 1];
-                struct vm_arch_pd_info info;
+                struct vm_arch_page_entry entries[PAGE_ENTRIES - 1];
                 struct vm_arch_page_entry itself; /**< Recursive mapping to edit dir entries. */
         } __packed dir;
         struct vm_arch_page_entry raw_entries[PAGE_ENTRIES];
 };
-#undef PAGE_ENTRIES
-
-kstatic_assert(sizeof(union vm_arch_page_dir) == PLATFORM_PAGEDIR_SIZE,
-               "Page dir doesn't fit into a page");
 
 /**
 * @brief Calculate an address of the page table entry for a virtual address.

@@ -1,9 +1,8 @@
-#ifndef _KERNEL_MM_BUDDY_H
-#define _KERNEL_MM_BUDDY_H
-
-#include "kernel/mm/linear.h"
+#ifndef _LIB_MM_BUDDY_H
+#define _LIB_MM_BUDDY_H
 
 #include "lib/ds/bitmap.h"
+#include "lib/mm/linear.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -53,4 +52,4 @@ bool buddy_is_free(struct buddy_manager *bmgr, uint32_t page_ndx);
  */
 size_t buddy_predict_req_space(size_t pages);
 
-#endif /* _KERNEL_MM_BUDDY_H */
+#endif /* _LIB_MM_BUDDY_H */

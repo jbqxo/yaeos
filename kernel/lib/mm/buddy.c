@@ -1,13 +1,11 @@
-#include "kernel/mm/buddy.h"
-
-#include "kernel/klog.h"
-#include "kernel/platform.h"
+#include "lib/mm/buddy.h"
 
 #include "lib/align.h"
 #include "lib/cppdefs.h"
 #include "lib/cstd/assert.h"
 #include "lib/cstd/nonstd.h"
 #include "lib/cstd/string.h"
+#include "lib/platform_consts.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -80,7 +78,10 @@ static void occupy_buddy(struct buddy_manager *bmgr, unsigned lvl, unsigned bit)
 
         /* Occupy buddy and it's ancestors. */
         for (int i = 0; i < bmgr->lvls; i++) {
-                bitmap_set_true(&bmgr->lvl_bitmaps[i], bit >>= i);
+                /* Guard against trailing 1 when length is odd. */
+                if (bit >> i < bmgr->lvl_bitmaps[i].length) {
+                        bitmap_set_true(&bmgr->lvl_bitmaps[i], bit >> i);
+                }
         }
 }
 

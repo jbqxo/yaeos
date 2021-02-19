@@ -1,13 +1,13 @@
 #include "kernel/kernel.h"
 
 #include "kernel/config.h"
-#include "kernel/console.h"
 #include "kernel/klog.h"
 #include "kernel/mm/kmm.h"
 #include "kernel/mm/mm.h"
 #include "kernel/mm/vmm.h"
 
 #include "lib/align.h"
+#include "lib/console.h"
 #include "lib/cppdefs.h"
 #include "lib/cstd/nonstd.h"
 

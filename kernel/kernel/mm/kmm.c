@@ -3,9 +3,7 @@
 #include "kernel/config.h"
 #include "kernel/kernel.h"
 #include "kernel/klog.h"
-#include "kernel/mm/pool.h"
 #include "kernel/mm/vmm.h"
-#include "kernel/platform.h"
 
 #include "lib/align.h"
 #include "lib/cppdefs.h"
@@ -13,13 +11,15 @@
 #include "lib/cstd/nonstd.h"
 #include "lib/cstd/string.h"
 #include "lib/ds/slist.h"
+#include "lib/mm/pool.h"
+#include "lib/platform_consts.h"
 
 #include <stdalign.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-static char STATIC_STORAGE[CONF_STATIC_SLAB_PAGES * PLATFORM_PAGE_SIZE];
+static char STATIC_STORAGE[CONF_STATIC_SLAB_SPACE];
 static struct mem_pool STATIC_PAGE_POOL;
 
 ///

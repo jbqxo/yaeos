@@ -3,12 +3,12 @@
 #include "kernel/kernel.h"
 #include "kernel/klog.h"
 #include "kernel/mm/kmm.h"
-#include "kernel/mm/linear.h"
-#include "kernel/platform.h"
 
 #include "lib/align.h"
 #include "lib/cstd/assert.h"
 #include "lib/cstd/string.h"
+#include "lib/mm/linear.h"
+#include "lib/platform_consts.h"
 
 static struct kmm_cache ZONES_CACHE;
 

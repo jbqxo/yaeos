@@ -5,6 +5,13 @@
 #include "kernel/klog.h"
 
 #include "lib/cppdefs.h"
+#include "lib/platform_consts.h"
+
+size_t const PLATFORM_PAGE_SIZE = 4096;
+size_t const PLATFORM_REGISTERS_COUNT = 20;
+size_t const PLATFORM_PAGEDIR_SIZE = PLATFORM_PAGE_SIZE;
+size_t const PLATFORM_PAGEDIR_COUNT = 2;
+size_t const PLATFORM_PAGEDIR_PAGES = 1024;
 
 void *kernel_arch_vm_offset(void)
 {

@@ -1,10 +1,8 @@
-#include "kernel/mm/linear.h"
+#include "lib/mm/linear.h"
 
-#include "kernel/klog.h"
-
+#include "lib/align.h"
 #include "lib/cppdefs.h"
 #include "lib/cstd/assert.h"
-#include "lib/align.h"
 
 void linear_alloc_init(struct linear_alloc *a, void *mem, size_t len)
 {
@@ -25,7 +23,24 @@ void *linear_alloc_alloc(struct linear_alloc *a, size_t len)
         union uiptr pos = uint2uiptr(a->position);
 
         if (__unlikely(pos.num + len >= a->limit)) {
-                LOGF_W("Allocation from a linear allocator failed; not enough memory.\n");
+                return (NULL);
+        }
+
+        a->position = pos.num + len;
+
+        return (pos.ptr);
+}
+
+void *linear_alloc_alloc_aligned(struct linear_alloc *a, size_t const len, size_t const align)
+{
+        kassert(a != NULL);
+        /* Just use linear_alloc_alloc(). */
+        kassert(align > 0);
+
+        union uiptr pos = uint2uiptr(a->position);
+        pos.num = align_roundup(pos.num, align);
+
+        if (__unlikely(pos.num + len >= a->limit)) {
                 return (NULL);
         }
 

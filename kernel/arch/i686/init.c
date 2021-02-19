@@ -2,16 +2,15 @@
 #include "arch_i686/exceptions.h"
 #include "arch_i686/intr.h"
 #include "arch_i686/kernel.h"
-#include "arch_i686/platform.h"
 #include "arch_i686/vmm.h"
 
 #include "kernel/config.h"
 #include "kernel/kernel.h"
-#include "kernel/platform.h"
 
 #include "lib/align.h"
 #include "lib/cppdefs.h"
 #include "lib/cstd/string.h"
+#include "lib/platform_consts.h"
 
 #include <multiboot.h>
 #include <stdbool.h>
@@ -43,8 +42,9 @@
 static void map_addr_range(union vm_arch_page_dir *page_dir, const void *start, const void *end,
                            enum vm_table_flags flags)
 {
-        union uiptr page_addr = uint2uiptr(align_rounddown(ptr2uint(start), PLATFORM_PAGE_SIZE));
-        union uiptr upto_page = uint2uiptr(align_roundup(ptr2uint(end), PLATFORM_PAGE_SIZE));
+        size_t const *page_size = kernel_arch_to_low(&PLATFORM_PAGE_SIZE);
+        union uiptr page_addr = uint2uiptr(align_rounddown(ptr2uint(start), *page_size));
+        union uiptr upto_page = uint2uiptr(align_roundup(ptr2uint(end), *page_size));
 
         while (page_addr.num < upto_page.num) {
                 const union uiptr virt_addr = uint2uiptr(KERNEL_VM_OFFSET + page_addr.num);
@@ -57,7 +57,7 @@ static void map_addr_range(union vm_arch_page_dir *page_dir, const void *start, 
                 pte->is_present = true;
                 pte->present.table.flags = flags;
 
-                page_addr.num += PLATFORM_PAGE_SIZE;
+                page_addr.num += *page_size;
         }
 }
 

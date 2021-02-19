@@ -1,7 +1,6 @@
-#include "kernel/panic.h"
+#include "lib/panic.h"
 
-#include "kernel/console.h"
-
+#include "lib/console.h"
 #include "lib/cstd/stdio.h"
 
 static int conwrite(const char *msg, size_t len)

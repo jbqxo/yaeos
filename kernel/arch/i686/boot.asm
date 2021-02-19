@@ -1,5 +1,6 @@
-#include "arch_i686/platform.h"
 #include "kernel/config.h"
+
+#define PLATFORM_PAGE_SIZE 4096
 
 // Constants for the multiboot header
 #define FLAG_ALIGN   (0x1 << 0)                  // align loaded modules on page boundaries

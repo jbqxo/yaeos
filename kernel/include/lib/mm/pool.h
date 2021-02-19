@@ -1,5 +1,5 @@
-#ifndef _KERNEL_MM_POOL_H
-#define _KERNEL_MM_POOL_H
+#ifndef _LIB_MM_POOL_H
+#define _LIB_MM_POOL_H
 
 #include "lib/cppdefs.h"
 #include "lib/ds/slist.h"
@@ -20,4 +20,4 @@ void mem_pool_init(struct mem_pool *, void *mem, size_t mem_size, size_t elem_si
 void *mem_pool_alloc(struct mem_pool *);
 void mem_pool_free(struct mem_pool *, void *);
 
-#endif // _KERNEL_MM_POOL_H
+#endif // _LIB_MM_POOL_H
