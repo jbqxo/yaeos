@@ -649,8 +649,7 @@ void kmm_init_kmalloc(void)
                        "Some kmalloc caches don't have names");
         kstatic_assert(ARRAY_SIZE(heap_names) >= CONF_MALLOC_MAX_POW, "Missing heap names");
 
-        const size_t count = CONF_MALLOC_MAX_POW - CONF_MALLOC_MIN_POW + 1;
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < ARRAY_SIZE(KMALLOC_CACHES); i++) {
                 const char *heap_name = heap_names[i + CONF_MALLOC_MIN_POW];
                 const size_t obj_size =
                         (1 << (i + CONF_MALLOC_MIN_POW)) + sizeof(struct kmalloc_block);
