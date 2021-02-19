@@ -3,9 +3,8 @@
 #include "arch_i686/descriptors.h"
 #include "arch_i686/io.h"
 
-#include "kernel/klog.h"
-
 #include "lib/cstd/assert.h"
+#include "lib/klog.h"
 
 #include <stdint.h>
 

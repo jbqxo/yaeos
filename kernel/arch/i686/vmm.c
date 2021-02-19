@@ -4,12 +4,12 @@
 
 #include "kernel/config.h"
 #include "kernel/kernel.h"
-#include "kernel/klog.h"
 #include "kernel/mm/vmm.h"
 
 #include "lib/cppdefs.h"
 #include "lib/cstd/assert.h"
 #include "lib/ds/rbtree.h"
+#include "lib/klog.h"
 
 #include <stdbool.h>
 #include <stdint.h>

@@ -2,9 +2,8 @@
 
 #include "arch_i686/kernel.h"
 
-#include "kernel/klog.h"
-
 #include "lib/cppdefs.h"
+#include "lib/klog.h"
 #include "lib/platform_consts.h"
 
 size_t const PLATFORM_PAGE_SIZE = 4096;

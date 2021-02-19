@@ -2,13 +2,13 @@
 #include "arch_i686/vmm.h"
 
 #include "kernel/kernel.h"
-#include "kernel/klog.h"
 #include "kernel/mm/kmm.h"
 #include "kernel/mm/mm.h"
 
 #include "lib/align.h"
 #include "lib/cppdefs.h"
 #include "lib/cstd/nonstd.h"
+#include "lib/klog.h"
 #include "lib/platform_consts.h"
 
 #include <multiboot.h>

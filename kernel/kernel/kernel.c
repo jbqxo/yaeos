@@ -1,7 +1,6 @@
 #include "kernel/kernel.h"
 
 #include "kernel/config.h"
-#include "kernel/klog.h"
 #include "kernel/mm/kmm.h"
 #include "kernel/mm/mm.h"
 #include "kernel/mm/vmm.h"
@@ -10,6 +9,7 @@
 #include "lib/console.h"
 #include "lib/cppdefs.h"
 #include "lib/cstd/nonstd.h"
+#include "lib/klog.h"
 
 struct vm_area KERNELBIN_AREAS[KSEGMENT_COUNT] = { 0 };
 struct vm_area KHEAP_AREA = { 0 };

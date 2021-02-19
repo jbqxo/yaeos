@@ -1,11 +1,19 @@
-#include "kernel/klog.h"
-
-#include "kernel/kernel.h"
+#include "lib/klog.h"
 
 #include "lib/cstd/stdio.h"
+#include "lib/panic.h"
 
 #include <stdarg.h>
 #include <stdint.h>
+
+static char lvl_to_char(enum LOG_LEVEL lvl)
+{
+        static char LOOKUP_TABLE[LOG_PANIC + 1] = {
+                [LOG_DEBUG] = 'D', [LOG_INFO] = 'I',  [LOG_WARN] = 'W',
+                [LOG_ERR] = 'E',   [LOG_PANIC] = 'P',
+        };
+        return (LOOKUP_TABLE[lvl]);
+}
 
 static const char *find_filename(const char *path)
 {
@@ -31,7 +39,7 @@ void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, const char *res
 {
         uint64_t cycle = 0;
         kfprintf(write, "[%llu:%c] %s:%s:%s | ", cycle, lvl_to_char(lvl), find_filename(path), func,
-                line);
+                 line);
 
         va_list ap;
         va_start(ap, format);

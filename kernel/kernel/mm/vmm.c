@@ -1,12 +1,12 @@
 #include "kernel/mm/vmm.h"
 
 #include "kernel/kernel.h"
-#include "kernel/klog.h"
 
 #include "lib/align.h"
 #include "lib/cppdefs.h"
 #include "lib/ds/rbtree.h"
 #include "lib/ds/slist.h"
+#include "lib/klog.h"
 
 void vm_pgfault_handle_default(struct vm_area *area, void *addr)
 {

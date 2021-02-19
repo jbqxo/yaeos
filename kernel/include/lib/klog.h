@@ -1,5 +1,5 @@
-#ifndef _KERNEL_KLOG_H
-#define _KERNEL_KLOG_H
+#ifndef _LIB_KLOG_H
+#define _LIB_KLOG_H
 
 #include "lib/console.h"
 #include "lib/cppdefs.h"
@@ -24,15 +24,6 @@ enum LOG_LEVEL {
         LOG_PANIC = 0x4,
 };
 
-static inline char lvl_to_char(enum LOG_LEVEL lvl)
-{
-        static char LOOKUP_TABLE[LOG_PANIC + 1] = {
-                [LOG_DEBUG] = 'D', [LOG_INFO] = 'I',  [LOG_WARN] = 'W',
-                [LOG_ERR] = 'E',   [LOG_PANIC] = 'P',
-        };
-        return (LOOKUP_TABLE[lvl]);
-}
-
 void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, const char *restrict func,
                   const char *restrict line, const char *restrict format, ...)
         __attribute__((format(printf, 5, 6)));
@@ -40,4 +31,4 @@ void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, const char *res
 __noreturn void klog_logf_panic(const char *location, const char *restrict format, ...)
         __attribute__((format(printf, 2, 3)));
 
-#endif // _KERNEL_KLOG_H
+#endif // _LIB_KLOG_H

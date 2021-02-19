@@ -2,7 +2,6 @@
 
 #include "kernel/config.h"
 #include "kernel/kernel.h"
-#include "kernel/klog.h"
 #include "kernel/mm/vmm.h"
 
 #include "lib/align.h"
@@ -11,6 +10,7 @@
 #include "lib/cstd/nonstd.h"
 #include "lib/cstd/string.h"
 #include "lib/ds/slist.h"
+#include "lib/klog.h"
 #include "lib/mm/pool.h"
 #include "lib/platform_consts.h"
 
