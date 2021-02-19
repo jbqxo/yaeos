@@ -14,7 +14,9 @@
   * Although GCC allows it as an extension.
   * See: https://gcc.gnu.org/onlinedocs/gcc/Empty-Structures.html#Empty-Structures
   */
-struct elflist_mark {};
+/* Pointer aligned (because elflists store pointers) because otherwise it won't be aligned at all,
+ * but the first pointer would still be pointer-aligned. */
+struct elflist_mark {} __aligned(sizeof(void*));
 
 /**
  * The macro places the address of a symbol in the list's section and ensures that there are edge marks.
