@@ -31,18 +31,20 @@ static struct kernel_panic_info prepare_panic_info(struct intr_ctx *ctx, const c
                 .description = DESCRIPTION_BUFFER,
                 .location = NULL,
         };
-        KVSTATIC_INIT(&info.regs, "", 0, kstrcmp);
+        void *mem = __builtin_alloca(kvstore_predict_reqmem(PLATFORM_REGISTERS_COUNT));
+        info.regs = kvstore_create(mem, PLATFORM_REGISTERS_COUNT,
+                                   (int (*)(void const *, void const *))kstrcmp);
 
-        KVSTATIC_ADD(&info.regs, "EDI", ctx->edi);
-        KVSTATIC_ADD(&info.regs, "ESI", ctx->esi);
-        KVSTATIC_ADD(&info.regs, "EBP", ctx->ebp);
-        KVSTATIC_ADD(&info.regs, "ESP", ctx->esp);
-        KVSTATIC_ADD(&info.regs, "EBX", ctx->ebx);
-        KVSTATIC_ADD(&info.regs, "EDX", ctx->edx);
-        KVSTATIC_ADD(&info.regs, "ECX", ctx->ecx);
-        KVSTATIC_ADD(&info.regs, "EAX", ctx->eax);
-        KVSTATIC_ADD(&info.regs, "EIP", ctx->eip);
-        KVSTATIC_ADD(&info.regs, "ESP", ctx->preint_esp);
+        kvstore_append(info.regs, "EDI", uint2ptr(ctx->edi));
+        kvstore_append(info.regs, "ESI", uint2ptr(ctx->esi));
+        kvstore_append(info.regs, "EBP", uint2ptr(ctx->ebp));
+        kvstore_append(info.regs, "ESP", uint2ptr(ctx->esp));
+        kvstore_append(info.regs, "EBX", uint2ptr(ctx->ebx));
+        kvstore_append(info.regs, "EDX", uint2ptr(ctx->edx));
+        kvstore_append(info.regs, "ECX", uint2ptr(ctx->ecx));
+        kvstore_append(info.regs, "EAX", uint2ptr(ctx->eax));
+        kvstore_append(info.regs, "EIP", uint2ptr(ctx->eip));
+        kvstore_append(info.regs, "ESP", uint2ptr(ctx->preint_esp));
 
         return (info);
 }

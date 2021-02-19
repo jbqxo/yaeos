@@ -1,12 +1,20 @@
 #include "lib/panic.h"
 
 #include "lib/console.h"
+#include "lib/cppdefs.h"
 #include "lib/cstd/stdio.h"
 
 static int conwrite(const char *msg, size_t len)
 {
         console_write(msg, len);
         return (len);
+}
+
+static void print_register(void *key, void *value, void *data __unused)
+{
+        char const *reg = key;
+        uintptr_t val = ptr2uint(value);
+        kfprintf(conwrite, "%s: %08X\n", reg, val);
 }
 
 __noreturn void kernel_panic(struct kernel_panic_info *info)
@@ -18,21 +26,14 @@ __noreturn void kernel_panic(struct kernel_panic_info *info)
                 kfprintf(conwrite, "Location: %s\n", info->location);
         }
 
-        {
-                int regs_len;
-                KVSTATIC_LEN(&info->regs, regs_len);
+        if (info->regs != NULL) {
+                size_t regs_len = kvstore_length(info->regs);
                 if (regs_len > 0) {
                         kfprintf(conwrite, "Registers:");
-                        int i;
-                        const char *key;
-                        size_t reg;
-                        KVSTATIC_FOREACH (&info->regs, i, key, reg) {
-                                if (i % 4 == 0) {
-                                        conwrite("\n", 1);
-                                }
-                                kfprintf(conwrite, "%s: %08X ", key, reg);
-                        }
+                        kvstore_iter(info->regs, print_register, NULL);
                 }
         }
-        halt(false);
+        while (true) {
+                asm volatile("hlt");
+        }
 }

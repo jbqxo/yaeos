@@ -14,6 +14,7 @@
                         struct kernel_panic_info __info = { 0 };                                 \
                         __info.description = "Assertion failed: assert(" TO_SSTR_MACRO(exp) ")"; \
                         __info.location = __FILE__ ":" TO_SSTR_MACRO(__LINE__);                  \
+                        __info.regs = NULL;                                                      \
                         kernel_panic(&__info);                                                   \
                 }                                                                                \
         } while (0)
