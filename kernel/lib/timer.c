@@ -1,6 +1,4 @@
-#include "kernel/timer.h"
-
-#include "kernel/config.h"
+#include "lib/timer.h"
 
 #include "lib/ds/cbuffer.h"
 #include "lib/elflist.h"
@@ -12,7 +10,6 @@ struct event {
         unsigned wake_time;
 };
 
-static CBUFFER_DECLARE(struct event, CONF_TIMER_QUEUE_LENGTH) QUEUE;
 static struct int_timer *TIMER;
 static unsigned TIME;
 
@@ -32,8 +29,6 @@ void timer_init(void)
                 TIMER = *t;
                 break;
         }
-
-        CBUFFER_INIT(&QUEUE);
 }
 
 void timer_call_after(unsigned ms, callback_fn f)
