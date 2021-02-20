@@ -1,6 +1,7 @@
 #include "kernel/kernel.h"
 
 #include "kernel/config.h"
+#include "kernel/mm/kmalloc.h"
 #include "kernel/mm/kmm.h"
 #include "kernel/mm/mm.h"
 #include "kernel/mm/vmm.h"
@@ -208,15 +209,18 @@ void kernel_init()
         init_kernel_heap_area(&KHEAP_AREA, &KHEAP_DATA);
 
         kmm_init();
-        kmm_init_kmalloc();
+        kmalloc_init();
         LOGF_I("Kernel Memory Manager is... Up and running\n");
 
         LOGF_I("Trying to allocate a bit of memory...\n");
-        void *mem = kmalloc(0x100);
-        if (mem != NULL) {
-                kmemset(mem, 0x0, 0x100);
-                LOGF_I("Success! We now own writable memory at %p\n", mem);
-        } else {
-                LOGF_I("Sad :(\n");
+        for (int i = 0;; i++) {
+                void *mem = kmalloc(0x700);
+                if (mem != NULL) {
+                        kmemset(mem, 0x0, 0x700);
+                        LOGF_I("Success! Allocated #%d %p\n", i, mem);
+                        kfree(mem);
+                } else {
+                        LOGF_P("Failed to allocate #%d\n", i);
+                }
         }
 }

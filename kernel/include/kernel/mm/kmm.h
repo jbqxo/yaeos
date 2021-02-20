@@ -80,10 +80,4 @@ void *kmm_cache_alloc(struct kmm_cache *);
  */
 void kmm_cache_free(struct kmm_cache *, void *mem);
 
-void kmm_init_kmalloc(void);
-
-void *kmalloc(size_t size);
-
-void kfree(void *);
-
 #endif /* _KERNEL_MM_KMM_H */
