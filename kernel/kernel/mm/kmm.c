@@ -1,6 +1,5 @@
 #include "kernel/mm/kmm.h"
 
-#include "kernel/config.h"
 #include "kernel/kernel.h"
 #include "kernel/mm/vmm.h"
 
@@ -11,16 +10,12 @@
 #include "lib/cstd/string.h"
 #include "lib/ds/slist.h"
 #include "lib/klog.h"
-#include "lib/mm/pool.h"
 #include "lib/platform_consts.h"
 
 #include <stdalign.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
-static char STATIC_STORAGE[CONF_STATIC_SLAB_SPACE];
-static struct mem_pool STATIC_PAGE_POOL;
 
 ///
 /// Buffer control block for small objects (< PAGE_SIZE / 8).
@@ -87,9 +82,8 @@ static void *get_bufctl_small(uintptr_t buffer_addr, struct kmm_cache *cache)
 ///
 struct page {
         struct kmm_slab *owner;
-        bool dynamic;  //! Whether the page was allocated from VMM, or from the static memory pool.
         uintptr_t : 0; //! Align address of buffer's data region.
-        char data[0];
+        char data[];
 };
 
 struct kmm_slab {
@@ -112,11 +106,27 @@ static SLIST_HEAD(, struct kmm_cache) ALLOCATED_CACHES;
 static void page_free(struct page *p)
 {
         kassert(p);
-        if (p->dynamic) {
-                vm_area_unregister_page(&KHEAP_AREA, p);
-        } else {
-                mem_pool_free(&STATIC_PAGE_POOL, p);
+        vm_area_unregister_page(&KHEAP_AREA, p);
+}
+
+///
+/// Allocates a new page from VMM.
+/// If the allocation fails, it will try to reclaim some memory from other caches.
+/// If the allocation fails again and the cache is capable of using static storage,
+/// it will get memory from static memory pool as a last resort.
+///
+static struct page *page_alloc(struct kmm_cache *cache)
+{
+        kassert(cache);
+
+        struct page *page = vm_area_register_page(&KHEAP_AREA, NULL);
+        if (__unlikely(page == NULL)) {
+                LOGF_E("There is no more free pages in the kernel's heap.\n");
         }
+
+        kassert(check_align(ptr2uint(page), PLATFORM_PAGE_SIZE));
+
+        return (page);
 }
 
 static void slab_destroy(struct kmm_slab *slab, struct kmm_cache *cache)
@@ -160,96 +170,25 @@ static void slab_destroy(struct kmm_slab *slab, struct kmm_cache *cache)
         page_free(slab->page);
 }
 
-///
-/// Reclaims required number of free pages from all system caches.
-///
-/// @return The number of reclaimed pages. May be less or more than required.
-static unsigned caches_try_reclaim(unsigned reclaim)
+void kmm_cache_trim(struct kmm_cache *cache)
 {
-        unsigned reclaimed = 0;
-        struct kmm_cache *itc;
+        kassert(cache != NULL);
+
+        struct kmm_slab *next = NULL;
+        struct kmm_slab *current = SLIST_FIRST(&cache->slabs_empty);
+        while (current != NULL) {
+                next = SLIST_NEXT(current, slabs_list);
+                slab_destroy(current, cache);
+                current = next;
+        }
+}
+
+void kmm_cache_trim_all(void)
+{
+        struct kmm_cache *itc = NULL;
         SLIST_FOREACH (itc, &ALLOCATED_CACHES, caches) {
-                // Can't use SLIST_FOREACH because it would use a slab after freeing.
-                struct kmm_slab *next;
-                struct kmm_slab *current = SLIST_FIRST(&itc->slabs_empty);
-                while (current != NULL) {
-                        if (reclaimed >= reclaim) {
-                                return (reclaimed);
-                        }
-                        next = SLIST_NEXT(current, slabs_list);
-                        slab_destroy(current, itc);
-                        current = next;
-                        reclaimed++;
-                }
-
-                if (reclaimed >= reclaim) {
-                        return (reclaimed);
-                }
+                kmm_cache_trim(itc);
         }
-
-        return (reclaimed);
-}
-
-static struct page *page_alloc_dynamic(void)
-{
-        const size_t to_allocate = 1;
-        struct page *page = vm_area_register_page(&KHEAP_AREA, NULL);
-        if (page == NULL) {
-                LOGF_W("System is running out of memory. Trying to reclaim some...\n");
-                if (caches_try_reclaim(to_allocate) >= to_allocate) {
-                        page = vm_area_register_page(&KHEAP_AREA, NULL);
-                        if (page == NULL) {
-                                LOGF_P("Can't allocate new page, but we've successfully reclaimed some.\n");
-                        }
-                } else {
-                        LOGF_W("Failed to reclaim required amount of memory.\n");
-                }
-        }
-
-        page->dynamic = true;
-
-        return (page);
-}
-
-static struct page *page_alloc_static(struct kmm_cache *cache)
-{
-        struct page *page = NULL;
-
-        page = mem_pool_alloc(&STATIC_PAGE_POOL);
-        if (__unlikely(page == NULL)) {
-                LOGF_E("Couldn't allocate a page from static memory for %s cache.\n", cache->name);
-                return (NULL);
-        }
-        LOGF_I("A page has been allocated from static memory for %s cache.\n", cache->name);
-        page->dynamic = false;
-
-        return (page);
-}
-
-///
-/// Allocates a new page from VMM.
-/// If the allocation fails, it will try to reclaim some memory from other caches.
-/// If the allocation fails again and the cache is capable of using static storage,
-/// it will get memory from static memory pool as a last resort.
-///
-static struct page *page_alloc(struct kmm_cache *cache)
-{
-        kassert(cache);
-
-        struct page *page = page_alloc_dynamic();
-
-        if (__unlikely(page == NULL) && cache->flags & KMM_CACHE_STATIC) {
-                LOGF_W("Couldn't allocate a page from a dynamic memory.\n");
-                page = page_alloc_static(cache);
-        }
-
-        if (page == NULL) {
-                LOGF_E("Couldn't allocate a page for the %s cache\n", cache->name);
-        } else {
-                kassert(ptr2uint(page) == align_roundup(ptr2uint(page), PLATFORM_PAGE_SIZE));
-        }
-
-        return (page);
 }
 
 ///
@@ -319,12 +258,12 @@ static struct kmm_slab *slab_create_large(struct kmm_cache *cache, unsigned colo
         kassert(cache);
 
         struct kmm_slab *slab = kmm_cache_alloc(&CACHES.slabs);
-        if (__unlikely(!slab)) {
+        if (__unlikely(slab == NULL)) {
                 return (NULL);
         }
 
         struct page *page = page_alloc(cache);
-        if (__unlikely(!page)) {
+        if (__unlikely(page == NULL)) {
                 goto clean_slab;
         }
         page->owner = slab;
@@ -465,20 +404,17 @@ void kmm_cache_register(struct kmm_cache *cache)
 
 void kmm_init(void)
 {
-        mem_pool_init(&STATIC_PAGE_POOL, STATIC_STORAGE, sizeof(STATIC_STORAGE), PLATFORM_PAGE_SIZE,
-                      PLATFORM_PAGE_SIZE);
-
         SLIST_INIT(&ALLOCATED_CACHES);
         SLIST_INSERT_HEAD(&ALLOCATED_CACHES, &CACHES.caches, caches);
         SLIST_INSERT_HEAD(&ALLOCATED_CACHES, &CACHES.slabs, caches);
         SLIST_INSERT_HEAD(&ALLOCATED_CACHES, &CACHES.large_bufctls, caches);
 
-        kmm_cache_init(&CACHES.caches, "slab_alloc_caches", sizeof(struct kmm_cache), 0,
-                       KMM_CACHE_STATIC, NULL, NULL);
-        kmm_cache_init(&CACHES.slabs, "slab_alloc_slabs", sizeof(struct kmm_slab), 0,
-                       KMM_CACHE_STATIC, NULL, NULL);
+        kmm_cache_init(&CACHES.caches, "slab_alloc_caches", sizeof(struct kmm_cache), 0, 0, NULL,
+                       NULL);
+        kmm_cache_init(&CACHES.slabs, "slab_alloc_slabs", sizeof(struct kmm_slab), 0, 0, NULL,
+                       NULL);
         kmm_cache_init(&CACHES.large_bufctls, "slab_alloc_bufctls", sizeof(struct bufctl_large), 0,
-                       KMM_CACHE_STATIC, NULL, NULL);
+                       0, NULL, NULL);
 }
 
 struct kmm_cache *kmm_cache_create(const char *name, size_t size, size_t align,
@@ -624,21 +560,19 @@ void kmm_cache_free(struct kmm_cache *cache, void *mem)
         object_free(mem, slab, cache);
 }
 
-static struct kmm_cache *KMALLOC_CACHES[CONF_MALLOC_MAX_POW - CONF_MALLOC_MIN_POW];
+static struct kmm_cache *KMALLOC_CACHES[CONF_MALLOC_MAX_POW - CONF_MALLOC_MIN_POW + 1];
 
-struct kmalloc_block {
-        struct {
-                uint8_t heap_index;
-        } header;
-        unsigned char data[];
+/* We store index of cache level along with every allocated piece of memory. */
+struct kmalloc_ident_info {
+        uint8_t cache_index;
 };
+kstatic_assert(sizeof(struct kmalloc_ident_info) <= alignof(max_align_t),
+               "kmalloc_ident_info is biggen than alignof(max_align_t)");
+kstatic_assert((uint8_t)(~0) >= ARRAY_SIZE(KMALLOC_CACHES),
+               "KMALLOC_CACHES length exceeds maximum length");
 
 void kmm_init_kmalloc(void)
 {
-        kstatic_assert(sizeof(((struct kmalloc_block *)NULL)->header.heap_index) * 8 >=
-                               ARRAY_SIZE(KMALLOC_CACHES),
-                       "KMALLOC_CACHES length exceeds maximum length");
-
         const char *const heap_names[13] = {
                 "kmalloc_1",   "kmalloc_2",   "kmalloc_4",    "kmalloc_8",
                 "kmalloc_16",  "kmalloc_32",  "kmalloc_64",   "kmalloc_128",
@@ -651,23 +585,26 @@ void kmm_init_kmalloc(void)
 
         for (int i = 0; i < ARRAY_SIZE(KMALLOC_CACHES); i++) {
                 const char *heap_name = heap_names[i + CONF_MALLOC_MIN_POW];
-                const size_t obj_size =
-                        (1 << (i + CONF_MALLOC_MIN_POW)) + sizeof(struct kmalloc_block);
+
+                size_t obj_size = sizeof(struct kmalloc_ident_info);
+                obj_size = align_roundup(obj_size, alignof(max_align_t));
+                obj_size += (1 << (i + CONF_MALLOC_MIN_POW));
 
                 KMALLOC_CACHES[i] =
-                        kmm_cache_create(heap_name, obj_size, 0, KMM_CACHE_STATIC, NULL, NULL);
+                        kmm_cache_create(heap_name, obj_size, alignof(max_align_t), 0, NULL, NULL);
         }
 }
 
 void *kmalloc(size_t size)
 {
-        int pow = log2_ceil(size);
+        size_t const req_space = size + sizeof(struct kmalloc_ident_info);
+        int pow = log2_ceil(req_space);
+        const int cache_index = pow - (CONF_MALLOC_MIN_POW + 1);
 
-        const int cache_index = pow - CONF_MALLOC_MIN_POW;
         if (cache_index >= ARRAY_SIZE(KMALLOC_CACHES)) {
                 const size_t max_available = 1 << CONF_MALLOC_MAX_POW;
                 LOGF_E("Requested too much memory from kmalloc. Requested: %zu Max available: %zu",
-                       size, max_available);
+                       req_space, max_available);
                 return (NULL);
         }
         kassert(cache_index >= 0);
@@ -675,20 +612,26 @@ void *kmalloc(size_t size)
         struct kmm_cache *c = KMALLOC_CACHES[cache_index];
         kassert(c != NULL);
 
-        struct kmalloc_block *allocated = kmm_cache_alloc(c);
-        allocated->header.heap_index = cache_index;
+        struct kmalloc_ident_info *info = kmm_cache_alloc(c);
+        kassert(check_align(ptr2uint(info), alignof(max_align_t)));
+        info->cache_index = cache_index;
 
-        return (allocated->data);
+        void *mem = uint2ptr(align_roundup(ptr2uint(info) + sizeof(*info), alignof(max_align_t)));
+
+        return (mem);
 }
 
 void kfree(void *mem)
 {
-        const int data_offset =
-                offsetof(struct kmalloc_block, data) - offsetof(struct kmalloc_block, header);
-        kassert(data_offset > 0);
-        struct kmalloc_block *alloc = uint2ptr(ptr2uint(mem) - data_offset);
-        uint8_t heap_index = alloc->header.heap_index;
-        kassert(heap_index < ARRAY_SIZE(KMALLOC_CACHES));
+        union uiptr const m = ptr2uiptr(mem);
 
-        kmm_cache_free(KMALLOC_CACHES[heap_index], alloc);
+        kassert(m.ptr != NULL);
+        kassert(check_align(m.num, alignof(max_align_t)));
+
+        struct kmalloc_ident_info *info =
+                uint2ptr(align_rounddown(m.num - 1, alignof(max_align_t)));
+        uint8_t cache_index = info->cache_index;
+        kassert(cache_index < ARRAY_SIZE(KMALLOC_CACHES));
+
+        kmm_cache_free(KMALLOC_CACHES[cache_index], info);
 }

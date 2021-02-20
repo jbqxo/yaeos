@@ -57,6 +57,14 @@ static void vmarea_heap_fault_handler(struct vm_area *area, void *fault_addr)
         /* The page is registered in the heap, but mappings are missing.
          * For now, it means that we haven't allocated the page yet. */
         struct mm_page *page = mm_alloc_page();
+        if (__unlikely(page == NULL)) {
+                LOGF_E("Not enough physicall space. Trying to trim some caches.\n");
+                kmm_cache_trim_all();
+                page = mm_alloc_page();
+                if (__unlikely(page == NULL)) {
+                        LOGF_P("Couldn't trim enough space. Bye.\n");
+                }
+        }
         vm_arch_ptree_map(area->owner->root_dir, page->paddr, page_addr.ptr, area->flags);
 }
 

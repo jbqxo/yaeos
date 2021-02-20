@@ -20,8 +20,7 @@ struct kmm_cache {
         unsigned colour_off;
         unsigned colour_next;
 
-#define KMM_CACHE_STATIC (0x1 << 0) /**< Can use reserved static storage as the last resort. */
-#define KMM_CACHE_LARGE  (0x1 << 1)
+#define KMM_CACHE_LARGE  (0x1 << 0)
         unsigned flags;
 
         const char *name;
@@ -40,11 +39,12 @@ struct kmm_cache {
  * @brief Initialize the KMM subsystem. It needs to be called only on boot.
  */
 void kmm_init(void);
+void kmm_cache_trim_all(void);
 
 void kmm_cache_init(struct kmm_cache *restrict cache, const char *name, size_t size, size_t align,
                     unsigned flags, void (*ctor)(void *), void (*dtor)(void *));
-
 void kmm_cache_register(struct kmm_cache *cache);
+void kmm_cache_trim(struct kmm_cache *cache);
 
 /**
  * @brief Allocates, inits, and registers new cache object.
