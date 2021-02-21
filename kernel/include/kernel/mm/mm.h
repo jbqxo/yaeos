@@ -1,8 +1,7 @@
 #ifndef _KERNEL_MM_H
 #define _KERNEL_MM_H
 
-#include "kernel/mm/pmm.h"
-#include "kernel/mm/vmm.h"
+#include "kernel/mm/vm.h"
 
 #include "lib/cppdefs.h"
 #include "lib/ds/slist.h"

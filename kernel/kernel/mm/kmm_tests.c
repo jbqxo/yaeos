@@ -6,7 +6,7 @@
 
 #include "kernel/config.h"
 #include "kernel/kernel.h"
-#include "kernel/mm/vmm.h"
+#include "kernel/mm/vm.h"
 
 #include "lib/cppdefs.h"
 #include "lib/platform_consts.h"

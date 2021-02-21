@@ -2,7 +2,7 @@
 #define _KERNEL_KERNEL_H
 
 #include "kernel/config.h"
-#include "kernel/mm/vmm.h"
+#include "kernel/mm/vm.h"
 
 #include "lib/cppdefs.h"
 

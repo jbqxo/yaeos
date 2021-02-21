@@ -1,10 +1,9 @@
-#include "arch_i686/vmm.h"
-
 #include "arch_i686/intr.h"
+#include "arch_i686/vm.h"
 
 #include "kernel/config.h"
 #include "kernel/kernel.h"
-#include "kernel/mm/vmm.h"
+#include "kernel/mm/vm.h"
 
 #include "lib/cppdefs.h"
 #include "lib/cstd/assert.h"

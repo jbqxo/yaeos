@@ -2,7 +2,7 @@
 #include "arch_i686/exceptions.h"
 #include "arch_i686/intr.h"
 #include "arch_i686/kernel.h"
-#include "arch_i686/vmm.h"
+#include "arch_i686/vm.h"
 
 #include "kernel/config.h"
 #include "kernel/kernel.h"

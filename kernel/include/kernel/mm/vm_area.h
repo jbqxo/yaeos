@@ -1,43 +1,15 @@
-#ifndef _KERNEL_MM_VMM_H
-#define _KERNEL_MM_VMM_H
+#ifndef _KERNEL_VM_AREA_H
+#define _KERNEL_VM_AREA_H
 
-#include "lib/cppdefs.h"
-#include "lib/cstd/assert.h"
-#include "lib/ds/rbtree.h"
 #include "lib/ds/slist.h"
+#include "lib/ds/rbtree.h"
 
-#include <stdbool.h>
 #include <stddef.h>
 
 enum vm_flags {
         VM_WRITE = 0x1 << 0,
         VM_USER = 0x1 << 1,
 };
-
-/**
- * Describes an address space of a user process or the kernel.
- */
-struct vm_space {
-        union vm_arch_page_dir *
-                root_dir; /**< Top level directory of every *userspace* vm_space is always present.*/
-        union uiptr offset; /**< I think it will be used only by the kernel space. */
-
-        struct rbtree rb_areas;
-        SLIST_HEAD(, struct vm_area) sorted_areas;
-};
-
-/**
- * Should be used for initialization of the kernel space only.
- * It does the same, except that it won't allocate top-level pagedir by itself.
- */
-void vm_space_init(struct vm_space *space, union vm_arch_page_dir *root_pdir, union uiptr offset);
-
-void vm_space_append_area(struct vm_space *space, struct vm_area *area);
-
-void vm_space_remove_area(struct vm_space *space, struct vm_area *area);
-
-void *vm_space_find_gap(struct vm_space *space,
-                        bool (*predicate)(void *base, size_t len, void *data), void *pred_data);
 
 /**
  * Similar to the same entity in the Linux kernel.
@@ -61,9 +33,6 @@ struct vm_area {
 };
 
 void vm_area_init(struct vm_area *area, void *vaddr, size_t length, const struct vm_space *owner);
-
-void vm_pgfault_handle_default(struct vm_area *area, void *addr);
-void vm_pgfault_handle_direct(struct vm_area *area, void *addr);
 
 /**
  * @brief Used as a comparison function to search addresses inside of Red-Black Tree.
@@ -91,12 +60,4 @@ void *vm_area_register_page(struct vm_area *area, void *page_addr);
  * */
 void vm_area_unregister_page(struct vm_area *area, void *page_addr);
 
-void vm_arch_load_spaces(const struct vm_space *user, const struct vm_space *kernel);
-
-void vm_arch_ptree_map(union vm_arch_page_dir *tree_root, const void *phys_addr,
-                       const void *at_virt_addr, enum vm_flags flags);
-
-void *vm_heap_alloc_page(void);
-void *vm_heap_free_page(void);
-
-#endif // _KERNEL_MM_VMM_H
+#endif /* _KERNEL_VM_AREA_H */

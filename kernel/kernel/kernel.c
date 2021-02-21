@@ -4,7 +4,7 @@
 #include "kernel/mm/kmalloc.h"
 #include "kernel/mm/kmm.h"
 #include "kernel/mm/mm.h"
-#include "kernel/mm/vmm.h"
+#include "kernel/mm/vm.h"
 
 #include "lib/align.h"
 #include "lib/console.h"

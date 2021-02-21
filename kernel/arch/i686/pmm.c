@@ -1,5 +1,5 @@
 #include "arch_i686/kernel.h"
-#include "arch_i686/vmm.h"
+#include "arch_i686/vm.h"
 
 #include "kernel/kernel.h"
 #include "kernel/mm/kmm.h"

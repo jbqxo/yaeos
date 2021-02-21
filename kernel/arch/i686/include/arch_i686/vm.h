@@ -3,7 +3,7 @@
 
 #include "arch_i686/intr.h"
 
-#include "kernel/mm/vmm.h"
+#include "kernel/mm/vm.h"
 
 #include "lib/cppdefs.h"
 #include "lib/platform_consts.h"

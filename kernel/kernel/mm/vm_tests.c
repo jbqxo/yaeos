@@ -1,12 +1,11 @@
 // UNITY_TEST DEPENDS ON: kernel/test_fakes/panic.c
 // UNITY_TEST DEPENDS ON: kernel/test_fakes/kmm.c
 
-// UNITY_TEST DEPENDS ON: kernel/kernel/mm/vmm.c
+// UNITY_TEST DEPENDS ON: kernel/kernel/mm/vm.c
 // UNITY_TEST DEPENDS ON: kernel/lib/ds/rbtree.c
 
-#include "kernel/mm/vmm.h"
-
-#include "kernel/mm/kmm.h"
+#include "kernel/mm/mm.h"
+#include "kernel/mm/vm.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -29,7 +28,8 @@ static int vmspace_mappings_count(struct vmm_space *vms)
 {
         int counter = 0;
         struct vmm_mapping *it;
-        VMM_SPACE_MAPPINGS_FOREACH (vms, it) {
+        VMM_SPACE_MAPPINGS_FOREACH(vms, it)
+        {
                 TEST_ASSERT_NOT_NULL(it->start);
                 TEST_ASSERT_GREATER_THAN_INT(0, it->length);
                 counter++;

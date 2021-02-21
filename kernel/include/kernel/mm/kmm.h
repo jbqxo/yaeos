@@ -1,7 +1,7 @@
 #ifndef _KERNEL_MM_KMM_H
 #define _KERNEL_MM_KMM_H
 
-#include "kernel/mm/vmm.h"
+#include "kernel/mm/vm.h"
 
 #include "lib/ds/slist.h"
 
@@ -20,7 +20,7 @@ struct kmm_cache {
         unsigned colour_off;
         unsigned colour_next;
 
-#define KMM_CACHE_LARGE  (0x1 << 0)
+#define KMM_CACHE_LARGE (0x1 << 0)
         unsigned flags;
 
         const char *name;
