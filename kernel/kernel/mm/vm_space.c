@@ -1,6 +1,6 @@
 #include "kernel/mm/vm_space.h"
 
-#include "kernel/config.h"
+#include "kernel/mm/vm.h"
 
 #include "lib/cstd/assert.h"
 #include "lib/ds/slist.h"
@@ -28,8 +28,7 @@ void *vm_space_find_gap(struct vm_space *space,
                 next_after_last_area_end.num = ptr2uint(it->base_vaddr) + it->length;
         }
 
-        const uintptr_t LAST_AVAILABLE_ADDR =
-                UINTPTR_MAX - (PLATFORM_PAGEDIR_PAGES - CONF_VM_LAST_PAGE - 1) * PLATFORM_PAGE_SIZE;
+        const uintptr_t LAST_AVAILABLE_ADDR = ~0UL;
         const size_t length_til_space_end = LAST_AVAILABLE_ADDR - next_after_last_area_end.num + 1;
 
         bool hit = predicate(next_after_last_area_end.ptr, length_til_space_end, pred_data);
