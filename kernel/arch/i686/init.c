@@ -6,16 +6,20 @@
 
 #include "kernel/config.h"
 #include "kernel/kernel.h"
+#include "kernel/mm/highmem.h"
+#include "kernel/platform_consts.h"
 
 #include "lib/align.h"
 #include "lib/cppdefs.h"
 #include "lib/cstd/string.h"
-#include "lib/platform_consts.h"
 
 #include <multiboot.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#define TO_LOW(addr)  (void *)((uintptr_t)(addr) - (KERNEL_VM_OFFSET))
+#define TO_HIGH(addr) (void *)((uintptr_t)(addr) + (KERNEL_VM_OFFSET))
 
 /**
  * @brief Adjust the frame with given offset.
@@ -42,7 +46,7 @@
 static void map_addr_range(union vm_arch_page_dir *page_dir, const void *start, const void *end,
                            enum vm_table_flags flags)
 {
-        size_t const *page_size = kernel_arch_to_low(&PLATFORM_PAGE_SIZE);
+        size_t const *page_size = TO_LOW(&PLATFORM_PAGE_SIZE);
         union uiptr page_addr = uint2uiptr(align_rounddown(ptr2uint(start), *page_size));
         union uiptr upto_page = uint2uiptr(align_roundup(ptr2uint(end), *page_size));
 
@@ -68,8 +72,8 @@ static void map_segment(enum kernel_segments seg, union vm_arch_page_dir *pdir,
         union uiptr end = ptr2uiptr(NULL);
         kernel_arch_get_segment(seg, &start.ptr, &end.ptr);
 
-        start.ptr = kernel_arch_to_low(start.ptr);
-        end.ptr = kernel_arch_to_low(end.ptr);
+        start.ptr = TO_LOW(start.ptr);
+        end.ptr = TO_LOW(end.ptr);
 
         map_addr_range(pdir, start.ptr, end.ptr, flags);
 }
@@ -104,8 +108,8 @@ static __noinline void setup_boot_paging(void)
         union uiptr pt_addr = ptr2uiptr(&boot_paging_pt);
         union uiptr pd_addr = ptr2uiptr(&boot_paging_pd);
 
-        pt_addr.ptr = kernel_arch_to_low(pt_addr.ptr);
-        pd_addr.ptr = kernel_arch_to_low(pd_addr.ptr);
+        pt_addr.ptr = TO_LOW(pt_addr.ptr);
+        pd_addr.ptr = TO_LOW(pd_addr.ptr);
 
         union vm_arch_page_dir *pd = pd_addr.ptr;
         union vm_arch_page_dir *pt = pt_addr.ptr;
@@ -146,7 +150,7 @@ static __noinline void setup_boot_paging(void)
 static void patch_multiboot_info(multiboot_info_t *info)
 {
         union uiptr addr = uint2uiptr(info->mmap_addr);
-        addr.ptr = kernel_arch_to_high(addr.ptr);
+        addr.ptr = TO_HIGH(addr.ptr);
         info->mmap_addr = addr.num;
 }
 
@@ -158,7 +162,11 @@ void i686_init(multiboot_info_t *info, uint32_t magic)
                 // TODO: Panic
                 return;
         }
+
         setup_boot_paging();
+
+        highmem_set_offset(ptr2uint(kernel_vma));
+
         boot_setup_gdt();
         boot_setup_idt();
         intr_init();
@@ -166,7 +174,7 @@ void i686_init(multiboot_info_t *info, uint32_t magic)
         intr_handler_cpu(INTR_CPU_PAGEFAULT, vm_i686_pg_fault_handler);
 
         union uiptr info_addr = ptr2uiptr(info);
-        info_addr.ptr = kernel_arch_to_high(info_addr.ptr);
+        info_addr.ptr = highmem_to_high(info_addr.ptr);
         I686_INFO.multiboot = info_addr.ptr;
         patch_multiboot_info(I686_INFO.multiboot);
 

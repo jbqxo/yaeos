@@ -38,4 +38,4 @@ static inline bool check_align(uintptr_t value, uintptr_t alignment)
         return (value == align_rounddown(value, alignment));
 }
 
-#endif // _LIB_ALIGN_H
+#endif /* _LIB_ALIGN_H */

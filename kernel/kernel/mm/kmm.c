@@ -1,7 +1,8 @@
 #include "kernel/mm/kmm.h"
 
-#include "kernel/kernel.h"
+#include "kernel/klog.h"
 #include "kernel/mm/vm.h"
+#include "kernel/platform_consts.h"
 
 #include "lib/align.h"
 #include "lib/cppdefs.h"
@@ -9,12 +10,13 @@
 #include "lib/cstd/nonstd.h"
 #include "lib/cstd/string.h"
 #include "lib/ds/slist.h"
-#include "lib/klog.h"
-#include "lib/platform_consts.h"
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+static alloc_page_fn_t ALLOC_PAGE_FN;
+static free_page_fn_t FREE_PAGE_FN;
 
 ///
 /// Buffer control block for small objects (< PAGE_SIZE / 8).
@@ -105,7 +107,7 @@ static SLIST_HEAD(, struct kmm_cache) ALLOCATED_CACHES;
 static void page_free(struct page *p)
 {
         kassert(p);
-        vm_area_unregister_page(&KHEAP_AREA, p);
+        FREE_PAGE_FN(p);
 }
 
 ///
@@ -118,7 +120,7 @@ static struct page *page_alloc(struct kmm_cache *cache)
 {
         kassert(cache);
 
-        struct page *page = vm_area_register_page(&KHEAP_AREA, NULL);
+        struct page *page = ALLOC_PAGE_FN();
         if (__unlikely(page == NULL)) {
                 LOGF_E("There is no more free pages in the kernel's heap.\n");
         }
@@ -401,8 +403,14 @@ void kmm_cache_register(struct kmm_cache *cache)
         SLIST_INSERT_HEAD(&ALLOCATED_CACHES, cache, caches);
 }
 
-void kmm_init(void)
+void kmm_init(alloc_page_fn_t alloc_page_fn, free_page_fn_t free_page_fn)
 {
+        kassert(alloc_page_fn != NULL);
+        kassert(free_page_fn != NULL);
+
+        ALLOC_PAGE_FN = alloc_page_fn;
+        FREE_PAGE_FN = free_page_fn;
+
         SLIST_INIT(&ALLOCATED_CACHES);
         SLIST_INSERT_HEAD(&ALLOCATED_CACHES, &CACHES.caches, caches);
         SLIST_INSERT_HEAD(&ALLOCATED_CACHES, &CACHES.slabs, caches);

@@ -9,6 +9,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef void *(*alloc_page_fn_t)(void);
+typedef void (*free_page_fn_t)(void *);
+
 struct kmm_cache {
         size_t size;          /**< Size of objects in the cache. */
         size_t alignment;     /**< Alignment of each object. */
@@ -38,7 +41,7 @@ struct kmm_cache {
 /**
  * @brief Initialize the KMM subsystem. It needs to be called only on boot.
  */
-void kmm_init(void);
+void kmm_init(alloc_page_fn_t alloc_page_fn, free_page_fn_t free_page_fn);
 void kmm_cache_trim_all(void);
 
 void kmm_cache_init(struct kmm_cache *restrict cache, const char *name, size_t size, size_t align,

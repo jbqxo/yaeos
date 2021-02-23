@@ -41,4 +41,4 @@ struct elflist_mark {} __aligned(sizeof(void*));
 #define ELFLIST_FOREACH(listname, iterv) \
         for ((iterv) = ELFLIST_BEGIN(listname); (iterv) < ELFLIST_END(listname); (iterv)++)
 
-#endif // _LIB_ELFLIST_H
+#endif /* _LIB_ELFLIST_H */

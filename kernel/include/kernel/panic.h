@@ -1,8 +1,9 @@
 #ifndef _KERNEL_PANIC_H
 #define _KERNEL_PANIC_H
 
+#include "kernel/platform_consts.h"
+
 #include "lib/ds/kvstore.h"
-#include "lib/platform_consts.h"
 
 struct kernel_panic_info {
         char *description;
@@ -13,4 +14,4 @@ struct kernel_panic_info {
 
 void kernel_panic(struct kernel_panic_info *);
 
-#endif // _KERNEL_PANIC_H
+#endif /* _KERNEL_PANIC_H */

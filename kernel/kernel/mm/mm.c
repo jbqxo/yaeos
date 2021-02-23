@@ -1,14 +1,14 @@
 #include "kernel/mm/mm.h"
 
 #include "kernel/kernel.h"
+#include "kernel/klog.h"
 #include "kernel/mm/kmm.h"
+#include "kernel/platform_consts.h"
 
 #include "lib/align.h"
 #include "lib/cstd/assert.h"
 #include "lib/cstd/string.h"
-#include "lib/klog.h"
 #include "lib/mm/linear.h"
-#include "lib/platform_consts.h"
 
 static struct kmm_cache ZONES_CACHE;
 

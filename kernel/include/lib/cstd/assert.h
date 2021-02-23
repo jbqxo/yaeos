@@ -3,20 +3,19 @@
 #undef kassert
 
 #include "lib/cppdefs.h"
-#include "lib/panic.h"
+#include "lib/cstd/stdio.h"
+
+__noreturn void assertion_fail(char const *failed_expression, char const *location);
+void assertion_init(fprintf_fn);
 
 #ifdef NDEBUG
 #define kassert(exp) ((void)0)
 #else
-#define kassert(exp)                                                                             \
-        do {                                                                                     \
-                if (__unlikely(!(exp))) {                                                        \
-                        struct kernel_panic_info __info = { 0 };                                 \
-                        __info.description = "Assertion failed: assert(" TO_SSTR_MACRO(exp) ")"; \
-                        __info.location = __FILE__ ":" TO_SSTR_MACRO(__LINE__);                  \
-                        __info.regs = NULL;                                                      \
-                        kernel_panic(&__info);                                                   \
-                }                                                                                \
+#define kassert(exp)                                                                              \
+        do {                                                                                      \
+                if (__unlikely(!(exp))) {                                                         \
+                        assertion_fail(TO_SSTR_MACRO(exp), __FILE__ ":" TO_SSTR_MACRO(__LINE__)); \
+                }                                                                                 \
         } while (0)
 #endif
 

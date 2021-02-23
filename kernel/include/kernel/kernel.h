@@ -25,10 +25,6 @@ extern struct vm_space *CURRENT_USER;
 
 union vm_arch_page_dir *kernel_arch_get_early_pg_root(void);
 
-void *kernel_arch_vm_offset(void);
-void *kernel_arch_to_low(const void *high_addr);
-void *kernel_arch_to_high(const void *low_addr);
-bool kernel_arch_is_highmem(const void *addr);
 void kernel_init(void);
 
-#endif // _KERNEL_KERNEL_H
+#endif /* _KERNEL_KERNEL_H */

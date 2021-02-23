@@ -1,7 +1,8 @@
-#include "lib/klog.h"
+#include "kernel/klog.h"
+
+#include "kernel/panic.h"
 
 #include "lib/cstd/stdio.h"
-#include "lib/panic.h"
 
 #include <stdarg.h>
 #include <stdint.h>

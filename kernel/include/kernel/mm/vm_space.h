@@ -4,6 +4,10 @@
 #include "kernel/mm/vm_area.h"
 
 #include "lib/cppdefs.h"
+#include "lib/ds/rbtree.h"
+#include "lib/ds/slist.h"
+
+#include <stdbool.h>
 
 /**
  * Describes an address space of a user process or the kernel.

@@ -1,12 +1,13 @@
 #include "kernel/mm/vm.h"
 
 #include "kernel/kernel.h"
+#include "kernel/klog.h"
+#include "kernel/mm/highmem.h"
 
 #include "lib/align.h"
 #include "lib/cppdefs.h"
 #include "lib/ds/rbtree.h"
 #include "lib/ds/slist.h"
-#include "lib/klog.h"
 
 void vm_pgfault_handle_default(struct vm_area *area, void *addr)
 {
@@ -21,7 +22,7 @@ void vm_pgfault_handle_direct(struct vm_area *area, void *addr)
         const union uiptr fault_addr = ptr2uiptr(addr);
 
         const void *virt_page_addr = uint2ptr(align_rounddown(fault_addr.num, PLATFORM_PAGE_SIZE));
-        const void *phys_page_addr = kernel_arch_to_low(virt_page_addr);
+        const void *phys_page_addr = highmem_to_low(virt_page_addr);
 
         vm_arch_ptree_map(area->owner->root_dir, phys_page_addr, virt_page_addr, area->flags);
 }

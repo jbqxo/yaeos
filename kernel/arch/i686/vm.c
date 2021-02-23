@@ -1,14 +1,16 @@
-#include "arch_i686/intr.h"
 #include "arch_i686/vm.h"
+
+#include "arch_i686/intr.h"
 
 #include "kernel/config.h"
 #include "kernel/kernel.h"
+#include "kernel/klog.h"
+#include "kernel/mm/highmem.h"
 #include "kernel/mm/vm.h"
 
 #include "lib/cppdefs.h"
 #include "lib/cstd/assert.h"
 #include "lib/ds/rbtree.h"
-#include "lib/klog.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -69,7 +71,7 @@ void vm_i686_pg_fault_handler(struct intr_ctx *__unused ctx)
 {
         union uiptr addr = ptr2uiptr(vm_get_cr2());
         struct vm_space *fault_space = NULL;
-        if (kernel_arch_is_highmem(addr.ptr)) {
+        if (highmem_is_high(addr.ptr)) {
                 fault_space = &CURRENT_KERNEL;
         } else {
                 kassert(CURRENT_USER != NULL);
@@ -103,7 +105,7 @@ void vm_arch_ptree_map(union vm_arch_page_dir *tree_root, const void *phys_addr,
         kassert(pde->is_present);
 
         union vm_arch_page_dir *pt = vm_pt_get_addr(pde);
-        pt = kernel_arch_to_high(pt);
+        pt = highmem_to_high(pt);
 
         struct vm_arch_page_entry *pte = vm_table_entry(pt, vaddr.ptr);
         kassert(!pte->is_present);

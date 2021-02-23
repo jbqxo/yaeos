@@ -1,5 +1,5 @@
-#ifndef _KERNEL_DS_DCLIST_H
-#define _KERNEL_DS_DCLIST_H
+#ifndef _LIB_DS_DCLIST_H
+#define _LIB_DS_DCLIST_H
 
 #define DCLIST_HEAD(name, type) \
         struct name {           \
@@ -50,4 +50,4 @@
                 DCLIST_PREV(elem, fieldname) = (insertee);                         \
         } while (0)
 
-#endif // _KERNEL_DS_DCLIST_H
+#endif /* _LIB_DS_DCLIST_H */

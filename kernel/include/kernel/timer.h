@@ -1,5 +1,5 @@
-#ifndef _LIB_TIMER_H
-#define _LIB_TIMER_H
+#ifndef _KERNEL_TIMER_H
+#define _KERNEL_TIMER_H
 
 #include "lib/ds/slist.h"
 
@@ -18,4 +18,4 @@ void timer_init(void);
 void timer_call_after(unsigned ms, callback_fn);
 void timer_call_every(unsigned ms, callback_fn);
 
-#endif // _LIB_TIMER_H
+#endif /* _KERNEL_TIMER_H */

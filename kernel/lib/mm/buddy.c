@@ -5,7 +5,6 @@
 #include "lib/cstd/assert.h"
 #include "lib/cstd/nonstd.h"
 #include "lib/cstd/string.h"
-#include "lib/platform_consts.h"
 
 #include <stdbool.h>
 #include <stddef.h>

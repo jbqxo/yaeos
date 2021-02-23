@@ -1,15 +1,16 @@
+#include "kernel/mm/discover.h"
+
 #include "arch_i686/kernel.h"
 #include "arch_i686/vm.h"
 
 #include "kernel/kernel.h"
-#include "kernel/mm/kmm.h"
-#include "kernel/mm/mm.h"
+#include "kernel/klog.h"
+#include "kernel/mm/highmem.h"
+#include "kernel/platform_consts.h"
 
 #include "lib/align.h"
 #include "lib/cppdefs.h"
 #include "lib/cstd/nonstd.h"
-#include "lib/klog.h"
-#include "lib/platform_consts.h"
 
 #include <multiboot.h>
 #include <stdbool.h>
@@ -62,8 +63,8 @@ static void availmem_iter(struct multiboot_mmap_entry *mmap, void *_data)
         }
 
         struct availmem_data *data = _data;
-        uintptr_t kstart = ptr2uint(kernel_arch_to_low(kernel_start));
-        uintptr_t kend = ptr2uint(kernel_arch_to_low(kernel_end));
+        uintptr_t kstart = ptr2uint(highmem_to_low(kernel_start));
+        uintptr_t kend = ptr2uint(highmem_to_low(kernel_end));
         uintptr_t memstart = mmap->addr;
         uintptr_t memend = memstart + mmap->len;
 
@@ -157,7 +158,7 @@ static void find(uintptr_t start, uintptr_t end, uint32_t type, void *data)
         (*chunks)++;
 }
 
-int mm_arch_chunks_len(void)
+int mm_discover_chunks_len(void)
 {
         int counter = 0;
         struct availmem_data d = (struct availmem_data){ .fn = count, .fn_data = &counter };
@@ -165,7 +166,7 @@ int mm_arch_chunks_len(void)
         return (counter);
 }
 
-void mm_arch_get_chunks(struct mem_chunk *chunks)
+void mm_discover_get_chunks(struct mem_chunk *chunks)
 {
         struct availmem_data d = (struct availmem_data){ .fn = find, .fn_data = &chunks };
         chunks_iter(availmem_iter, &d);

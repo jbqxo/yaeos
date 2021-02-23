@@ -1,11 +1,12 @@
-#ifndef _KERNEL_DS_RBTREE_H
-#define _KERNEL_DS_RBTREE_H
+#ifndef _LIB_DS_RBTREE_H
+#define _LIB_DS_RBTREE_H
 
 #include "lib/cppdefs.h"
 #include "lib/cstd/assert.h"
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef int (*rbtree_cmp_fn)(const void *tree_val, const void *external_val);
 
@@ -42,4 +43,4 @@ struct rbtree_node *rbtree_search_max(struct rbtree *rbt, void *limit, rbtree_cm
 void rbtree_iter_range(struct rbtree *rbt, void *value_from, void *value_to, rbtree_cmp_fn cmpf,
                        bool (*fn)(void *elem, void *data), void *data);
 
-#endif // _KERNEL_DS_RBTREE_H
+#endif /* _LIB_DS_RBTREE_H */

@@ -2,7 +2,7 @@
 #define _KERNEL_CONFIG_H
 
 #ifndef __ASSEMBLER__
-#include "lib/platform_consts.h"
+#include "kernel/platform_consts.h"
 #endif // __ASSEMBLER__
 
 #define CONF_STACK_SIZE         (16 << 10)
@@ -12,6 +12,6 @@
 #define CONF_MALLOC_MAX_POW     (11)
 
 #define CONF_VM_RECURSIVE_PAGE (PLATFORM_PAGEDIR_PAGES - 1 - 1)
-#define CONF_VM_ERRORS_PAGE (PLATFORM_PAGEDIR_PAGES - 1)
+#define CONF_VM_ERRORS_PAGE    (PLATFORM_PAGEDIR_PAGES - 1)
 
 #endif // _KERNEL_CONFIG_H

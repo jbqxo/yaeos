@@ -1,16 +1,19 @@
 #include "kernel/kernel.h"
 
 #include "kernel/config.h"
+#include "kernel/console.h"
+#include "kernel/klog.h"
+#include "kernel/mm/discover.h"
+#include "kernel/mm/highmem.h"
 #include "kernel/mm/kmalloc.h"
 #include "kernel/mm/kmm.h"
 #include "kernel/mm/mm.h"
 #include "kernel/mm/vm.h"
 
 #include "lib/align.h"
-#include "lib/console.h"
 #include "lib/cppdefs.h"
 #include "lib/cstd/nonstd.h"
-#include "lib/klog.h"
+#include "lib/cstd/string.h"
 
 struct vm_area KERNELBIN_AREAS[KSEGMENT_COUNT] = { 0 };
 struct vm_area KHEAP_AREA = { 0 };
@@ -148,7 +151,7 @@ static void init_kernel_heap_area(struct vm_area *heap_area, struct vm_area_heap
 static void init_kernel_vmspace(void)
 {
         vm_space_init(&CURRENT_KERNEL, kernel_arch_get_early_pg_root(),
-                      ptr2uiptr(kernel_arch_vm_offset()));
+                      ptr2uiptr(highmem_get_offset()));
 
         for (int i = 0; i < ARRAY_SIZE(KERNELBIN_AREAS); i++) {
                 struct vm_area *a = &KERNELBIN_AREAS[i];
@@ -185,10 +188,10 @@ static struct mm_zone *create_zone_from_chunk(struct mem_chunk *chunk)
 
 static void create_mem_zones(void)
 {
-        int chunks_count = mm_arch_chunks_len();
+        int chunks_count = mm_discover_chunks_len();
 
         struct mem_chunk *chunks = __builtin_alloca(chunks_count * sizeof(*chunks));
-        mm_arch_get_chunks(chunks);
+        mm_discover_get_chunks(chunks);
 
         for (int i = 0; i < chunks_count; i++) {
                 struct mem_chunk *chunk = &chunks[i];
@@ -198,9 +201,27 @@ static void create_mem_zones(void)
         }
 }
 
+static int conwrite(const char *msg, size_t len)
+{
+        console_write(msg, len);
+        return (len);
+}
+
+static void *alloc_page(void)
+{
+        return (vm_area_register_page(&KHEAP_AREA, NULL));
+}
+
+static void free_page(void *page)
+{
+        vm_area_register_page(&KHEAP_AREA, NULL);
+        vm_area_unregister_page(&KHEAP_AREA, page);
+}
+
 void kernel_init()
 {
         console_init();
+        assertion_init(conwrite);
         LOGF_I("Platform Layer is... Up and running\n");
 
         init_kernel_vmspace();
@@ -208,8 +229,8 @@ void kernel_init()
         create_mem_zones();
         init_kernel_heap_area(&KHEAP_AREA, &KHEAP_DATA);
 
-        kmm_init();
-        kmalloc_init();
+        kmm_init(alloc_page, free_page);
+        kmalloc_init(CONF_MALLOC_MIN_POW, CONF_MALLOC_MAX_POW);
         LOGF_I("Kernel Memory Manager is... Up and running\n");
 
         LOGF_I("Trying to allocate a bit of memory...\n");

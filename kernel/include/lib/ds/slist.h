@@ -1,5 +1,5 @@
-#ifndef _KERNEL_DS_SLIST_H
-#define _KERNEL_DS_SLIST_H
+#ifndef _LIB_DS_SLIST_H
+#define _LIB_DS_SLIST_H
 
 #define SLIST_HEAD(name, type) \
         struct name {          \
@@ -66,4 +66,4 @@
                 SLIST_REMOVE_AFTER(current, fieldname);                \
         } while (0)
 
-#endif // _KERNEL_DS_SLIST_H
+#endif /* _LIB_DS_SLIST_H */

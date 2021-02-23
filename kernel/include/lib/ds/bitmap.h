@@ -1,5 +1,5 @@
-#ifndef _KERNEL_DS_BITMAP_H
-#define _KERNEL_DS_BITMAP_H
+#ifndef _LIB_DS_BITMAP_H
+#define _LIB_DS_BITMAP_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -28,4 +28,4 @@ void bitmap_resize(struct bitmap *bitmap, size_t new_length_bits);
 size_t bitmap_predict_size(uint32_t length_bits);
 
 
-#endif /* _KERNEL_DS_BITMAP_H */
+#endif /* _LIB_DS_BITMAP_H */

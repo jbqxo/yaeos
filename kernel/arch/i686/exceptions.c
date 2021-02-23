@@ -3,6 +3,7 @@
 #include "arch_i686/intr.h"
 
 #include "kernel/kernel.h"
+#include "kernel/panic.h"
 
 #include "lib/cstd/stdio.h"
 

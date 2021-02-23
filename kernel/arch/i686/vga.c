@@ -1,9 +1,10 @@
 #include "arch_i686/kernel.h"
 #include "arch_i686/vm.h"
 
+#include "kernel/console.h"
 #include "kernel/kernel.h"
+#include "kernel/mm/highmem.h"
 
-#include "lib/console.h"
 #include "lib/cppdefs.h"
 #include "lib/cstd/ctype.h"
 #include "lib/cstd/string.h"
@@ -14,9 +15,9 @@
 
 #define VGA_WIDTH       80
 #define VGA_HEIGHT      25
-#define VGA_BUFFER_ADDR (0xb8000U)
+#define VGA_BUFFER_ADDR (0xC00B8000U)
 
-struct {
+static struct {
         volatile uint16_t *buffer;
         uint_fast16_t row;
         uint_fast16_t col;
@@ -88,21 +89,23 @@ static void break_line(void)
         }
 }
 
-static int vga_init(struct console *c __unused)
+void vga_clear(struct console *c __unused)
 {
-        union uiptr buffer_addr = uint2uiptr(VGA_BUFFER_ADDR);
-        buffer_addr.ptr = kernel_arch_to_high(buffer_addr.ptr);
-
-        STATE.row = 0;
-        STATE.col = 0;
-        STATE.color = vga_mix_color(VGA_DEFAULT_FG, VGA_DEFAULT_BG);
-        STATE.buffer = buffer_addr.ptr;
-
         for (uint_fast16_t y = 0; y < VGA_HEIGHT; y++) {
                 for (uint_fast16_t x = 0; x < VGA_WIDTH; x++) {
                         write_char(' ', STATE.color, x, y);
                 }
         }
+}
+
+static int vga_init(struct console *c)
+{
+        STATE.row = 0;
+        STATE.col = 0;
+        STATE.color = vga_mix_color(VGA_DEFAULT_FG, VGA_DEFAULT_BG);
+        STATE.buffer = uint2ptr(VGA_BUFFER_ADDR);
+
+        vga_clear(c);
 
         return (CONSRC_OK);
 }
@@ -112,32 +115,27 @@ static int min(int x, int y)
         return (x < y ? x : y);
 }
 
-void vga_write(struct console *c __unused, const char *restrict data, size_t size)
+void vga_write(struct console *c __unused, const char *restrict str, size_t size)
 {
         while (size > 0) {
-                const char *nl_pos = kstrchr(data, '\n');
+                const char *nl_pos = kstrchr(str, '\n');
                 size_t w = min(size, VGA_WIDTH - STATE.col);
                 if (nl_pos) {
-                        w = min(w, nl_pos - data);
+                        w = min(w, nl_pos - str);
                 }
-                for (size_t i = 0; i < w; i++, data++) {
-                        write_char(*data, STATE.color, STATE.col, STATE.row);
+                for (size_t i = 0; i < w; i++, str++) {
+                        write_char(*str, STATE.color, STATE.col, STATE.row);
                         STATE.col++;
                 }
                 size -= w;
                 if (size != 0) {
-                        if (*data == '\n') {
-                                data++;
+                        if (*str == '\n') {
+                                str++;
                                 size--;
                         }
                         break_line();
                 }
         }
-}
-
-void vga_clear(struct console *c __unused)
-{
-        vga_init(c);
 }
 
 struct console vga_console = (struct console){ .name = "vga_console",

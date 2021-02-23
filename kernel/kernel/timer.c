@@ -1,4 +1,4 @@
-#include "lib/timer.h"
+#include "kernel/timer.h"
 
 #include "lib/ds/cbuffer.h"
 #include "lib/elflist.h"

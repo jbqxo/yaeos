@@ -1,6 +1,7 @@
-#include "lib/panic.h"
+#include "kernel/panic.h"
 
-#include "lib/console.h"
+#include "kernel/console.h"
+
 #include "lib/cppdefs.h"
 #include "lib/cstd/stdio.h"
 
@@ -19,7 +20,7 @@ static void print_register(void *key, void *value, void *data __unused)
 
 __noreturn void kernel_panic(struct kernel_panic_info *info)
 {
-        console_clear();
+        kfprintf(conwrite, "\n\n");
         kfprintf(conwrite, "Whoopsie. The kernel is on fire... Bye.\n");
         kfprintf(conwrite, "Cause: %s\n", info->description);
         if (info->location != NULL) {

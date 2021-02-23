@@ -1,5 +1,5 @@
-#ifndef _KERNEL_DS_KVSTORE_H
-#define _KERNEL_DS_KVSTORE_H
+#ifndef _LIB_DS_KVSTORE_H
+#define _LIB_DS_KVSTORE_H
 
 #include "lib/cppdefs.h"
 #include "lib/cstd/string.h"
@@ -30,4 +30,4 @@ void kvstore_append(struct kvstore *kv, void *key, void *val);
 void kvstore_remove(struct kvstore *kv, void const *key);
 void kvstore_change(struct kvstore *kv, void const *key, void *val);
 
-#endif // _KERNEL_DS_KVSTORE_H
+#endif /* _LIB_DS_KVSTORE_H */

@@ -13,6 +13,7 @@ struct console {
         void (*write)(struct console *, const char *msg, size_t len);
         void (*clear)(struct console *);
         int (*init)(struct console *);
+        void *data;
 #define CONSFLAG_EARLY (0x1)
         unsigned flags;
 
@@ -23,4 +24,4 @@ void console_init(void);
 void console_write(const char *msg, size_t len);
 void console_clear(void);
 
-#endif // _KERNEL_CONSOLE_H
+#endif /* _KERNEL_CONSOLE_H */

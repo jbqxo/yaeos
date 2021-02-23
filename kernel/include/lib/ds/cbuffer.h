@@ -1,5 +1,5 @@
-#ifndef _KERNEL_DS_CBUFFER_H
-#define _KERNEL_DS_CBUFFER_H
+#ifndef _LIB_DS_CBUFFER_H
+#define _LIB_DS_CBUFFER_H
 
 #include "lib/cstd/string.h"
 
@@ -47,4 +47,4 @@
                 (cbuffer)->count--;                            \
         } while (0)
 
-#endif // _KERNEL_DS_CBUFFER_H
+#endif /* _LIB_DS_CBUFFER_H */

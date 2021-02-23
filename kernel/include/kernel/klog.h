@@ -1,7 +1,8 @@
-#ifndef _LIB_KLOG_H
-#define _LIB_KLOG_H
+#ifndef _KERNEL_KLOG_H
+#define _KERNEL_KLOG_H
 
-#include "lib/console.h"
+#include "kernel/console.h"
+
 #include "lib/cppdefs.h"
 
 #include <stdarg.h>
@@ -31,4 +32,4 @@ void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, const char *res
 __noreturn void klog_logf_panic(const char *location, const char *restrict format, ...)
         __attribute__((format(printf, 2, 3)));
 
-#endif // _LIB_KLOG_H
+#endif /* _KERNEL_KLOG_H */

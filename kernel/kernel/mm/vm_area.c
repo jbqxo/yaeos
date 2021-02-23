@@ -1,8 +1,11 @@
 #include "kernel/mm/vm_area.h"
 
+#include "kernel/klog.h"
+#include "kernel/platform_consts.h"
+
 #include "lib/align.h"
 #include "lib/cstd/assert.h"
-#include "lib/klog.h"
+#include "lib/cstd/string.h"
 
 int vm_area_rbtcmpfn(const void *area_x, const void *area_y)
 {
