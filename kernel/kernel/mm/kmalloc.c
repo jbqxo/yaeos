@@ -58,7 +58,8 @@ void *kmalloc(size_t size)
 {
         size_t const req_space = size + sizeof(struct kmalloc_ident_info);
         int pow = log2_ceil(req_space);
-        unsigned const cache_index = pow - (LOW_POW + 1);
+        pow = MAX(pow, LOW_POW);
+        unsigned const cache_index = pow - LOW_POW;
 
         if (cache_index >= POWERS) {
                 const size_t max_available = 1 << MAX_POW;

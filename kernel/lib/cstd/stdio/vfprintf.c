@@ -237,25 +237,24 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args)
         struct argument arg = { 0 };
         switch (s.spec) {
         case CS_INT: {
-                intmax_t val = va_arg(*args, intmax_t);
                 switch (s.length) {
-#define CASE_BODY(type)                      \
-        do {                                 \
-                type v = (type)val;          \
-                arg.val.d = v;               \
-                if (v < 0) {                 \
-                        arg.negative = true; \
-                        arg.val.d *= -1;     \
-                }                            \
+#define CASE_BODY(__type, __va_type)                         \
+        do {                                                 \
+                __type v = (__type)va_arg(*args, __va_type); \
+                arg.val.d = v;                               \
+                if (v < 0) {                                 \
+                        arg.negative = true;                 \
+                        arg.val.d *= -1;                     \
+                }                                            \
         } while (0)
-                case CL_CHAR: CASE_BODY(char); break;
-                case CL_SHORT: CASE_BODY(short); break;
-                case CL_LONG: CASE_BODY(long); break;
-                case CL_LLONG: CASE_BODY(long long); break;
-                case CL_INTMAX: CASE_BODY(intmax_t); break;
-                case CL_SIZET: CASE_BODY(size_t); break;
-                case CL_NONE: CASE_BODY(int); break;
-                case CL_PTRDIFF: CASE_BODY(ptrdiff_t); break;
+                case CL_CHAR: CASE_BODY(char, int); break;
+                case CL_SHORT: CASE_BODY(short, int); break;
+                case CL_LONG: CASE_BODY(long, long); break;
+                case CL_LLONG: CASE_BODY(long long, long long); break;
+                case CL_INTMAX: CASE_BODY(intmax_t, intmax_t); break;
+                case CL_SIZET: CASE_BODY(size_t, size_t); break;
+                case CL_NONE: CASE_BODY(int, int); break;
+                case CL_PTRDIFF: CASE_BODY(ptrdiff_t, ptrdiff_t); break;
 #undef CASE_BODY
                 }
         } break;
@@ -263,19 +262,18 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args)
         case CS_UHEX_BIG:
         case CS_UOCTAL:
         case CS_UDEC: {
-                uintmax_t val = va_arg(*args, uintmax_t);
                 switch (s.length) {
-                case CL_CHAR: arg.val.d = (unsigned char)val; break;
-                case CL_SHORT: arg.val.d = (unsigned short)val; break;
-                case CL_LONG: arg.val.d = (unsigned long)val; break;
-                case CL_LLONG: arg.val.d = (unsigned long long)val; break;
-                case CL_INTMAX: arg.val.d = (uintmax_t)val; break;
-                case CL_SIZET: arg.val.d = (size_t)val; break;
-                case CL_NONE: arg.val.d = (unsigned)val; break;
-                case CL_PTRDIFF: arg.val.d = (ptrdiff_t)val; break;
+                case CL_CHAR: arg.val.d = (unsigned char)va_arg(*args, int); break;
+                case CL_SHORT: arg.val.d = (unsigned short)va_arg(*args, int); break;
+                case CL_LONG: arg.val.d = (unsigned long)va_arg(*args, long); break;
+                case CL_LLONG: arg.val.d = (unsigned long long)va_arg(*args, long long); break;
+                case CL_INTMAX: arg.val.d = (uintmax_t)va_arg(*args, intmax_t); break;
+                case CL_SIZET: arg.val.d = (size_t)va_arg(*args, size_t); break;
+                case CL_NONE: arg.val.d = (unsigned)va_arg(*args, int); break;
+                case CL_PTRDIFF: arg.val.d = (ptrdiff_t)va_arg(*args, ptrdiff_t); break;
                 }
         } break;
-        case CS_PTR: arg.val.d = va_arg(*args, int); break;
+        case CS_PTR: arg.val.d = va_arg(*args, uintptr_t); break;
         case CS_STR: arg.val.str = va_arg(*args, char *); break;
         case CS_UCHAR: arg.val.d = va_arg(*args, int); break;
         }

@@ -35,7 +35,7 @@ union uiptr {
         uintptr_t num;
 };
 
-static inline union uiptr ptr2uiptr(const void *ptr)
+static inline union uiptr ptr2uiptr(void *ptr)
 {
         return ((union uiptr){ .ptr = ptr });
 }
@@ -50,7 +50,7 @@ static inline void *uint2ptr(uintptr_t address)
         return (uint2uiptr(address).ptr);
 }
 
-static inline uintptr_t ptr2uint(const void *address)
+static inline uintptr_t ptr2uint(void *address)
 {
         return (ptr2uiptr(address).num);
 }

@@ -27,7 +27,7 @@ static int descbuffer_write(const char *msg, size_t len)
 
 static struct kernel_panic_info prepare_panic_info(struct intr_ctx *ctx, const char *desc)
 {
-        kfprintf(descbuffer_write, "%s (INTNO: %d; ERR: %d)", desc, ctx->int_n, ctx->err_code);
+        kfprintf(descbuffer_write, "%s (INTNO: %u; ERR: %u)", desc, ctx->int_n, ctx->err_code);
         struct kernel_panic_info info = (struct kernel_panic_info){
                 .description = DESCRIPTION_BUFFER,
                 .location = NULL,

@@ -18,10 +18,10 @@
 static alloc_page_fn_t ALLOC_PAGE_FN;
 static free_page_fn_t FREE_PAGE_FN;
 
-///
-/// Buffer control block for small objects (< PAGE_SIZE / 8).
-/// It's stored at the end of the buffer it manages.
-///
+/**
+ *  Buffer control block for small objects (< PAGE_SIZE / 8).
+ *  It's stored at the end of the buffer it manages.
+ */
 struct bufctl_small {
         SLIST_FIELD(struct bufctl_small) slist;
 };
@@ -37,9 +37,9 @@ union bufctl {
         struct bufctl_large large;
 };
 
-///
-/// Returns an address of a memory block that is owned by a small bufctl.
-///
+/**
+ * Returns an address of a memory block that is owned by a small bufctl.
+ */
 static void *bufctl_small_get_mem(struct bufctl_small *ctl, struct kmm_cache *cache)
 {
         uintptr_t ctl_addr = ptr2uint(ctl);
@@ -48,17 +48,17 @@ static void *bufctl_small_get_mem(struct bufctl_small *ctl, struct kmm_cache *ca
         return (uint2ptr(buffer_addr));
 }
 
-///
-/// Returns an address of a memory block that is owned by a large bufctl.
-///
+/**
+ * Returns an address of a memory block that is owned by a large bufctl.
+ */
 static void *bufctl_large_get_mem(struct bufctl_large *ctl)
 {
         return (ctl->memory);
 }
 
-///
-/// Returns an address of a memory block owned by a bufctl.
-///
+/**
+ * Returns an address of a memory block owned by a bufctl.
+ */
 static void *bufctl_mem(union bufctl *ctl, struct kmm_cache *cache)
 {
         if (cache->flags & KMM_CACHE_LARGE) {
@@ -67,9 +67,9 @@ static void *bufctl_mem(union bufctl *ctl, struct kmm_cache *cache)
         return (bufctl_small_get_mem(&ctl->small, cache));
 }
 
-///
-/// Returns an address of a small bufctl that owns given buffer.
-///
+/**
+ * Returns an address of a small bufctl that owns given buffer.
+ */
 static void *get_bufctl_small(uintptr_t buffer_addr, struct kmm_cache *cache)
 {
         buffer_addr += cache->size;
@@ -77,13 +77,13 @@ static void *get_bufctl_small(uintptr_t buffer_addr, struct kmm_cache *cache)
         return (uint2ptr(buffer_addr));
 }
 
-///
-/// The structure of every used page.
-/// We keep some information at the beginning and use the rest of the page.
-///
+/**
+ * The structure of every used page.
+ * We keep some information at the beginning and use the rest of the page.
+ */
 struct page {
         struct kmm_slab *owner;
-        uintptr_t : 0; //! Align address of buffer's data region.
+        uintptr_t : 0; /**< Align address of buffer's data region. */
         char data[];
 };
 
@@ -101,7 +101,7 @@ static struct {
         struct kmm_cache slabs;
 } CACHES;
 
-/// Used to find empty memory slabs.
+/* Used to find empty memory slabs. */
 static SLIST_HEAD(, struct kmm_cache) ALLOCATED_CACHES;
 
 static void page_free(struct page *p)
@@ -110,12 +110,12 @@ static void page_free(struct page *p)
         FREE_PAGE_FN(p);
 }
 
-///
-/// Allocates a new page from VMM.
-/// If the allocation fails, it will try to reclaim some memory from other caches.
-/// If the allocation fails again and the cache is capable of using static storage,
-/// it will get memory from static memory pool as a last resort.
-///
+/**
+ * Allocates a new page from VMM.
+ * If the allocation fails, it will try to reclaim some memory from other caches.
+ * If the allocation fails again and the cache is capable of using static storage,
+ * it will get memory from static memory pool as a last resort.
+ */
 static struct page *page_alloc(struct kmm_cache *cache)
 {
         kassert(cache);
@@ -192,9 +192,9 @@ void kmm_cache_trim_all(void)
         }
 }
 
-///
-/// Returns page structure that contains an address.
-///
+/**
+ * Returns page structure that contains an address.
+ */
 static struct page *page_get_by_addr(void *addr)
 {
         uintptr_t p = ptr2uint(addr);
@@ -202,9 +202,9 @@ static struct page *page_get_by_addr(void *addr)
         return (uint2ptr(p));
 }
 
-///
-/// Returns slab that owns an address.
-///
+/**
+ * Returns slab that owns an address.
+ */
 static struct kmm_slab *slab_get_by_addr(void *addr)
 {
         return (page_get_by_addr(addr)->owner);
@@ -233,7 +233,7 @@ static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colo
         SLIST_FIELD_INIT(slab, slabs_list);
         SLIST_INIT(&slab->free_buffers);
 
-        // Check that leftover space is less than a full stride.
+        /* Check that leftover space is less than a full stride. */
         kassert((ptr2uint(page) + PLATFORM_PAGE_SIZE) -
                         (cursor.num + cache->slab_capacity * cache->stride) <
                 cache->stride);
@@ -335,7 +335,7 @@ static size_t cache_get_avail_space(struct kmm_cache *cache)
         kassert(cache);
         kassert(cache->stride > 0);
 
-        // struct page is always stored at the beginning of the page.
+        /* struct page is always stored at the beginning of the page. */
         size_t avail_space = PLATFORM_PAGE_SIZE - sizeof(struct page);
         if (!(cache->flags & KMM_CACHE_LARGE)) {
                 avail_space -= sizeof(struct kmm_slab);
@@ -442,7 +442,7 @@ void kmm_cache_destroy(struct kmm_cache *cache)
 {
         kassert(cache);
 
-        // Can't use SLIST_FOREACH 'cause it would use a slab after freeing.
+        /* Can't use SLIST_FOREACH 'cause it would use a slab after freeing. */
         struct kmm_slab *next;
         struct kmm_slab *current = SLIST_FIRST(&cache->slabs_full);
         while (current) {
@@ -488,7 +488,7 @@ static struct kmm_slab *find_existing_slab(struct kmm_cache *cache)
         } else if (!SLIST_EMPTY(&cache->slabs_empty)) {
                 slab = SLIST_FIRST(&cache->slabs_empty);
 
-                // Becomes partial.
+                /* Becomes partial. */
                 SLIST_REMOVE(&cache->slabs_empty, slab, slabs_list);
                 SLIST_INSERT_HEAD(&cache->slabs_partial, slab, slabs_list);
         }
