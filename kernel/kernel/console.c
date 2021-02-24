@@ -1,9 +1,10 @@
 #include "kernel/console.h"
 
+#include "lib/cppdefs.h"
 #include "lib/ds/slist.h"
 #include "lib/elflist.h"
 
-ELFLIST_EXTERN(struct console, consoles);
+ELFLIST_EXTERN(consoles);
 
 static SLIST_HEAD(, struct console) ACTIVE_CONSOLES;
 
@@ -11,7 +12,7 @@ void console_init(void)
 {
         struct console **c;
         SLIST_INIT(&ACTIVE_CONSOLES);
-        ELFLIST_FOREACH (consoles, c) {
+        ELFLIST_FOREACH (struct console, consoles, c) {
                 if ((*c)->init != NULL) {
                         int rc = (*c)->init(*c);
                         if (rc != CONSRC_OK) {

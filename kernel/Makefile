@@ -30,7 +30,7 @@ FILES_TESTS_OBJ :=\
     $(addsuffix .o, \
     $(shell $(FIND) * -name '*_tests.c'))
 
-HEADERS := $(shell $(FIND) * -type f -name '*.h')
+HEADERS := $(shell $(FIND) include arch/$(ARCH) -type f -name '*.h')
 # Strip headers paths up until the last "include/"
 STRIPPED_HEADERS := $(shell echo $(HEADERS) | sed -E 's/[^\ ]*include\/([^\ ]+)/\1/g')
 OFFSETS_HEADERS := $(addprefix $(BUILDDIR_KERNEL)/gen_include/offsets/, $(STRIPPED_HEADERS))

@@ -3,7 +3,7 @@
 #include "lib/ds/cbuffer.h"
 #include "lib/elflist.h"
 
-ELFLIST_EXTERN(struct int_timer, timers);
+ELFLIST_EXTERN(timers);
 
 struct event {
         callback_fn cb;
@@ -19,7 +19,7 @@ static void callback(void)
 void timer_init(void)
 {
         struct int_timer **t;
-        ELFLIST_FOREACH (timers, t) {
+        ELFLIST_FOREACH (struct int_timer, timers, t) {
                 if ((*t)->init != NULL) {
                         int rc = (*t)->init(callback);
                         if (rc != TIMER_RC_OK) {

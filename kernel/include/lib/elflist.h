@@ -16,7 +16,8 @@
   */
 /* Pointer aligned (because elflists store pointers) because otherwise it won't be aligned at all,
  * but the first pointer would still be pointer-aligned. */
-struct elflist_mark {} __aligned(sizeof(void*));
+struct elflist_mark {
+} __aligned(sizeof(void *));
 
 /**
  * The macro places the address of a symbol in the list's section and ensures that there are edge marks.
@@ -31,14 +32,18 @@ struct elflist_mark {} __aligned(sizeof(void*));
                                                                               "_" #listname \
                                                                               "_end")
 
-#define ELFLIST_EXTERN(ptype, listname)                                                    \
-        extern ptype *__elflist_##listname##_begin; /*NOLINT(bugprone-macro-parentheses)*/ \
-        extern ptype *__elflist_##listname##_end    /*NOLINT(bugprone-macro-parentheses)*/
+#define ELFLIST_EXTERN(listname)                                                 \
+        const __weak struct elflist_mark __elflist_##listname##_begin __section( \
+                ".elflist_" #listname "_begin");                                 \
+        const __weak struct elflist_mark __elflist_##listname##_end __section(   \
+                ".elflist_" #listname "_end")
 
-#define ELFLIST_BEGIN(listname) (&__elflist_##listname##_begin)
-#define ELFLIST_END(listname)   (&__elflist_##listname##_end)
-#define ELFLIST_COUNT(listname) (ELFLIST_END(listname) - ELFLIST_BEGIN(listname))
-#define ELFLIST_FOREACH(listname, iterv) \
-        for ((iterv) = ELFLIST_BEGIN(listname); (iterv) < ELFLIST_END(listname); (iterv)++)
+#define ELFLIST_BEGIN(ptype, listname) ((ptype **)&__elflist_##listname##_begin)
+#define ELFLIST_END(ptype, listname)   ((ptype **)&__elflist_##listname##_end)
+#define ELFLIST_COUNT(ptype, listname) \
+        (ELFLIST_END(ptype, listname) - ELFLIST_BEGIN(ptype, listname))
+#define ELFLIST_FOREACH(ptype, listname, iterv)                                                \
+        for ((iterv) = ELFLIST_BEGIN(ptype, listname); (iterv) < ELFLIST_END(ptype, listname); \
+             (iterv)++)
 
 #endif /* _LIB_ELFLIST_H */

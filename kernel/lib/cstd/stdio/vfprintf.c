@@ -54,27 +54,17 @@ struct conv_spec {
         enum conv_specifiers spec;
 };
 
-#ifdef __i686__
-static unsigned conv_positive_atoi(const char *s, unsigned len)
+static unsigned vfprintf_atoi(const char *s)
 {
-        // The number cannot be negative.
-        // The segment must contain only digits.
         unsigned res = 0;
-        switch (len) {
-        case 10: res += (s[len - 10] - '0') * 1000000000U;
-        case 9: res += (s[len - 9] - '0') * 100000000U;
-        case 8: res += (s[len - 8] - '0') * 10000000U;
-        case 7: res += (s[len - 7] - '0') * 1000000U;
-        case 6: res += (s[len - 6] - '0') * 100000U;
-        case 5: res += (s[len - 5] - '0') * 10000U;
-        case 4: res += (s[len - 4] - '0') * 1000U;
-        case 3: res += (s[len - 3] - '0') * 100U;
-        case 2: res += (s[len - 2] - '0') * 10U;
-        case 1: res += (s[len - 1] - '0');
+
+        for (;; s++) {
+                switch (*s) {
+                case '0' ... '9': res = 10 * res + (*s - '0'); break;
+                default: return res;
+                }
         }
-        return (res);
 }
-#endif // __i686__
 
 static struct conv_spec parse_conv_spec(const char *_format, int *spec_len)
 {
@@ -133,7 +123,7 @@ static struct conv_spec parse_conv_spec(const char *_format, int *spec_len)
                         goto skip_width;
                 }
 
-                result.width = (int)conv_positive_atoi(begin, len);
+                result.width = (int)vfprintf_atoi(begin);
                 format += len;
 
         skip_width:;
@@ -164,7 +154,7 @@ static struct conv_spec parse_conv_spec(const char *_format, int *spec_len)
                         result.precision = 0;
                         goto skip_precision;
                 }
-                result.precision = (int)conv_positive_atoi(begin, len);
+                result.precision = (int)vfprintf_atoi(begin);
                 format += len;
 
         skip_precision:;

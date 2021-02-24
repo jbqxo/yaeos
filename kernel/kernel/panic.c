@@ -35,6 +35,6 @@ __noreturn void kernel_panic(struct kernel_panic_info *info)
                 }
         }
         while (true) {
-                asm volatile("hlt");
+                asm volatile("");
         }
 }
