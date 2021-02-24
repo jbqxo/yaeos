@@ -1,22 +1,11 @@
-#include "arch_i686/descriptors.h"
-#include "arch_i686/exceptions.h"
-#include "arch_i686/intr.h"
-#include "arch_i686/kernel.h"
-#include "arch_i686/vm.h"
+#include "arch_i686/early_paging.h"
 
-#include "kernel/config.h"
+#include "arch_i686/vm.h"
+#include "arch_i686/kernel.h"
 #include "kernel/kernel.h"
-#include "kernel/mm/highmem.h"
-#include "kernel/platform_consts.h"
 
 #include "lib/align.h"
 #include "lib/cppdefs.h"
-#include "lib/cstd/string.h"
-
-#include <multiboot.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 
 #define TO_LOW(addr)  (void *)((uintptr_t)(addr) - (KERNEL_VM_OFFSET))
 #define TO_HIGH(addr) (void *)((uintptr_t)(addr) + (KERNEL_VM_OFFSET))
@@ -100,10 +89,7 @@ static void map_platform(union vm_arch_page_dir *page_dir)
         map_addr_range(page_dir, start.ptr, end.ptr, VM_TABLE_FLAG_RW);
 }
 
-/**
- * @brief Setup paging to actualy boot the kernel.
- */
-static __noinline void setup_boot_paging(void)
+__noinline void setup_boot_paging(void)
 {
         union uiptr pt_addr = ptr2uiptr(&boot_paging_pt);
         union uiptr pd_addr = ptr2uiptr(&boot_paging_pd);
@@ -142,41 +128,9 @@ static __noinline void setup_boot_paging(void)
         vm_tlb_flush();
 }
 
-/**
- * @brief Patch some multiboot information in order to use it from high memory.
- *
- * @param info Multiboot info block.
- */
-static void patch_multiboot_info(multiboot_info_t *info)
+void patch_multiboot_info(multiboot_info_t *info)
 {
         union uiptr addr = uint2uiptr(info->mmap_addr);
         addr.ptr = TO_HIGH(addr.ptr);
         info->mmap_addr = addr.num;
-}
-
-struct arch_info_i686 I686_INFO;
-
-void i686_init(multiboot_info_t *info, uint32_t magic)
-{
-        if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
-                // TODO: Panic
-                return;
-        }
-
-        setup_boot_paging();
-
-        highmem_set_offset(ptr2uint(kernel_vma));
-
-        boot_setup_gdt();
-        boot_setup_idt();
-        intr_init();
-        i686_setup_exception_handlers();
-        intr_handler_cpu(INTR_CPU_PAGEFAULT, vm_i686_pg_fault_handler);
-
-        union uiptr info_addr = ptr2uiptr(info);
-        info_addr.ptr = highmem_to_high(info_addr.ptr);
-        I686_INFO.multiboot = info_addr.ptr;
-        patch_multiboot_info(I686_INFO.multiboot);
-
-        kernel_init();
 }
