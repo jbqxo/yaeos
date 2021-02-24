@@ -2,7 +2,7 @@ export ROOT := $(shell pwd)
 
 include confmk/common.mk
 
-.PHONY: all build_dir kernel grub-iso tests clean
+.PHONY: all build_dir kernel grub-iso tests clean raw.bin
 
 all: kernel grub-iso tests build_dir
 
@@ -13,6 +13,9 @@ clean:
 	@$(MAKE) -C $(DIR_KERNEL) clean
 	@$(MAKE) -C $(DIR_BOOT) clean
 	@$(MAKE) -C $(DIR_DEPS) clean
+
+raw.bin: kernel | build_dir
+	$(OBJCOPY) -O binary $(BUILDDIR_KERNEL)/kernel.bin $(BUILDDIR_BUILD)/raw.bin
 
 grub-iso: kernel | build_dir
 	$(call log, [build] make grub iso)
