@@ -6,12 +6,12 @@
 
 ELFLIST_EXTERN(consoles);
 
-static SLIST_HEAD(, struct console) ACTIVE_CONSOLES;
+static struct slist_ref ACTIVE_CONSOLES;
 
 void console_init(void)
 {
         struct console **c;
-        SLIST_INIT(&ACTIVE_CONSOLES);
+        slist_init(&ACTIVE_CONSOLES);
         ELFLIST_FOREACH (struct console, consoles, c) {
                 if ((*c)->init != NULL) {
                         int rc = (*c)->init(*c);
@@ -19,14 +19,14 @@ void console_init(void)
                                 continue;
                         }
                 }
-                SLIST_INSERT_HEAD(&ACTIVE_CONSOLES, *c, active_consoles);
+                slist_insert(&ACTIVE_CONSOLES, &(*c)->active_consoles);
         }
 }
 
 void console_clear()
 {
-        struct console *c;
-        SLIST_FOREACH (c, &ACTIVE_CONSOLES, active_consoles) {
+        SLIST_FOREACH (it, &ACTIVE_CONSOLES) {
+                struct console *c = container_of(it, struct console, active_consoles);
                 if (c->clear != NULL) {
                         c->clear(c);
                 }
@@ -35,8 +35,8 @@ void console_clear()
 
 void console_write(const char *msg, size_t len)
 {
-        struct console *c;
-        SLIST_FOREACH (c, &ACTIVE_CONSOLES, active_consoles) {
+        SLIST_FOREACH (it, &ACTIVE_CONSOLES) {
+                struct console *c = container_of(it, struct console, active_consoles);
                 if (c->write != NULL) {
                         c->write(c, msg, len);
                 }

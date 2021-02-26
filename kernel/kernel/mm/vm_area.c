@@ -65,7 +65,7 @@ void vm_area_init(struct vm_area *area, void *vaddr, size_t length, const struct
 
         rbtree_init_node(&area->rb_areas);
         area->rb_areas.data = area;
-        SLIST_FIELD_INIT(area, sorted_areas);
+        slist_init(&area->sorted_areas);
 }
 
 void *vm_area_register_page(struct vm_area *area, void *page_addr)

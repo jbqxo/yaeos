@@ -17,7 +17,7 @@ struct console {
 #define CONSFLAG_EARLY (0x1)
         unsigned flags;
 
-        SLIST_FIELD(struct console) active_consoles;
+        struct slist_ref active_consoles;
 };
 
 void console_init(void);

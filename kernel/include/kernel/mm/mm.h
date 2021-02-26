@@ -34,7 +34,7 @@ struct mm_zone {
          * Basically, it maps a virtual address to it's physical counterpart. */
         struct vm_area info_area;
 
-        SLIST_FIELD(struct mm_zone) list;
+        struct slist_ref sys_zones;
 };
 
 struct mm_zone *mm_zone_create(void *phys_start, size_t length, struct vm_space *kernel_vmspace);

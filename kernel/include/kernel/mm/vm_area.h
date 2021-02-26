@@ -1,8 +1,8 @@
 #ifndef _KERNEL_VM_AREA_H
 #define _KERNEL_VM_AREA_H
 
-#include "lib/ds/slist.h"
 #include "lib/ds/rbtree.h"
+#include "lib/ds/slist.h"
 
 #include <stddef.h>
 
@@ -20,8 +20,8 @@ struct vm_area {
         size_t length;
         enum vm_flags flags;
 
-        SLIST_FIELD(struct vm_area) sorted_areas; /**< Sorted list of areas in an address space. */
-        struct rbtree_node rb_areas;              /**< RBT of areas in an address space. */
+        struct slist_ref sorted_areas; /**< Sorted list of areas in an address space. */
+        struct rbtree_node rb_areas;   /**< RBT of areas in an address space. */
         const struct vm_space *owner;
 
         struct vm_area_ops {

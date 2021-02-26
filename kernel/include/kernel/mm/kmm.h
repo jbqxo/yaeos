@@ -30,12 +30,11 @@ struct kmm_cache {
         void (*ctor)(void *);
         void (*dtor)(void *);
 
-        SLIST_HEAD(, struct kmm_slab) slabs_empty;
-        SLIST_HEAD(, struct kmm_slab) slabs_partial;
-        SLIST_HEAD(, struct kmm_slab) slabs_full;
+        struct slist_ref slabs_empty;
+        struct slist_ref slabs_partial;
+        struct slist_ref slabs_full;
 
-        SLIST_FIELD(struct kmm_cache)
-        caches; /**< List of all creating caches. Used to reclaim memory. */
+        struct slist_ref sys_caches; /**< List of all created caches. Used to reclaim memory. */
 };
 
 /**

@@ -14,18 +14,19 @@ void *vm_space_find_gap(struct vm_space *space,
         kassert(predicate != NULL);
 
         union uiptr next_after_last_area_end = space->offset;
-        struct vm_area *it = NULL;
 
-        SLIST_FOREACH (it, &space->sorted_areas, sorted_areas) {
+        SLIST_FOREACH (it, &space->sorted_areas) {
+                struct vm_area *a = container_of(it, struct vm_area, sorted_areas);
+
                 union uiptr current_base = next_after_last_area_end;
-                size_t current_length = ptr2uint(it->base_vaddr) - current_base.num;
+                size_t current_length = ptr2uint(a->base_vaddr) - current_base.num;
 
                 bool hit = predicate(current_base.ptr, current_length, pred_data);
                 if (hit) {
                         return (current_base.ptr);
                 }
 
-                next_after_last_area_end.num = ptr2uint(it->base_vaddr) + it->length;
+                next_after_last_area_end.num = ptr2uint(a->base_vaddr) + a->length;
         }
 
         const uintptr_t LAST_AVAILABLE_ADDR = ~0UL;
@@ -44,7 +45,7 @@ void vm_space_init(struct vm_space *space, union vm_arch_page_dir *root_pdir, un
         kassert(space != NULL);
         kassert(root_pdir != NULL);
 
-        SLIST_INIT(&space->sorted_areas);
+        slist_init(&space->sorted_areas);
         rbtree_init_tree(&space->rb_areas);
         space->root_dir = root_pdir;
         space->offset = offset;
@@ -61,9 +62,9 @@ void vm_space_append_area(struct vm_space *space, struct vm_area *area)
         rbtree_insert(&space->rb_areas, &area->rb_areas, vm_area_rbtcmpfn);
 
         if (left_neigh == NULL) {
-                SLIST_INSERT_HEAD(&space->sorted_areas, area, sorted_areas);
+                slist_insert(&space->sorted_areas, &area->sorted_areas);
         } else {
-                SLIST_INSERT_AFTER(left_neigh, area, sorted_areas);
+                slist_insert(&left_neigh->sorted_areas, &area->sorted_areas);
         }
 }
 
@@ -73,5 +74,5 @@ void vm_space_remove_area(struct vm_space *space, struct vm_area *area)
         kassert(area != NULL);
 
         rbtree_delete(&space->rb_areas, &area->rb_areas);
-        SLIST_REMOVE(&space->sorted_areas, area, sorted_areas);
+        slist_remove(&space->sorted_areas, &area->sorted_areas);
 }

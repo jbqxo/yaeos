@@ -18,7 +18,7 @@ struct vm_space {
         union uiptr offset; /**< I think it will be used only by the kernel space. */
 
         struct rbtree rb_areas;
-        SLIST_HEAD(, struct vm_area) sorted_areas;
+        struct slist_ref sorted_areas;
 };
 
 /**

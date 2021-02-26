@@ -23,16 +23,16 @@ static free_page_fn_t FREE_PAGE_FN;
  *  It's stored at the end of the buffer it manages.
  */
 struct bufctl_small {
-        SLIST_FIELD(struct bufctl_small) slist;
+        struct slist_ref slist;
 };
 
 struct bufctl_large {
-        SLIST_FIELD(struct bufctl_large) slist;
+        struct slist_ref slist;
         void *memory;
 };
 
 union bufctl {
-        SLIST_FIELD(union bufctl) slist;
+        struct slist_ref slist;
         struct bufctl_small small;
         struct bufctl_large large;
 };
@@ -88,8 +88,8 @@ struct page {
 };
 
 struct kmm_slab {
-        SLIST_FIELD(struct kmm_slab) slabs_list;
-        SLIST_HEAD(, union bufctl) free_buffers;
+        struct slist_ref slabs_list;
+        struct slist_ref free_buffers;
 
         struct page *page;
         unsigned objects_inuse;
@@ -102,7 +102,7 @@ static struct {
 } CACHES;
 
 /* Used to find empty memory slabs. */
-static SLIST_HEAD(, struct kmm_cache) ALLOCATED_CACHES;
+static struct slist_ref ALLOCATED_CACHES_HEAD;
 
 static void page_free(struct page *p)
 {
@@ -141,54 +141,63 @@ static void slab_destroy(struct kmm_slab *slab, struct kmm_cache *cache)
         }
 
         if (cache->flags & KMM_CACHE_LARGE) {
-                union bufctl *it;
-                SLIST_FOREACH (it, &slab->free_buffers, slist) {
+                SLIST_FOREACH (it, slab->free_buffers.next) {
+                        union bufctl *b = container_of(it, union bufctl, slist);
+
                         if (cache->dtor) {
-                                void *mem = bufctl_large_get_mem(&it->large);
+                                void *mem = bufctl_large_get_mem(&b->large);
                                 cache->dtor(mem);
                         }
-                        kmm_cache_free(&CACHES.large_bufctls, it);
+                        kmm_cache_free(&CACHES.large_bufctls, b);
                 }
                 kmm_cache_free(&CACHES.slabs, slab);
         } else {
-                union bufctl *it;
-                SLIST_FOREACH (it, &slab->free_buffers, slist) {
+                SLIST_FOREACH (it, slab->free_buffers.next) {
+                        union bufctl *b = container_of(it, union bufctl, slist);
                         if (cache->dtor) {
-                                void *mem = bufctl_small_get_mem(&it->small, cache);
+                                void *mem = bufctl_small_get_mem(&b->small, cache);
                                 cache->dtor(mem);
                         }
                 }
         }
 
         if (__likely(slab->objects_inuse == 0)) {
-                SLIST_REMOVE(&cache->slabs_empty, slab, slabs_list);
+                slist_remove(&cache->slabs_empty, &slab->slabs_list);
         } else if (slab->objects_inuse == cache->slab_capacity) {
-                SLIST_REMOVE(&cache->slabs_full, slab, slabs_list);
+                slist_remove(&cache->slabs_full, &slab->slabs_list);
         } else {
-                SLIST_REMOVE(&cache->slabs_partial, slab, slabs_list);
+                slist_remove(&cache->slabs_partial, &slab->slabs_list);
         }
 
         page_free(slab->page);
 }
 
-void kmm_cache_trim(struct kmm_cache *cache)
+static void free_slabs_list(struct slist_ref *list_head, struct kmm_cache *from_cache)
 {
-        kassert(cache != NULL);
+        kassert(list_head != NULL);
 
-        struct kmm_slab *next = NULL;
-        struct kmm_slab *current = SLIST_FIRST(&cache->slabs_empty);
+        /* Can't use SLIST_FOREACH 'cause it would use a slab after freeing. */
+        struct slist_ref *next = NULL;
+        struct slist_ref *current = slist_next(list_head);
         while (current != NULL) {
-                next = SLIST_NEXT(current, slabs_list);
-                slab_destroy(current, cache);
+                struct kmm_slab *slab = container_of(current, struct kmm_slab, slabs_list);
+                next = slist_next(current);
+                slab_destroy(slab, from_cache);
                 current = next;
         }
 }
 
+void kmm_cache_trim(struct kmm_cache *cache)
+{
+        kassert(cache != NULL);
+        free_slabs_list(&cache->slabs_empty, cache);
+}
+
 void kmm_cache_trim_all(void)
 {
-        struct kmm_cache *itc = NULL;
-        SLIST_FOREACH (itc, &ALLOCATED_CACHES, caches) {
-                kmm_cache_trim(itc);
+        SLIST_FOREACH(it, slist_next(&ALLOCATED_CACHES_HEAD)) {
+                struct kmm_cache *c = container_of(it, struct kmm_cache, sys_caches);
+                kmm_cache_trim(c);
         }
 }
 
@@ -230,8 +239,8 @@ static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colo
 
         slab->objects_inuse = 0;
         slab->page = page;
-        SLIST_FIELD_INIT(slab, slabs_list);
-        SLIST_INIT(&slab->free_buffers);
+        slist_init(&slab->slabs_list);
+        slist_init(&slab->free_buffers);
 
         /* Check that leftover space is less than a full stride. */
         kassert((ptr2uint(page) + PLATFORM_PAGE_SIZE) -
@@ -242,8 +251,8 @@ static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colo
                 kassert(ctl_mem.num < cursor.num + cache->stride);
 
                 struct bufctl_small *ctl = ctl_mem.ptr;
-                SLIST_FIELD_INIT(ctl, slist);
-                SLIST_INSERT_HEAD(&slab->free_buffers, (union bufctl *)ctl, slist);
+                slist_init(&ctl->slist);
+                slist_insert(&slab->free_buffers, &ctl->slist);
 
                 void *mem = bufctl_small_get_mem(ctl, cache);
                 if (cache->ctor) {
@@ -275,13 +284,13 @@ static struct kmm_slab *slab_create_large(struct kmm_cache *cache, unsigned colo
 
         slab->objects_inuse = 0;
         slab->page = page;
-        SLIST_FIELD_INIT(slab, slabs_list);
-        SLIST_INIT(&slab->free_buffers);
+        slist_init(&slab->slabs_list);
+        slist_init(&slab->free_buffers);
 
         for (int i = 0; i < cache->slab_capacity; i++, obj_addr += cache->stride) {
                 struct bufctl_large *ctl = kmm_cache_alloc(&CACHES.large_bufctls);
-                SLIST_FIELD_INIT(ctl, slist);
-                SLIST_INSERT_HEAD(&slab->free_buffers, (union bufctl *)ctl, slist);
+                slist_init(&ctl->slist);
+                slist_insert(&slab->free_buffers, &ctl->slist);
 
                 void *obj = uint2ptr(obj_addr);
                 ctl->memory = obj;
@@ -310,16 +319,16 @@ static void object_free(void *mem, struct kmm_slab *slab, struct kmm_cache *cach
         } else {
                 ctl = get_bufctl_small(ptr2uint(mem), cache);
         }
-        SLIST_INSERT_HEAD(&slab->free_buffers, ctl, slist);
+        slist_insert(&slab->free_buffers, &ctl->slist);
 }
 
 static void *object_alloc(struct kmm_slab *slab, struct kmm_cache *cache)
 {
         kassert(slab);
-        kassert(!SLIST_EMPTY(&slab->free_buffers));
+        kassert(!slist_is_empty(&slab->free_buffers));
 
-        union bufctl *free_ctl = SLIST_FIRST(&slab->free_buffers);
-        SLIST_REMOVE(&slab->free_buffers, free_ctl, slist);
+        union bufctl *free_ctl = container_of(slist_next(&slab->free_buffers), union bufctl, slist);
+        slist_remove(&slab->free_buffers, &free_ctl->slist);
         void *mem = bufctl_mem(free_ctl, cache);
         if (cache->flags & KMM_CACHE_LARGE) {
                 kmm_cache_free(&CACHES.large_bufctls, free_ctl);
@@ -393,14 +402,14 @@ void kmm_cache_init(struct kmm_cache *restrict cache, const char *name, size_t s
 
         cache->ctor = ctor;
         cache->dtor = dtor;
-        SLIST_INIT(&cache->slabs_empty);
-        SLIST_INIT(&cache->slabs_partial);
-        SLIST_INIT(&cache->slabs_full);
+        slist_init(&cache->slabs_empty);
+        slist_init(&cache->slabs_partial);
+        slist_init(&cache->slabs_full);
 }
 
 void kmm_cache_register(struct kmm_cache *cache)
 {
-        SLIST_INSERT_HEAD(&ALLOCATED_CACHES, cache, caches);
+        slist_insert(&ALLOCATED_CACHES_HEAD, &cache->sys_caches);
 }
 
 void kmm_init(alloc_page_fn_t alloc_page_fn, free_page_fn_t free_page_fn)
@@ -411,10 +420,11 @@ void kmm_init(alloc_page_fn_t alloc_page_fn, free_page_fn_t free_page_fn)
         ALLOC_PAGE_FN = alloc_page_fn;
         FREE_PAGE_FN = free_page_fn;
 
-        SLIST_INIT(&ALLOCATED_CACHES);
-        SLIST_INSERT_HEAD(&ALLOCATED_CACHES, &CACHES.caches, caches);
-        SLIST_INSERT_HEAD(&ALLOCATED_CACHES, &CACHES.slabs, caches);
-        SLIST_INSERT_HEAD(&ALLOCATED_CACHES, &CACHES.large_bufctls, caches);
+        slist_init(&ALLOCATED_CACHES_HEAD);
+
+        kmm_cache_register(&CACHES.caches);
+        kmm_cache_register(&CACHES.slabs);
+        kmm_cache_register(&CACHES.large_bufctls);
 
         kmm_cache_init(&CACHES.caches, "slab_alloc_caches", sizeof(struct kmm_cache), 0, 0, NULL,
                        NULL);
@@ -442,32 +452,17 @@ void kmm_cache_destroy(struct kmm_cache *cache)
 {
         kassert(cache);
 
-        /* Can't use SLIST_FOREACH 'cause it would use a slab after freeing. */
-        struct kmm_slab *next;
-        struct kmm_slab *current = SLIST_FIRST(&cache->slabs_full);
-        while (current) {
+        if (!slist_is_empty(&cache->slabs_full)) {
                 LOGF_W("Freeing slab with objects in use from %s cache\n", cache->name);
-                next = SLIST_NEXT(current, slabs_list);
-                slab_destroy(current, cache);
-                current = next;
+                free_slabs_list(&cache->slabs_full, cache);
         }
-
-        current = SLIST_FIRST(&cache->slabs_partial);
-        while (current) {
+        if (!slist_is_empty(&cache->slabs_partial)) {
                 LOGF_W("Freeing slab with objects in use from %s cache\n", cache->name);
-                next = SLIST_NEXT(current, slabs_list);
-                slab_destroy(current, cache);
-                current = next;
+                free_slabs_list(&cache->slabs_partial, cache);
         }
+        free_slabs_list(&cache->slabs_empty, cache);
 
-        current = SLIST_FIRST(&cache->slabs_empty);
-        while (current) {
-                next = SLIST_NEXT(current, slabs_list);
-                slab_destroy(current, cache);
-                current = next;
-        }
-
-        SLIST_REMOVE(&ALLOCATED_CACHES, cache, caches);
+        slist_remove(&ALLOCATED_CACHES_HEAD, &cache->sys_caches);
 
         kmm_cache_free(&CACHES.caches, cache);
 }
@@ -477,20 +472,20 @@ static struct kmm_slab *find_existing_slab(struct kmm_cache *cache)
         kassert(cache != NULL);
 
         struct kmm_slab *slab = NULL;
-        if (!SLIST_EMPTY(&cache->slabs_partial)) {
-                slab = SLIST_FIRST(&cache->slabs_partial);
+        if (!slist_is_empty(&cache->slabs_partial)) {
+                slab = container_of(slist_next(&cache->slabs_partial), struct kmm_slab, slabs_list);
 
                 bool becomes_full = slab->objects_inuse + 1 == cache->slab_capacity;
                 if (becomes_full) {
-                        SLIST_REMOVE(&cache->slabs_partial, slab, slabs_list);
-                        SLIST_INSERT_HEAD(&cache->slabs_full, slab, slabs_list);
+                        slist_remove(&cache->slabs_partial, &slab->slabs_list);
+                        slist_insert(&cache->slabs_full, &slab->slabs_list);
                 }
-        } else if (!SLIST_EMPTY(&cache->slabs_empty)) {
-                slab = SLIST_FIRST(&cache->slabs_empty);
+        } else if (!slist_is_empty(&cache->slabs_empty)) {
+                slab = container_of(slist_next(&cache->slabs_empty), struct kmm_slab, slabs_list);
 
                 /* Becomes partial. */
-                SLIST_REMOVE(&cache->slabs_empty, slab, slabs_list);
-                SLIST_INSERT_HEAD(&cache->slabs_partial, slab, slabs_list);
+                slist_remove(&cache->slabs_empty, &slab->slabs_list);
+                slist_insert(&cache->slabs_partial, &slab->slabs_list);
         }
 
         return (slab);
@@ -514,9 +509,9 @@ static struct kmm_slab *get_new_slab(struct kmm_cache *cache)
         }
 
         if (cache->slab_capacity == 1) {
-                SLIST_INSERT_HEAD(&cache->slabs_full, slab, slabs_list);
+                slist_insert(&cache->slabs_full, &slab->slabs_list);
         } else {
-                SLIST_INSERT_HEAD(&cache->slabs_partial, slab, slabs_list);
+                slist_insert(&cache->slabs_partial, &slab->slabs_list);
         }
 
         return (slab);
@@ -552,16 +547,16 @@ void kmm_cache_free(struct kmm_cache *cache, void *mem)
         bool becomes_empty = slab->objects_inuse == 1;
 
         if (was_full) {
-                SLIST_REMOVE(&cache->slabs_full, slab, slabs_list);
+                slist_remove(&cache->slabs_full, &slab->slabs_list);
         } else if (becomes_empty) {
                 kassert(cache->slab_capacity > 1);
-                SLIST_REMOVE(&cache->slabs_partial, slab, slabs_list);
+                slist_remove(&cache->slabs_partial, &slab->slabs_list);
         }
 
         if (becomes_empty) {
-                SLIST_INSERT_HEAD(&cache->slabs_empty, slab, slabs_list);
+                slist_insert(&cache->slabs_empty, &slab->slabs_list);
         } else if (was_full) {
-                SLIST_INSERT_HEAD(&cache->slabs_partial, slab, slabs_list);
+                slist_insert(&cache->slabs_partial, &slab->slabs_list);
         }
 
         object_free(mem, slab, cache);

@@ -9,7 +9,7 @@
 #include <stddef.h>
 
 union node {
-        SLIST_FIELD(union node) list;
+        struct slist_ref nodes;
         char data[0];
 };
 
@@ -25,21 +25,22 @@ void mem_pool_init(struct mem_pool *pool, void *mem, size_t mem_size, size_t ele
         size_t stride = align_roundup(elem_size, elem_align);
         size_t limit = ptr2uiptr(mem).num + mem_size;
 
-        SLIST_INIT(&pool->list);
+        slist_init(&pool->nodes);
 #ifndef NDEBUG
         pool->mem_start = ptr2uiptr(pool);
         pool->mem_end = uint2uiptr(limit);
 #endif
 
         kassert(mblock + elem_size <= limit);
-        SLIST_INSERT_HEAD(&pool->list, (union node *)uint2ptr(mblock), list);
+        union node *node = uint2ptr(mblock);
+        slist_insert(&pool->nodes, &node->nodes);
 
         while (mblock + stride + elem_size <= limit) {
                 union node *current = uint2ptr(mblock);
                 union node *next = uint2uiptr(mblock + stride).ptr;
                 mblock = ptr2uint(next);
 
-                SLIST_INSERT_AFTER(current, next, list);
+                slist_insert(&current->nodes, &next->nodes);
         }
 }
 
@@ -47,12 +48,12 @@ void *mem_pool_alloc(struct mem_pool *pool)
 {
         kassert(pool);
 
-        union node *n = SLIST_FIRST(&pool->list);
+        union node *n = container_of(slist_next(&pool->nodes), union node, nodes);
         if (!n) {
                 return (NULL);
         }
 
-        SLIST_REMOVE(&pool->list, n, list);
+        slist_remove(&pool->nodes, &n->nodes);
         return (n);
 }
 
@@ -66,5 +67,5 @@ void mem_pool_free(struct mem_pool *pool, void *mem)
         kassert(m.num > pool->mem_start.num && m.num < pool->mem_end.num);
 #endif
 
-        SLIST_INSERT_HEAD(&pool->list, (union node *)m.ptr, list);
+        slist_insert(&pool->nodes, &((union node*)m.ptr)->nodes);
 }

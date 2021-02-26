@@ -1,69 +1,25 @@
 #ifndef _LIB_DS_SLIST_H
 #define _LIB_DS_SLIST_H
 
-#define SLIST_HEAD(name, type) \
-        struct name {          \
-                type *first;   \
-        }
+#include <stdbool.h>
 
-#define SLIST_FIELD(type)   \
-        struct {            \
-                type *next; \
-        }
+struct slist_ref {
+        struct slist_ref *next;
+};
 
-#define SLIST_NEXT(node, fieldname) ((node)->fieldname.next)
-#define SLIST_FIRST(head)           ((head)->first)
-#define SLIST_EMPTY(head)           (SLIST_FIRST(head) == NULL)
+void slist_init(struct slist_ref *node);
 
-#define SLIST_CLEAR(node) ((node)->next = NULL)
-#define SLIST_INIT(head)                  \
-        do {                              \
-                SLIST_FIRST(head) = NULL; \
-        } while (0)
+struct slist_ref *slist_next(struct slist_ref const *node);
 
-// TODO: Allow to start from a specific node.
-#define SLIST_FOREACH(iterv, head, fieldname) \
-        for ((iterv) = SLIST_FIRST(head); (iterv); (iterv) = SLIST_NEXT(iterv, fieldname))
+bool slist_is_empty(struct slist_ref const *node);
 
-#define SLIST_INSERT_AFTER(elem, newelem, fieldname)                          \
-        do {                                                                  \
-                SLIST_NEXT(newelem, fieldname) = SLIST_NEXT(elem, fieldname); \
-                SLIST_NEXT(elem, fieldname) = (newelem);                      \
-        } while (0)
+#define SLIST_FOREACH(iterv, start_node) \
+        for (struct slist_ref const *iterv = start_node; iterv != NULL; iterv = slist_next(iterv))
 
-#define SLIST_INSERT_HEAD(head, newelem, fieldname)                 \
-        do {                                                        \
-                SLIST_NEXT(newelem, fieldname) = SLIST_FIRST(head); \
-                SLIST_FIRST(head) = newelem;                        \
-        } while (0)
+void slist_insert(struct slist_ref *prev_node, struct slist_ref *new_node);
 
-#define SLIST_REMOVE_AFTER(elem, fieldname)                                                       \
-        do {                                                                                      \
-                SLIST_NEXT(elem, fieldname) = SLIST_NEXT(SLIST_NEXT(elem, fieldname), fieldname); \
-        } while (0)
+void slist_remove_next(struct slist_ref *prev_node);
 
-#define SLIST_REMOVE_HEAD(head, fieldname)                                    \
-        do {                                                                  \
-                SLIST_FIRST(head) = SLIST_NEXT(SLIST_FIRST(head), fieldname); \
-        } while (0)
-
-#define SLIST_FIELD_INIT(elem, fieldname)           \
-        do {                                        \
-                SLIST_NEXT(elem, fieldname) = NULL; \
-        } while (0)
-
-#define SLIST_REMOVE(head, elem, fieldname)                            \
-        do {                                                           \
-                if (SLIST_FIRST(head) == (elem)) {                     \
-                        SLIST_REMOVE_HEAD(head, fieldname);            \
-                        /* return; */                                  \
-                        break;                                         \
-                }                                                      \
-                typeof(SLIST_FIRST(head)) current = SLIST_FIRST(head); \
-                while (SLIST_NEXT(current, fieldname) != (elem)) {     \
-                        current = SLIST_NEXT(current, fieldname);      \
-                }                                                      \
-                SLIST_REMOVE_AFTER(current, fieldname);                \
-        } while (0)
+void slist_remove(struct slist_ref *list_head, struct slist_ref const *to_remove);
 
 #endif /* _LIB_DS_SLIST_H */

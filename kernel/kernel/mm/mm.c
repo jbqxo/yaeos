@@ -12,11 +12,11 @@
 
 static struct kmm_cache ZONES_CACHE;
 
-static SLIST_HEAD(, struct mm_zone) MM_ZONES;
+static struct slist_ref MM_ZONES;
 
 void mm_init(void)
 {
-        SLIST_INIT(&MM_ZONES);
+        slist_init(&MM_ZONES);
         kmm_cache_init(&ZONES_CACHE, "mm_zones", sizeof(struct mm_zone), 0, 0, NULL, NULL);
         kmm_cache_register(&ZONES_CACHE);
 }
@@ -72,7 +72,7 @@ struct mm_zone *mm_zone_create(void *phys_start, size_t length, struct vm_space 
 
         zone->start = phys_start;
         zone->length = length;
-        SLIST_FIELD_INIT(zone, list);
+        slist_init(&zone->sys_zones);
 
         size_t free_pages = buddy_init(zone->buddym, length / PLATFORM_PAGE_SIZE, zone->alloc);
         zone->pages = linear_alloc_alloc(zone->alloc, free_pages * sizeof(*zone->pages));
@@ -113,7 +113,7 @@ void mm_page_init_free(struct mm_page *p, void *phys_addr)
 void mm_zone_register(struct mm_zone *zone)
 {
         kassert(zone != NULL);
-        SLIST_INSERT_HEAD(&MM_ZONES, zone, list);
+        slist_insert(&MM_ZONES, &zone->sys_zones);
 }
 
 struct mm_page *mm_alloc_page_from(struct mm_zone *zone)
@@ -132,8 +132,8 @@ struct mm_page *mm_alloc_page(void)
 {
         /* For now, just get a page from any zone. */
         struct mm_page *p = NULL;
-        struct mm_zone *z = NULL;
-        SLIST_FOREACH (z, &MM_ZONES, list) {
+        SLIST_FOREACH (it, &MM_ZONES) {
+                struct mm_zone *z = container_of(it, struct mm_zone, sys_zones);
                 p = mm_alloc_page_from(z);
                 if (p != NULL) {
                         break;
@@ -153,12 +153,12 @@ struct mm_page *mm_get_page_by_paddr(void *phys_addr)
 {
         union uiptr paddr = ptr2uiptr(phys_addr);
         struct mm_zone *zone = NULL;
-        struct mm_zone *i = NULL;
-        SLIST_FOREACH (i, &MM_ZONES, list) {
-                uintptr_t zstart = ptr2uint(i->start);
-                uintptr_t zend = zstart + i->length;
+        SLIST_FOREACH (it, &MM_ZONES) {
+                struct mm_zone *z = NULL;
+                uintptr_t zstart = ptr2uint(z->start);
+                uintptr_t zend = zstart + z->length;
                 if (paddr.num >= zstart && paddr.num < zend) {
-                        zone = i;
+                        zone = z;
                         break;
                 }
         }
