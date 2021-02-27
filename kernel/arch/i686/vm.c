@@ -15,21 +15,34 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+static uint32_t get_pte_ndx(void const *vaddr)
+{
+        /* The table index consists of 21:12 bits of an address. */
+        uintptr_t const MASK = 0x003FF000U;
+        uint32_t index = (ptr2uint(vaddr) & MASK) >> 12;
+        return (index);
+}
+
+static uint32_t get_pde_ndx(void const *vaddr)
+{
+        /* The directory index consists of 31:22 bits of an address. */
+        uint32_t index = ptr2uint(vaddr) >> 22;
+        return (index);
+}
+
 struct vm_arch_page_entry *vm_table_entry(union vm_arch_page_dir *dir, void *vaddr)
 {
-        // The table index consists of 21:12 bits of an address.
-        const uintptr_t MASK = 0x003FF000U;
-        uint32_t index = ((uintptr_t)vaddr & MASK) >> 12;
+        uint32_t ndx = get_pte_ndx(vaddr);
 
-        return (&dir->dir.entries[index]);
+        return (&dir->dir.entries[ndx]);
 }
 
 struct vm_arch_page_entry *vm_dir_entry(union vm_arch_page_dir *dir, void *vaddr)
 {
-        // The directory index consists of 31:22 bits of an address.
-        uint32_t index = ptr2uint(vaddr) >> 22;
+        /* The directory index consists of 31:22 bits of an address. */
+        uint32_t ndx = get_pde_ndx(vaddr);
 
-        return (&dir->dir.entries[index]);
+        return (&dir->dir.entries[ndx]);
 }
 
 void vm_tlb_flush(void)
@@ -60,6 +73,25 @@ void *vm_get_cr2(void)
         asm("mov %%cr2, %0" : "=r"(vaddr));
 
         return (vaddr);
+}
+
+void vm_set_recursive_mapping(union vm_arch_page_dir *phys_addr_dir)
+{
+        struct vm_arch_page_entry *e = &phys_addr_dir->dir.itself;
+        vm_pt_set_addr(e, phys_addr_dir);
+        e->is_present = true;
+        e->present.dir.flags |= VM_DIR_FLAG_RW;
+}
+
+void *vm_arch_get_phys_page(void const *virt_page)
+{
+        size_t const pte_ndx = get_pte_ndx(virt_page);
+
+        /* Use the recursive mapping at the end of the directory to get the address. */
+        union vm_arch_page_dir *dir = uint2ptr((ptr2uint(virt_page) | 0x003FF000U) & 0xFFFFF000U);
+
+        kassert(dir->dir.entries[pte_ndx].is_present);
+        return (vm_pt_get_addr(&dir->dir.entries[pte_ndx]));
 }
 
 void vm_arch_load_spaces(const struct vm_space *user, const struct vm_space *kernel)

@@ -100,13 +100,16 @@ __noinline void setup_boot_paging(void)
         union vm_arch_page_dir *pd = pd_addr.ptr;
         union vm_arch_page_dir *pt = pt_addr.ptr;
 
-        // Identity mapping
+        vm_set_recursive_mapping(pd);
+        vm_set_recursive_mapping(pt);
+
+        /* Identity mapping. */
         struct vm_arch_page_entry *pde_low = vm_dir_entry(pd, 0x0);
         pde_low->is_present = true;
         vm_pt_set_addr(pde_low, pt);
         pde_low->present.dir.flags = VM_DIR_FLAG_RW;
 
-        // Map the kernel to higher half of address space
+        /* Map the kernel to higher half of address space. */
         struct vm_arch_page_entry *pde_high = vm_dir_entry(pd, uint2ptr(KERNEL_VM_OFFSET));
         pde_high->is_present = true;
         vm_pt_set_addr(pde_high, pt);
@@ -118,12 +121,12 @@ __noinline void setup_boot_paging(void)
         vm_set_active_pt(pd);
         vm_paging_enable(KERNEL_VM_OFFSET);
 
-        // Patch i686_init(...)
+        /* Patch i686_init(...) */
         PATCH_FRAME(1, KERNEL_VM_OFFSET);
-        // Patch setup_boot_paging(...)
+        /* Patch setup_boot_paging(...) */
         PATCH_FRAME(0, KERNEL_VM_OFFSET);
 
-        // Undo identity mapping
+        /* Undo identity mapping */
         pde_low->is_present = false;
         vm_tlb_flush();
 }

@@ -111,7 +111,7 @@ void kernel_init()
                 void *mem = kmalloc(0x700);
                 if (mem != NULL) {
                         kmemset(mem, 0x0, 0x700);
-                        LOGF_I("Success! Allocated #%d %p\n", i, mem);
+                        LOGF_I("Success! Allocated %p at P%p\n", mem, vm_arch_get_phys_page(mem));
                 } else {
                         LOGF_P("Failed to allocate #%d\n", i);
                 }

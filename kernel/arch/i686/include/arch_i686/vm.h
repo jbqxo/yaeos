@@ -123,4 +123,6 @@ void *vm_get_cr2(void);
  */
 void vm_i686_pg_fault_handler(struct intr_ctx *ctx);
 
-#endif // _KERNEL_ARCH_I686_VM_H
+void vm_set_recursive_mapping(union vm_arch_page_dir *phys_addr_dir);
+
+#endif /* _KERNEL_ARCH_I686_VM_H */
