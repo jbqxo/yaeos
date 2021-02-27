@@ -7,8 +7,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-extern union vm_arch_page_dir boot_paging_pd asm("boot_paging_pd");
-extern union vm_arch_page_dir boot_paging_pt asm("boot_paging_pt");
+extern union i686_vm_arch_pd boot_paging_pd asm("boot_paging_pd");
+extern union i686_vm_arch_pd boot_paging_pt asm("boot_paging_pt");
 
 extern char kernel_bootstack_start[] asm("bootstack_top");
 extern char kernel_bootstack_end[] asm("bootstack_bottom");

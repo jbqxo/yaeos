@@ -22,8 +22,6 @@ void kernel_arch_get_segment(enum kernel_segments seg, void **start, void **end)
 extern struct vm_space CURRENT_KERNEL;
 extern struct vm_space *CURRENT_USER;
 
-union vm_arch_page_dir *kernel_arch_get_early_pg_root(void);
-
 void kernel_init(void);
 
 #endif /* _KERNEL_KERNEL_H */

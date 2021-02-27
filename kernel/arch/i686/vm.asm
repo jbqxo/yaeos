@@ -1,18 +1,18 @@
 .section .text
 
-.global vm_set_active_pt
-.type   vm_set_active_pt, @function
+.global i686_vm_set_pt
+.type   i686_vm_set_pt, @function
 
-vm_set_active_pt:
+i686_vm_set_pt:
         movl 4(%esp), %edi
         movl %edi, %cr3
         ret
-.size vm_set_active_pt, . - vm_set_active_pt
+.size i686_vm_set_pt, . - i686_vm_set_pt
 
-.global vm_paging_enable
-.type   vm_paging_enable, @function
+.global i686_vm_paging_enable
+.type   i686_vm_paging_enable, @function
 
-vm_paging_enable:
+i686_vm_paging_enable:
         // Offset at which kernel will be loaded
         movl 4(%esp), %edi
 
@@ -34,4 +34,4 @@ vm_paging_enable:
 
 1:
         ret
-.size vm_paging_enable, . - vm_paging_enable
+.size i686_vm_paging_enable, . - i686_vm_paging_enable

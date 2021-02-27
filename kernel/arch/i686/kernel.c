@@ -20,11 +20,6 @@ size_t const PLATFORM_PAGEDIR_SIZE = PLATFORM_PAGE_SIZE;
 size_t const PLATFORM_PAGEDIR_COUNT = 2;
 size_t const PLATFORM_PAGEDIR_PAGES = 1024;
 
-union vm_arch_page_dir *kernel_arch_get_early_pg_root(void)
-{
-        return (&boot_paging_pd);
-}
-
 void kernel_arch_get_segment(enum kernel_segments seg, void **start, void **end)
 {
         switch (seg) {
@@ -65,7 +60,7 @@ void i686_init(multiboot_info_t *info, uint32_t magic)
         boot_setup_idt();
         intr_init();
         i686_setup_exception_handlers();
-        intr_handler_cpu(INTR_CPU_PAGEFAULT, vm_i686_pg_fault_handler);
+        intr_handler_cpu(INTR_CPU_PAGEFAULT, i686_vm_pg_fault_handler);
 
         union uiptr info_addr = ptr2uiptr(info);
         info_addr.ptr = highmem_to_high(info_addr.ptr);

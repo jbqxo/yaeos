@@ -1,6 +1,7 @@
 #include "arch_i686/vm.h"
 
 #include "arch_i686/intr.h"
+#include "arch_i686/kernel.h"
 
 #include "kernel/config.h"
 #include "kernel/kernel.h"
@@ -14,6 +15,27 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+
+void *vm_arch_get_early_pgroot(void)
+{
+        return (&boot_paging_pd);
+}
+
+enum i686_vm_table_flags i686_vm_to_table_flags(enum vm_flags area_flags)
+{
+        enum i686_vm_table_flags f = 0;
+        f |= area_flags & VM_WRITE ? I686VM_TABLE_FLAG_RW : 0;
+        f |= area_flags & VM_USER ? I686VM_TABLE_FLAG_USER : 0;
+        return (f);
+}
+
+enum i686_vm_dir_flags i686_vm_to_dir_flags(enum vm_flags area_flags)
+{
+        enum i686_vm_dir_flags f = 0;
+        f |= area_flags & VM_WRITE ? I686VM_DIR_FLAG_RW : 0;
+        f |= area_flags & VM_USER ? I686VM_DIR_FLAG_USER : 0;
+        return (f);
+}
 
 static uint32_t get_pte_ndx(void const *vaddr)
 {
@@ -30,44 +52,45 @@ static uint32_t get_pde_ndx(void const *vaddr)
         return (index);
 }
 
-struct vm_arch_page_entry *vm_table_entry(union vm_arch_page_dir *dir, void *vaddr)
+struct i686_vm_pge *i686_vm_get_pge(enum i686_vm_pg_lvls lvl, struct i686_vm_pd *dir, void *vaddr)
 {
-        uint32_t ndx = get_pte_ndx(vaddr);
+        uint32_t ndx = 0;
+        switch (lvl) {
+        case I686VM_PGLVL_DIR: {
+                ndx = get_pde_ndx(vaddr);
+        } break;
+        case I686VM_PGLVL_TABLE: {
+                ndx = get_pte_ndx(vaddr);
+        } break;
+        default: kassert(false);
+        }
 
-        return (&dir->dir.entries[ndx]);
+        return (&dir->entries[ndx]);
 }
 
-struct vm_arch_page_entry *vm_dir_entry(union vm_arch_page_dir *dir, void *vaddr)
-{
-        /* The directory index consists of 31:22 bits of an address. */
-        uint32_t ndx = get_pde_ndx(vaddr);
-
-        return (&dir->dir.entries[ndx]);
-}
-
-void vm_tlb_flush(void)
+void i686_vm_tlb_flush(void)
 {
         asm volatile("movl %cr0, %eax;"
                      "movl %eax, %cr0");
 }
 
-void vm_tlb_invlpg(void *addr)
+void i686_vm_tlb_invlpg(void *addr)
 {
         asm volatile("invlpg (%0)" ::"r"(addr) : "memory");
 }
 
-void vm_pt_set_addr(struct vm_arch_page_entry *entry, const void *phys_addr)
+void i686_vm_pge_set_addr(struct i686_vm_pge *entry, const void *phys_addr)
 {
-        entry->present.any.paddr = ptr2uint(phys_addr) >> 12;
+        entry->any.paddr = ptr2uint(phys_addr) >> 12;
 }
 
-void *vm_pt_get_addr(struct vm_arch_page_entry *entry)
+void *i686_vm_pge_get_addr(struct i686_vm_pge *entry)
 {
-        kassert(entry->is_present);
-        return (uint2ptr(entry->present.any.paddr << 12));
+        kassert(entry->any.is_present);
+        return (uint2ptr(entry->any.paddr << 12));
 }
 
-void *vm_get_cr2(void)
+void *i686_vm_get_cr2(void)
 {
         void *vaddr;
         asm("mov %%cr2, %0" : "=r"(vaddr));
@@ -75,12 +98,12 @@ void *vm_get_cr2(void)
         return (vaddr);
 }
 
-void vm_set_recursive_mapping(union vm_arch_page_dir *phys_addr_dir)
+void i686_vm_setup_recursive_mapping(struct i686_vm_pd *phys_addr_dir)
 {
-        struct vm_arch_page_entry *e = &phys_addr_dir->dir.itself;
-        vm_pt_set_addr(e, phys_addr_dir);
-        e->is_present = true;
-        e->present.dir.flags |= VM_DIR_FLAG_RW;
+        struct i686_vm_pge *e = &phys_addr_dir->itself;
+        i686_vm_pge_set_addr(e, phys_addr_dir);
+        e->any.is_present = true;
+        e->dir.flags |= I686VM_DIR_FLAG_RW;
 }
 
 void *vm_arch_get_phys_page(void const *virt_page)
@@ -88,10 +111,10 @@ void *vm_arch_get_phys_page(void const *virt_page)
         size_t const pte_ndx = get_pte_ndx(virt_page);
 
         /* Use the recursive mapping at the end of the directory to get the address. */
-        union vm_arch_page_dir *dir = uint2ptr((ptr2uint(virt_page) | 0x003FF000U) & 0xFFFFF000U);
+        struct i686_vm_pd *dir = uint2ptr((ptr2uint(virt_page) | 0x003FF000U) & 0xFFFFF000U);
 
-        kassert(dir->dir.entries[pte_ndx].is_present);
-        return (vm_pt_get_addr(&dir->dir.entries[pte_ndx]));
+        kassert(dir->entries[pte_ndx].any.is_present);
+        return (i686_vm_pge_get_addr(&dir->entries[pte_ndx]));
 }
 
 void vm_arch_load_spaces(const struct vm_space *user, const struct vm_space *kernel)
@@ -99,9 +122,9 @@ void vm_arch_load_spaces(const struct vm_space *user, const struct vm_space *ker
         LOGF_P("vm_arch_load_space is not implemented!\n");
 }
 
-void vm_i686_pg_fault_handler(struct intr_ctx *__unused ctx)
+void i686_vm_pg_fault_handler(struct intr_ctx *__unused ctx)
 {
-        union uiptr addr = ptr2uiptr(vm_get_cr2());
+        union uiptr addr = ptr2uiptr(i686_vm_get_cr2());
         struct vm_space *fault_space = NULL;
         if (highmem_is_high(addr.ptr)) {
                 fault_space = &CURRENT_KERNEL;
@@ -126,25 +149,31 @@ void vm_i686_pg_fault_handler(struct intr_ctx *__unused ctx)
         }
 }
 
-void vm_arch_ptree_map(union vm_arch_page_dir *tree_root, const void *phys_addr,
-                       const void *at_virt_addr, enum vm_flags flags)
+void vm_arch_pt_map(void *tree_root, const void *phys_addr, const void *at_virt_addr,
+                    enum vm_flags flags)
 {
         kassert(tree_root != NULL);
 
         const union uiptr vaddr = ptr2uiptr(at_virt_addr);
 
-        struct vm_arch_page_entry *pde = vm_dir_entry(tree_root, vaddr.ptr);
-        kassert(pde->is_present);
+        struct i686_vm_pge *pde = i686_vm_get_pge(I686VM_PGLVL_DIR, tree_root, vaddr.ptr);
+        if (!pde->any.is_present) {
+                /* This is definitely the wrong place to do this.
+                 * TODO: Organize Virtual Memory management properly. */
+                void *new_pd_vaddr = vm_new_page_directory();
+                void *new_pd_paddr = vm_arch_get_phys_page(new_pd_vaddr);
+                i686_vm_pge_set_addr(pde, new_pd_paddr);
+                pde->dir.flags = i686_vm_to_dir_flags(flags);
+                pde->dir.is_present = true;
+        }
 
-        union vm_arch_page_dir *pt = vm_pt_get_addr(pde);
+        struct i686_vm_pd *pt = i686_vm_pge_get_addr(pde);
         pt = highmem_to_high(pt);
 
-        struct vm_arch_page_entry *pte = vm_table_entry(pt, vaddr.ptr);
-        kassert(!pte->is_present);
+        struct i686_vm_pge *pte = i686_vm_get_pge(I686VM_PGLVL_TABLE, pt, vaddr.ptr);
+        kassert(!pte->any.is_present);
 
-        pte->is_present = true;
-        pte->present.table.flags = 0;
-        pte->present.table.flags |= flags & VM_USER ? VM_TABLE_FLAG_USER : 0;
-        pte->present.table.flags |= flags & VM_WRITE ? VM_TABLE_FLAG_RW : 0;
-        vm_pt_set_addr(pte, phys_addr);
+        pte->table.flags = i686_vm_to_table_flags(flags);
+        pte->any.is_present = true;
+        i686_vm_pge_set_addr(pte, phys_addr);
 }

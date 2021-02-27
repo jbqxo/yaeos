@@ -39,16 +39,23 @@ struct vm_area_heap_data {
         struct linear_alloc buddy_alloc;
 } KHEAP_DATA;
 
+static bool is_registered_page(struct vm_area *area, union uiptr page_addr)
+{
+        kassert(area != NULL);
+
+        struct vm_area_heap_data *data = area->data;
+        kassert(data != NULL);
+
+        size_t const pg_ndx = (page_addr.num - ptr2uint(area->base_vaddr)) / PLATFORM_PAGE_SIZE;
+        return (buddy_is_free(&data->buddy, pg_ndx));
+}
+
 static void vmarea_heap_fault_handler(struct vm_area *area, void *fault_addr)
 {
         union uiptr const page_addr =
                 uint2uiptr(align_rounddown(ptr2uint(fault_addr), PLATFORM_PAGE_SIZE));
-        struct vm_area_heap_data *data = area->data;
-        kassert(data != NULL);
 
-        size_t const area_pg_ndx =
-                (page_addr.num - ptr2uint(area->base_vaddr)) / PLATFORM_PAGE_SIZE;
-        if (buddy_is_free(&data->buddy, area_pg_ndx)) {
+        if (is_registered_page(area, page_addr)) {
                 /* The page isn't registered in the heap.
                  * So it's true page fault. */
                 vm_pgfault_handle_default(area, fault_addr);
@@ -59,14 +66,14 @@ static void vmarea_heap_fault_handler(struct vm_area *area, void *fault_addr)
          * For now, it means that we haven't allocated the page yet. */
         struct mm_page *page = mm_alloc_page();
         if (__unlikely(page == NULL)) {
-                LOGF_E("Not enough physicall space. Trying to trim some caches.\n");
+                LOGF_W("Not enough physicall space. Trying to trim some caches.\n");
                 kmm_cache_trim_all();
                 page = mm_alloc_page();
                 if (__unlikely(page == NULL)) {
                         LOGF_P("Couldn't trim enough space. Bye.\n");
                 }
         }
-        vm_arch_ptree_map(area->owner->root_dir, page->paddr, page_addr.ptr, area->flags);
+        vm_arch_pt_map(area->owner->root_dir, page->paddr, page_addr.ptr, area->flags);
 }
 
 static void *heap_register_page(struct vm_area *area, void *page_addr)
@@ -117,7 +124,6 @@ void kheap_init(struct vm_space *space)
         vm_space_append_area(space, &KHEAP_AREA);
 
         const size_t heap_pages = area_len / PLATFORM_PAGE_SIZE;
-        /* This is completely random number... */
         const size_t req_space = buddy_predict_req_space(heap_pages);
         const size_t req_pages = div_ceil(req_space, PLATFORM_PAGE_SIZE);
 
@@ -128,7 +134,7 @@ void kheap_init(struct vm_space *space)
 
                 struct mm_page *p = mm_alloc_page();
                 p->state = PAGESTATE_FIXED;
-                vm_arch_ptree_map(KHEAP_AREA.owner->root_dir, p->paddr, map_addr.ptr,
+                vm_arch_pt_map(KHEAP_AREA.owner->root_dir, p->paddr, map_addr.ptr,
                                   KHEAP_AREA.flags);
         }
 

@@ -22,7 +22,7 @@ struct vm_space *CURRENT_USER = NULL;
 
 static void init_kernel_vmspace(void)
 {
-        vm_space_init(&CURRENT_KERNEL, kernel_arch_get_early_pg_root(),
+        vm_space_init(&CURRENT_KERNEL, vm_arch_get_early_pgroot(),
                       ptr2uiptr(highmem_get_offset()));
 
         for (int i = 0; i < ARRAY_SIZE(KERNELBIN_AREAS); i++) {

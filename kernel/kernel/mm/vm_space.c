@@ -40,7 +40,7 @@ void *vm_space_find_gap(struct vm_space *space,
         return (NULL);
 }
 
-void vm_space_init(struct vm_space *space, union vm_arch_page_dir *root_pdir, union uiptr offset)
+void vm_space_init(struct vm_space *space, void *root_pdir, union uiptr offset)
 {
         kassert(space != NULL);
         kassert(root_pdir != NULL);
