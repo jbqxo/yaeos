@@ -24,10 +24,10 @@
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 /* Shamelessly took the idea from the Linux. It's so cool actually...  */
-#define container_of(ptr, type, field_name)                    \
-        ({                                                     \
-                void *__fptr = (void *)(ptr);                  \
-                (type *)(__fptr - offsetof(type, field_name)); \
+#define container_of(ptr, type, field_name)                               \
+        ({                                                                \
+                void *__fptr = (void *)(ptr);                             \
+                (type *)((uintptr_t)__fptr - offsetof(type, field_name)); \
         })
 
 union uiptr {

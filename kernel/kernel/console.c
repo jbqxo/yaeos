@@ -25,7 +25,7 @@ void console_init(void)
 
 void console_clear()
 {
-        SLIST_FOREACH (it, &ACTIVE_CONSOLES) {
+        SLIST_FOREACH (it, slist_next(&ACTIVE_CONSOLES)) {
                 struct console *c = container_of(it, struct console, active_consoles);
                 if (c->clear != NULL) {
                         c->clear(c);
@@ -35,7 +35,7 @@ void console_clear()
 
 void console_write(const char *msg, size_t len)
 {
-        SLIST_FOREACH (it, &ACTIVE_CONSOLES) {
+        SLIST_FOREACH (it, slist_next(&ACTIVE_CONSOLES)) {
                 struct console *c = container_of(it, struct console, active_consoles);
                 if (c->write != NULL) {
                         c->write(c, msg, len);

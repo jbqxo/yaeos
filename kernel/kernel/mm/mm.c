@@ -132,7 +132,7 @@ struct mm_page *mm_alloc_page(void)
 {
         /* For now, just get a page from any zone. */
         struct mm_page *p = NULL;
-        SLIST_FOREACH (it, &MM_ZONES) {
+        SLIST_FOREACH (it, slist_next(&MM_ZONES)) {
                 struct mm_zone *z = container_of(it, struct mm_zone, sys_zones);
                 p = mm_alloc_page_from(z);
                 if (p != NULL) {
@@ -153,7 +153,7 @@ struct mm_page *mm_get_page_by_paddr(void *phys_addr)
 {
         union uiptr paddr = ptr2uiptr(phys_addr);
         struct mm_zone *zone = NULL;
-        SLIST_FOREACH (it, &MM_ZONES) {
+        SLIST_FOREACH (it, slist_next(&MM_ZONES)) {
                 struct mm_zone *z = NULL;
                 uintptr_t zstart = ptr2uint(z->start);
                 uintptr_t zend = zstart + z->length;

@@ -15,7 +15,7 @@ void *vm_space_find_gap(struct vm_space *space,
 
         union uiptr next_after_last_area_end = space->offset;
 
-        SLIST_FOREACH (it, &space->sorted_areas) {
+        SLIST_FOREACH (it, slist_next(&space->sorted_areas)) {
                 struct vm_area *a = container_of(it, struct vm_area, sorted_areas);
 
                 union uiptr current_base = next_after_last_area_end;
