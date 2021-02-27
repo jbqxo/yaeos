@@ -15,7 +15,6 @@ enum kernel_segments {
 #define KSEGMENT_COUNT (4)
 
 extern struct vm_area KERNELBIN_AREAS[KSEGMENT_COUNT];
-extern struct vm_area KHEAP_AREA;
 
 void kernel_arch_get_segment(enum kernel_segments seg, void **start, void **end);
 

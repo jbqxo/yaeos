@@ -17,7 +17,6 @@
 #include "lib/cstd/string.h"
 
 struct vm_area KERNELBIN_AREAS[KSEGMENT_COUNT] = { 0 };
-struct vm_area KHEAP_AREA = { 0 };
 struct vm_space CURRENT_KERNEL = { 0 };
 struct vm_space *CURRENT_USER = NULL;
 
@@ -80,16 +79,6 @@ static int conwrite(const char *msg, size_t len)
         return (len);
 }
 
-static void *alloc_page(void)
-{
-        return (vm_area_register_page(&KHEAP_AREA, NULL));
-}
-
-static void free_page(void *page)
-{
-        vm_area_register_page(&KHEAP_AREA, NULL);
-        vm_area_unregister_page(&KHEAP_AREA, page);
-}
 
 void kernel_init()
 {
@@ -100,9 +89,9 @@ void kernel_init()
         init_kernel_vmspace();
         mm_init();
         create_mem_zones();
-        init_kernel_heap(&KHEAP_AREA, &CURRENT_KERNEL);
+        kheap_init(&CURRENT_KERNEL);
 
-        kmm_init(alloc_page, free_page);
+        kmm_init(kheap_alloc_page, kheap_free_page);
         kmalloc_init(CONF_MALLOC_MIN_POW, CONF_MALLOC_MAX_POW);
         LOGF_I("Kernel Memory Manager is... Up and running\n");
 

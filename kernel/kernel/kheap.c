@@ -15,6 +15,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+static struct vm_area KHEAP_AREA = { 0 };
+
 struct find_largest_data {
         union uiptr max_base;
         size_t max_length;
@@ -96,7 +98,7 @@ static void *heap_register_page(struct vm_area *area, void *page_addr)
         return (result_addr.ptr);
 }
 
-void init_kernel_heap(struct vm_area *heap_area, struct vm_space *space)
+void kheap_init(struct vm_space *space)
 {
         struct find_largest_data fld = { 0 };
         vm_space_find_gap(space, find_largest, &fld);
@@ -105,14 +107,14 @@ void init_kernel_heap(struct vm_area *heap_area, struct vm_space *space)
         const union uiptr area_start =
                 uint2uiptr(align_roundup(fld.max_base.num, PLATFORM_PAGE_SIZE));
         const size_t area_len = fld.max_length - (area_start.num - fld.max_base.num);
-        vm_area_init(heap_area, area_start.ptr, area_len, space);
+        vm_area_init(&KHEAP_AREA, area_start.ptr, area_len, space);
 
-        heap_area->ops.handle_pg_fault = vmarea_heap_fault_handler;
-        heap_area->ops.register_page = heap_register_page;
-        heap_area->data = &KHEAP_DATA;
-        heap_area->flags |= VM_WRITE;
+        KHEAP_AREA.ops.handle_pg_fault = vmarea_heap_fault_handler;
+        KHEAP_AREA.ops.register_page = heap_register_page;
+        KHEAP_AREA.data = &KHEAP_DATA;
+        KHEAP_AREA.flags |= VM_WRITE;
 
-        vm_space_append_area(space, heap_area);
+        vm_space_append_area(space, &KHEAP_AREA);
 
         const size_t heap_pages = area_len / PLATFORM_PAGE_SIZE;
         /* This is completely random number... */
@@ -121,16 +123,16 @@ void init_kernel_heap(struct vm_area *heap_area, struct vm_space *space)
 
         /* Map first pages by hands to allow kernel heap to start. */
         for (int i = 0; i < req_pages; i++) {
-                union uiptr map_addr = ptr2uiptr(heap_area->base_vaddr);
+                union uiptr map_addr = ptr2uiptr(KHEAP_AREA.base_vaddr);
                 map_addr.num += i * PLATFORM_PAGE_SIZE;
 
                 struct mm_page *p = mm_alloc_page();
                 p->state = PAGESTATE_FIXED;
-                vm_arch_ptree_map(heap_area->owner->root_dir, p->paddr, map_addr.ptr,
-                                  heap_area->flags);
+                vm_arch_ptree_map(KHEAP_AREA.owner->root_dir, p->paddr, map_addr.ptr,
+                                  KHEAP_AREA.flags);
         }
 
-        linear_alloc_init(&KHEAP_DATA.buddy_alloc, heap_area->base_vaddr,
+        linear_alloc_init(&KHEAP_DATA.buddy_alloc, KHEAP_AREA.base_vaddr,
                           req_pages * PLATFORM_PAGE_SIZE);
         buddy_init(&KHEAP_DATA.buddy, heap_pages, &KHEAP_DATA.buddy_alloc);
         linear_forbid_further_alloc(&KHEAP_DATA.buddy_alloc);
@@ -141,4 +143,15 @@ void init_kernel_heap(struct vm_area *heap_area, struct vm_space *space)
                         LOGF_P("Couldn't reserve a page!\n");
                 }
         }
+}
+
+void *kheap_alloc_page(void)
+{
+        return (vm_area_register_page(&KHEAP_AREA, NULL));
+}
+
+void kheap_free_page(void *page)
+{
+        vm_area_register_page(&KHEAP_AREA, NULL);
+        vm_area_unregister_page(&KHEAP_AREA, page);
 }
