@@ -79,8 +79,20 @@ static int conwrite(const char *msg, size_t len)
         return (len);
 }
 
+static void test_allocation(void)
+{
+        for (int i = 0;; i++) {
+                void *mem = kmalloc(0x700);
+                if (mem != NULL) {
+                        kmemset(mem, 0x0, 0x700);
+                        LOGF_I("Allocation #%d. Overall allocated %x bytes\n", i, i * 0x700);
+                } else {
+                        LOGF_P("Failed to allocate #%d\n", i);
+                }
+        }
+}
 
-void kernel_init()
+void kernel_init(void)
 {
         console_init();
         assertion_init(conwrite);
@@ -95,14 +107,5 @@ void kernel_init()
         kmalloc_init(CONF_MALLOC_MIN_POW, CONF_MALLOC_MAX_POW);
         LOGF_I("Kernel Memory Manager is... Up and running\n");
 
-        LOGF_I("Trying to allocate a bit of memory...\n");
-        for (int i = 0;; i++) {
-                void *mem = kmalloc(0x700);
-                if (mem != NULL) {
-                        kmemset(mem, 0x0, 0x700);
-                        LOGF_I("Success! Allocated %p at P%p\n", mem, vm_arch_get_phys_page(mem));
-                } else {
-                        LOGF_P("Failed to allocate #%d\n", i);
-                }
-        }
+        test_allocation();
 }

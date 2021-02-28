@@ -122,7 +122,7 @@ static struct page *page_alloc(struct kmm_cache *cache)
 
         struct page *page = ALLOC_PAGE_FN();
         if (__unlikely(page == NULL)) {
-                LOGF_E("There is no more free pages in the kernel's heap.\n");
+                LOGF_E("There are no more free pages in the kernel's heap.\n");
         }
 
         kassert(check_align(ptr2uint(page), PLATFORM_PAGE_SIZE));

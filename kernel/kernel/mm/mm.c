@@ -93,7 +93,7 @@ struct mm_zone *mm_zone_create(void *phys_start, size_t length, struct vm_space 
 
         for (size_t i = 0; i < used_pages; i++) {
                 zone->pages[i].state = PAGESTATE_FIXED;
-                bool success = buddy_try_alloc(zone->buddym, i);
+                bool success = buddy_try_alloc(zone->buddym, 0, i);
                 if (__unlikely(!success)) {
                         LOGF_P("Couldn't reserve a page!\n");
                 }

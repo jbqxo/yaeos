@@ -1,6 +1,7 @@
 #include "kernel/mm/vm_area.h"
 
 #include "kernel/klog.h"
+#include "kernel/mm/vm.h"
 #include "kernel/platform_consts.h"
 
 #include "lib/align.h"
@@ -62,6 +63,13 @@ void vm_area_init(struct vm_area *area, void *vaddr, size_t length, const struct
         area->base_vaddr = vaddr;
         area->length = length;
         area->owner = owner;
+
+#ifndef NDEBUG
+        if (!vm_arch_is_range_valid(area->base_vaddr, area->length)) {
+                LOGF_E("Area %p overlaps with invalid addresses: %p-%p\n", area, area->base_vaddr,
+                       uint2ptr(ptr2uint(area->base_vaddr) + area->length - 1));
+        }
+#endif
 
         rbtree_init_node(&area->rb_areas);
         area->rb_areas.data = area;

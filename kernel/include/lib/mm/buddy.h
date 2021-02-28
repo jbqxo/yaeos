@@ -36,7 +36,7 @@ bool buddy_alloc(struct buddy_manager *bmgr, unsigned order, uint32_t *result);
  * @brief Try to allocate specified page.
  * @param page_ndx Index of the page to allocate.
  * @return Indicates success of the operation. */
-bool buddy_try_alloc(struct buddy_manager *bmgr, uint32_t page_ndx);
+bool buddy_try_alloc(struct buddy_manager *bmgr, unsigned order, uint32_t page_ndx);
 
 /**
  * @brief Free specified memory space.

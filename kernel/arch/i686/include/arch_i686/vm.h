@@ -60,10 +60,19 @@ struct i686_vm_pge {
         };
 };
 
+#define I686VM_PD_LAST_VALID_PAGE (1021U)
+#define I686VM_PD_EMERGENCY_NDX   (1022U)
+#define I686VM_PD_EMERGENCY_ADDR  ((void *)(I686VM_PD_EMERGENCY_NDX << 22))
+#define I686VM_PD_RECURSIVE_NDX   (1023U)
+#define I686VM_PD_RECURSIVE_ADDR  ((void *)(I686VM_PD_RECURSIVE_NDX << 22))
+
 struct i686_vm_pd {
-        struct i686_vm_pge entries[1023];
-        struct i686_vm_pge itself; /**< Recursive mapping to edit dir entries. */
+        struct i686_vm_pge entries[I686VM_PD_LAST_VALID_PAGE + 1];
+        struct i686_vm_pge emergency; /**< Page Tables don't have this. */
+        struct i686_vm_pge recursive;
 };
+
+kstatic_assert(sizeof(struct i686_vm_pd) == 4096, "Wrong size of the Page Dir struct.");
 
 enum i686_vm_pg_lvls {
         I686VM_PGLVL_DIR,
@@ -115,6 +124,6 @@ void *i686_vm_get_cr2(void);
  */
 void i686_vm_pg_fault_handler(struct intr_ctx *ctx);
 
-void i686_vm_setup_recursive_mapping(struct i686_vm_pd *phys_addr_dir);
+void i686_vm_setup_recursive_mapping(struct i686_vm_pd *dir, void *dir_paddr);
 
 #endif /* _KERNEL_ARCH_I686_VM_H */

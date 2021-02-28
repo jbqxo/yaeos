@@ -121,14 +121,14 @@ static void free_buddy(struct buddy_manager *bmgr, unsigned lvl, unsigned bit)
         free_buddys_ancestors(bmgr, lvl, bit);
 }
 
-bool buddy_try_alloc(struct buddy_manager *bmgr, uint32_t page_ndx)
+bool buddy_try_alloc(struct buddy_manager *bmgr, unsigned order, uint32_t page_ndx)
 {
         kassert(bmgr != NULL);
 
-        if (__unlikely(bitmap_get(&bmgr->lvl_bitmaps[0], page_ndx))) {
+        if (__unlikely(bitmap_get(&bmgr->lvl_bitmaps[order], page_ndx))) {
                 return (false);
         }
-        occupy_buddy(bmgr, 0, page_ndx);
+        occupy_buddy(bmgr, order, page_ndx);
         return (true);
 }
 
