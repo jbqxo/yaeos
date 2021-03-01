@@ -14,6 +14,7 @@
 #include "lib/cstd/assert.h"
 #include "lib/cstd/string.h"
 #include "lib/ds/rbtree.h"
+#include "lib/sync/barriers.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -118,13 +119,17 @@ struct i686_vm_pge *i686_vm_get_pge(enum i686_vm_pg_lvls lvl, struct i686_vm_pd 
 
 void i686_vm_tlb_flush(void)
 {
+        barrier_compiler();
         asm volatile("movl %cr0, %eax;"
                      "movl %eax, %cr0");
+        barrier_compiler();
 }
 
 void i686_vm_tlb_invlpg(void *addr)
 {
+        barrier_compiler();
         asm volatile("invlpg (%0)" ::"r"(addr) : "memory");
+        barrier_compiler();
 }
 
 void i686_vm_pge_set_addr(struct i686_vm_pge *entry, const void *phys_addr)
@@ -212,6 +217,8 @@ static void *create_new_dir(struct i686_vm_pd *root_pd)
         uintptr_t const emerg_vaddr = (I686VM_PD_RECURSIVE_NDX << 22) |
                                       (I686VM_PD_EMERGENCY_NDX << 12);
         void *const vaddr = uint2ptr(emerg_vaddr);
+
+        barrier_compiler();
 
         kmemset(vaddr, 0x0, PLATFORM_PAGE_SIZE);
 

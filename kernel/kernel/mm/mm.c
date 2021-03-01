@@ -100,6 +100,7 @@ struct mm_zone *mm_zone_create(void *phys_start, size_t length, struct vm_space 
         }
 
         zone->pages_count = free_pages - used_pages;
+        return (zone);
 }
 
 void mm_page_init_free(struct mm_page *p, void *phys_addr)

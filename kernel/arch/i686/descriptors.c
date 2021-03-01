@@ -2,6 +2,7 @@
 
 #include "lib/cppdefs.h"
 #include "lib/cstd/string.h"
+#include "lib/sync/barriers.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -27,7 +28,8 @@
  */
 struct gdt_entry {
         uint16_t limit_low : 16;
-        uint32_t base_low : 24;
+        uint32_t base_low : 16;
+        uint32_t base_middle : 8;
         bool accessed : 1;
         bool writable : 1;
         bool direction_conforming : 1;
@@ -79,10 +81,11 @@ static struct idt_structure {
 
 static void gdt_set_table(struct gdt_ptr *table, uint16_t data_offset, uint16_t code_offset)
 {
-        // Load GDT
+        /* Load GDT */
+        barrier_compiler();
         asm volatile("lgdt (%[table])" : : [table] "r"(table));
 
-        // Set Data segment
+        /* Set Data segment */
         asm volatile("movw %[data_sel], %%ds \n\t\
                       movw %[data_sel], %%ss \n\t\
                       movw %[data_sel], %%es \n\t\
@@ -91,7 +94,7 @@ static void gdt_set_table(struct gdt_ptr *table, uint16_t data_offset, uint16_t 
                      :
                      : [data_sel] "r"(data_offset));
 
-        // Set Code segment
+        /* Set Code segment */
         asm volatile goto("pushl %[code_sel] \n\t\
                            pushl $%l1 \n\t\
                            lret"
@@ -104,6 +107,7 @@ end:;
 
 static void idt_set_table(struct idt_ptr *table)
 {
+        barrier_compiler();
         asm volatile("lidt (%[table])" : : [table] "r"(table));
 }
 
@@ -123,6 +127,7 @@ void boot_setup_gdt(void)
         code_d->limit_low = LIMIT & 0xFFFF;
         code_d->limit_high = (LIMIT >> 0x10) & 0x0F;
         code_d->base_low = 0;
+        code_d->base_middle = 0;
         code_d->base_high = 0;
         code_d->accessed = false;
         code_d->writable = false;
@@ -138,6 +143,7 @@ void boot_setup_gdt(void)
         data_d->limit_low = LIMIT & 0xFFFF;
         data_d->limit_high = (LIMIT >> 0x10) & 0x0F;
         data_d->base_low = 0;
+        data_d->base_middle = 0;
         data_d->base_high = 0;
         data_d->accessed = false;
         data_d->writable = true;
