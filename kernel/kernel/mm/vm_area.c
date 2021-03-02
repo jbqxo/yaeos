@@ -81,8 +81,7 @@ void *vm_area_register_page(struct vm_area *area, void *page_addr)
         kassert(area != NULL);
 
         if (__unlikely(area->ops.register_page == NULL)) {
-                LOGF_P("Tried to register page at address %p but register function is undefined!\n",
-                       page_addr);
+                LOGF_P("Tried to register page but register function is undefined!\n");
                 /* Although, the kernel should panic at this point. */
                 return (NULL);
         }
@@ -95,8 +94,7 @@ void vm_area_unregister_page(struct vm_area *area, void *page_addr)
         kassert(area->ops.unregister_page != NULL);
 
         if (__unlikely(area->ops.unregister_page == NULL)) {
-                LOGF_P("Tried to register page at address %p but register function is undefined!\n",
-                       page_addr);
+                LOGF_P("Tried to unregister page but register function is undefined!\n");
                 /* Although, the kernel should panic at this point. */
         }
         return (area->ops.unregister_page(area, page_addr));

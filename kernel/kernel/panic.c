@@ -21,8 +21,8 @@ static void print_register(void *key, void *value, void *data __unused)
 __noreturn void kernel_panic(struct kernel_panic_info *info)
 {
         kfprintf(conwrite, "\n\n");
-        kfprintf(conwrite, "Whoopsie. The kernel is on fire... Bye.\n");
-        kfprintf(conwrite, "Cause: %s\n", info->description);
+        kfprintf(conwrite, "You've been whoopsed.\n");
+        kfprintf(conwrite, "Reason: %s\n", info->description);
         if (info->location != NULL) {
                 kfprintf(conwrite, "Location: %s\n", info->location);
         }

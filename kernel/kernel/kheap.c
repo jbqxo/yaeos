@@ -122,6 +122,20 @@ static void *heap_register_page(struct vm_area *area, void *page_addr)
         return (result_addr.ptr);
 }
 
+static void heap_unregister_page(struct vm_area *area, void *page_addr)
+{
+        kassert(area != NULL);
+
+        struct vm_area_heap_data *data = area->data;
+
+        size_t page_ndx = 0;
+        if (!area_page_ndx(area, page_addr, &page_ndx)) {
+                LOGF_P("Tried unregister page from an area that is not belong to it.\n");
+        }
+
+        buddy_free(&data->buddy, page_ndx, 0);
+}
+
 static void register_invalid_pages(void const *addr, size_t len, void *data __unused)
 {
         union uiptr const inv_start = ptr2uiptr(addr);
@@ -165,6 +179,7 @@ void kheap_init(struct vm_space *space)
 
         KHEAP_AREA.ops.handle_pg_fault = vmarea_heap_fault_handler;
         KHEAP_AREA.ops.register_page = heap_register_page;
+        KHEAP_AREA.ops.unregister_page = heap_unregister_page;
         KHEAP_AREA.data = &KHEAP_DATA;
         KHEAP_AREA.flags |= VM_WRITE;
 

@@ -22,8 +22,7 @@ struct vm_space *CURRENT_USER = NULL;
 
 static void init_kernel_vmspace(void)
 {
-        vm_space_init(&CURRENT_KERNEL, vm_arch_get_early_pgroot(),
-                      ptr2uiptr(highmem_get_offset()));
+        vm_space_init(&CURRENT_KERNEL, vm_arch_get_early_pgroot(), ptr2uiptr(highmem_get_offset()));
 
         for (int i = 0; i < ARRAY_SIZE(KERNELBIN_AREAS); i++) {
                 struct vm_area *a = &KERNELBIN_AREAS[i];
@@ -81,11 +80,13 @@ static int conwrite(const char *msg, size_t len)
 
 static void test_allocation(void)
 {
+        size_t overall = 0;
         for (int i = 0;; i++) {
                 void *mem = kmalloc(0x700);
                 if (mem != NULL) {
+                        overall += 0x700;
                         kmemset(mem, 0x0, 0x700);
-                        LOGF_I("Allocation #%d. Overall allocated %x bytes\n", i, i * 0x700);
+                        LOGF_I("Allocation #%d. Overall allocated %x bytes\n", i, overall);
                 } else {
                         LOGF_P("Failed to allocate #%d\n", i);
                 }
