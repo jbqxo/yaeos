@@ -16,20 +16,19 @@ typedef void *elflist_mark;
  * The macro places the address of a symbol in the list's section and ensures that there are edge marks.
  * Note that it's important how sections are named, as they are sorted by a linker.
  */
-#define ELFLIST_NEWDATA(listname, symbol)                                                          \
-        __weak elflist_mark __elflist_##listname##_begin __section(".elflist_" #listname "_begin") \
-                __used = NULL;                                                                     \
-        void *__elflist_##listname##_##symbol __section(".elflist_" #listname "_dat"               \
-                                                        "a") __used = &(symbol);                   \
-        __weak elflist_mark __elflist_##listname##_end __section(".elflist"                        \
-                                                                 "_" #listname "_end")             \
-                __used = NULL
+#define ELFLIST_NEWDATA(listname, symbol)                                            \
+        void *__elflist_##listname##_##symbol __section(".elflist_" #listname "_dat" \
+                                                        "a") __used = &(symbol)
 
-#define ELFLIST_EXTERN(listname)                                                                   \
-        __weak elflist_mark __elflist_##listname##_begin __section(".elflist_" #listname "_begin") \
-                __used;                                                                            \
-        __weak elflist_mark __elflist_##listname##_end __section(".elflist_" #listname "_end")     \
-                __used = NULL
+#define ELFLIST_EXTERN(listname)                          \
+        extern elflist_mark __elflist_##listname##_begin; \
+        extern elflist_mark __elflist_##listname##_end
+
+#define ELFLIST_DECLARE(listname)                                                           \
+        elflist_mark __elflist_##listname##_begin __section(".elflist_" #listname "_begin") \
+                __used = NULL;                                                              \
+        elflist_mark __elflist_##listname##_end __section(".elflist"                        \
+                                                          "_" #listname "_end") __used = NULL
 
 #define ELFLIST_BEGIN(ptype, listname) ((ptype **)&__elflist_##listname##_begin)
 #define ELFLIST_END(ptype, listname)   ((ptype **)&__elflist_##listname##_end)

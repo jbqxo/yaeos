@@ -3,7 +3,7 @@
 #include "lib/ds/cbuffer.h"
 #include "lib/elflist.h"
 
-ELFLIST_EXTERN(timers);
+ELFLIST_DECLARE(timers);
 
 struct event {
         callback_fn cb;

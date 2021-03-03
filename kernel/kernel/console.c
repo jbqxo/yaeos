@@ -4,7 +4,7 @@
 #include "lib/ds/slist.h"
 #include "lib/elflist.h"
 
-ELFLIST_EXTERN(consoles);
+ELFLIST_DECLARE(consoles);
 
 static struct slist_ref ACTIVE_CONSOLES;
 
