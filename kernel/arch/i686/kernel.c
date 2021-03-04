@@ -1,5 +1,6 @@
 #include "kernel/kernel.h"
 
+#include "arch_i686/resources.h"
 #include "arch_i686/descriptors.h"
 #include "arch_i686/early_paging.h"
 #include "arch_i686/exceptions.h"
@@ -66,6 +67,8 @@ void i686_init(multiboot_info_t *info, uint32_t magic)
         info_addr.ptr = highmem_to_high(info_addr.ptr);
         I686_INFO.multiboot = info_addr.ptr;
         patch_multiboot_info(I686_INFO.multiboot);
+
+        i686_register_resources();
 
         kernel_init();
 }

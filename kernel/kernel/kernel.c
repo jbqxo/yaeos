@@ -3,13 +3,13 @@
 #include "kernel/config.h"
 #include "kernel/console.h"
 #include "kernel/klog.h"
-#include "kernel/mm/discover.h"
 #include "kernel/mm/highmem.h"
 #include "kernel/mm/kheap.h"
 #include "kernel/mm/kmalloc.h"
 #include "kernel/mm/kmm.h"
 #include "kernel/mm/mm.h"
 #include "kernel/mm/vm.h"
+#include "kernel/resources.h"
 
 #include "lib/align.h"
 #include "lib/cppdefs.h"
@@ -44,32 +44,25 @@ static void init_kernel_vmspace(void)
         }
 }
 
-static struct mm_zone *create_zone_from_chunk(struct mem_chunk *chunk)
+static void register_zone_for_mem(void *base, size_t len)
 {
-        union uiptr chunk_base = ptr2uiptr(chunk->mem);
-        union uiptr chunk_end = uint2uiptr(chunk_base.num + chunk->length);
+        union uiptr chunk_base = ptr2uiptr(base);
+        union uiptr chunk_end = uint2uiptr(chunk_base.num + len);
         chunk_base.num = align_roundup(chunk_base.num, PLATFORM_PAGE_SIZE);
         chunk_end.num = align_rounddown(chunk_end.num, PLATFORM_PAGE_SIZE);
 
         const size_t chunk_len = chunk_end.num - chunk_base.num;
         struct mm_zone *zone = mm_zone_create(chunk_base.ptr, chunk_len, &CURRENT_KERNEL);
         mm_zone_register(zone);
-        return (zone);
 }
 
-static void create_mem_zones(void)
+static void register_mem_zones(struct resource *r)
 {
-        int chunks_count = mm_discover_chunks_len();
-
-        struct mem_chunk *chunks = __builtin_alloca(chunks_count * sizeof(*chunks));
-        mm_discover_get_chunks(chunks);
-
-        for (int i = 0; i < chunks_count; i++) {
-                struct mem_chunk *chunk = &chunks[i];
-                /* All invalid chunks shoudl've been excluded by mm_arch_get_chunks. */
-                kassert(chunk->type == MEM_TYPE_AVAIL);
-                create_zone_from_chunk(chunk);
+        if (r->type != RESOURCE_TYPE_MEMORY) {
+                return;
         }
+
+        register_zone_for_mem(r->data.mem_reg.base, r->data.mem_reg.len);
 }
 
 static int conwrite(const char *msg, size_t len)
@@ -101,7 +94,7 @@ void kernel_init(void)
 
         init_kernel_vmspace();
         mm_init();
-        create_mem_zones();
+        resources_iter(register_mem_zones);
         kheap_init(&CURRENT_KERNEL);
 
         kmm_init(kheap_alloc_page, kheap_free_page);

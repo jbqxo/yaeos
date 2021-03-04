@@ -1,12 +1,12 @@
-#include "kernel/mm/discover.h"
+#include "arch_i686/resources.h"
 
 #include "arch_i686/kernel.h"
-#include "arch_i686/vm.h"
 
 #include "kernel/kernel.h"
 #include "kernel/klog.h"
 #include "kernel/mm/highmem.h"
 #include "kernel/platform_consts.h"
+#include "kernel/resources.h"
 
 #include "lib/align.h"
 #include "lib/cppdefs.h"
@@ -27,42 +27,20 @@ static uintptr_t max_addr(void)
         return ((uintptr_t)(-0x1) & mask);
 }
 
-typedef void (*chunks_it_fn)(struct multiboot_mmap_entry *c, void *data);
+typedef void (*iter_available_fn_t)(uintptr_t start, uintptr_t end, uint32_t type);
 
-static void chunks_iter(chunks_it_fn fn, void *extra_data)
+static void iter_without_unavail(struct multiboot_mmap_entry *mmap, iter_available_fn_t fn)
 {
-        multiboot_info_t *info = I686_INFO.multiboot;
-        struct multiboot_mmap_entry *c = (void *)info->mmap_addr;
-
-        // mmap_* variables are not valid. There is nothing we can do.
-        if (!(info->flags & MULTIBOOT_INFO_MEM_MAP)) {
-                return;
-        }
-
-        while ((uintptr_t)c < info->mmap_addr + info->mmap_length) {
-                fn(c, extra_data);
-                c = (void *)((uintptr_t)c + c->size + sizeof(c->size));
-        }
-}
-
-typedef void (*availmem_it_fn)(uintptr_t start, uintptr_t end, uint32_t type, void *data);
-struct availmem_data {
-        availmem_it_fn fn;
-        void *fn_data;
-};
-static void availmem_iter(struct multiboot_mmap_entry *mmap, void *_data)
-{
-        // Skip unavailable memory.
+        /* Skip unavailable memory. */
         if (mmap->type == MULTIBOOT_MEMORY_BADRAM || mmap->type == MULTIBOOT_MEMORY_RESERVED) {
                 return;
         }
 
-        // ... if the chunk is entirely out of our reach, ignore it.
+        /* ... if the chunk is entirely out of our reach, ignore it. */
         if (mmap->addr > max_addr()) {
                 return;
         }
 
-        struct availmem_data *data = _data;
         uintptr_t kstart = ptr2uint(highmem_to_low(kernel_start));
         uintptr_t kend = ptr2uint(highmem_to_low(kernel_end));
         uintptr_t memstart = mmap->addr;
@@ -90,84 +68,91 @@ static void availmem_iter(struct multiboot_mmap_entry *mmap, void *_data)
          * So the boundaries checks there may be a bit incorrect (1 byte) and this is fine.
          */
 
-        // Case 1.
+        /* Case 1. */
         if (kend <= memstart) {
-                data->fn(memstart, memend, mmap->type, data->fn_data);
+                fn(memstart, memend, mmap->type);
                 return;
         }
 
-        // Case 2.
+        /* Case 2. */
         if (kstart >= memend) {
-                data->fn(memstart, memend, mmap->type, data->fn_data);
+                fn(memstart, memend, mmap->type);
                 return;
         }
 
-        // Case 3.
+        /* Case 3. */
         if (kend > memstart && kstart <= memstart) {
-                data->fn(kend, memend, mmap->type, data->fn_data);
+                fn(kend, memend, mmap->type);
                 return;
         }
 
-        // Case 4.
+        /* Case 4. */
         if (kstart < memend && kend >= memend) {
-                data->fn(memend, kstart, mmap->type, data->fn_data);
+                fn(memend, kstart, mmap->type);
                 return;
         }
 
-        // Case 5.
+        /* Case 5. */
         if (kstart <= memstart && kend >= memend) {
-                // Ignore the region.
+                /* Ignore the region. */
                 return;
         }
 
-        // Case 6.
+        /* Case 6. */
         if (kstart >= memstart && kend <= memend) {
-                data->fn(memstart, kstart, mmap->type, data->fn_data);
-                data->fn(kend, memend, mmap->type, data->fn_data);
+                fn(memstart, kstart, mmap->type);
+                fn(kend, memend, mmap->type);
                 return;
         }
-        LOGF_P("Unhandled case.\n");
+
+        /* Unhandled case */
+        kassert(false);
 }
 
-static void count(uintptr_t start __unused, uintptr_t end __unused, uint32_t type __unused,
-                  void *data)
+static void iter_available_regions(iter_available_fn_t fn)
+{
+        multiboot_info_t *info = I686_INFO.multiboot;
+        struct multiboot_mmap_entry *c = (void *)info->mmap_addr;
+
+        /* mmap_* variables are not valid. There is nothing we can do. */
+        if (!(info->flags & MULTIBOOT_INFO_MEM_MAP)) {
+                return;
+        }
+
+        while ((uintptr_t)c < info->mmap_addr + info->mmap_length) {
+                iter_without_unavail(c, fn);
+                c = (void *)((uintptr_t)c + c->size + sizeof(c->size));
+        }
+}
+
+static void register_mem_region(uintptr_t start, uintptr_t end, uint32_t type)
 {
         const size_t length = end - start;
+
         if (length <= PLATFORM_PAGE_SIZE) {
                 return;
         }
 
-        int *counter = data;
-        (*counter)++;
+        struct resource r = {
+                .device_id = "platform",
+                .type = RESOURCE_TYPE_MEMORY,
+                .data.mem_reg.base = uint2ptr(start),
+                /* ... if we can address some part of the chunk, cut remainders out. */
+                .data.mem_reg.len = MIN(length, max_addr() - start),
+        };
+        resources_register_res(r);
 }
 
-static void find(uintptr_t start, uintptr_t end, uint32_t type, void *data)
+static void register_bios_vga(void)
 {
-        struct mem_chunk **chunks = data;
-        struct mem_chunk *chunk = *chunks;
-        const size_t length = end - start;
-
-        if (length <= PLATFORM_PAGE_SIZE) {
-                return;
-        }
-
-        chunk->mem = (void *)start;
-        // ... if we can address some part of the chunk, cut remainders out.
-        chunk->length = MIN(length, max_addr() - start);
-        chunk->type = type;
-        (*chunks)++;
+        struct resource r = {
+                .device_id = "bios_vga",
+                .type = RESOURCE_TYPE_DEV_BUFFER,
+        };
 }
 
-int mm_discover_chunks_len(void)
+void i686_register_resources(void)
 {
-        int counter = 0;
-        struct availmem_data d = (struct availmem_data){ .fn = count, .fn_data = &counter };
-        chunks_iter(availmem_iter, &d);
-        return (counter);
-}
-
-void mm_discover_get_chunks(struct mem_chunk *chunks)
-{
-        struct availmem_data d = (struct availmem_data){ .fn = find, .fn_data = &chunks };
-        chunks_iter(availmem_iter, &d);
+        iter_available_regions(register_mem_region);
+        register_bios_vga();
 }
