@@ -9,6 +9,7 @@
 #include "kernel/mm/kmm.h"
 #include "kernel/mm/mm.h"
 #include "kernel/mm/vm.h"
+#include "kernel/modules.h"
 #include "kernel/resources.h"
 
 #include "lib/align.h"
@@ -100,6 +101,9 @@ void kernel_init(void)
         kmm_init(kheap_alloc_page, kheap_free_page);
         kmalloc_init(CONF_MALLOC_MIN_POW, CONF_MALLOC_MAX_POW);
         LOGF_I("Kernel Memory Manager is... Up and running\n");
+
+        modules_init();
+        modules_load_available();
 
         test_allocation();
 }
