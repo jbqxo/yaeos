@@ -225,6 +225,5 @@ void *kheap_alloc_page(void)
 
 void kheap_free_page(void *page)
 {
-        vm_area_register_page(&KHEAP_AREA, NULL);
         vm_area_unregister_page(&KHEAP_AREA, page);
 }
