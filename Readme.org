@@ -12,13 +12,13 @@ For now, the only achievement of note would be working (somewhat) Memory Managem
 
 - Find available physical memory (x86 only at the moment). It just takes the info from multiboot, tries to exclude regions occupied by the kernel segments, and passes it forward.
 
-- *Manage physical memory*. Manages regions of physical memory as separate zones (yea, took the concept from the Linux kernel). Bookkeeps the info with buddy allocator.
+- *Manage physical memory*. Manages regions of physical memory as separate zones. Bookkeeps the info with buddy allocator.
 
-- *Manage virtual memory* for /presumably/ multiple address spaces. Manages areas of virtual memory inside of virtual spaces.
+- *Manage virtual memory* for /presumably/ multiple address spaces. Manages areas of virtual memory.
 
 - Allocate memory for the rest of the kernel via *Kernel Memory Manager*. Gives the ability to the rest of the kernel to allocate an arbitrary block of memory, or to allocate a /cache/ of reusable objects. Well, it's your usual SLAB allocator in the end.
 
-If you would run the kernel now, you will see this boring output:
+If you would run the kernel now, you would see this boring output:
 
 #+begin_src
 $ TARGET_ARCH=i686 make kernel && qemu-system-i386 -s -kernel build/i686/kernel/kernel.bin -curses
@@ -43,14 +43,14 @@ Location: .../yaeos/kernel/kernel/kheap.c:91
 
 ** Working on
 
-In the beginning, I wrote unit tests for various parts (TDD), but while struggling to make working memory management unit tests became a nuisance.
+In the beginning, I wrote unit tests for various parts (TDD), but while I struggled to implement working memory managemen, the tests became a hindrance.
 
-Plus there was a problem that I've tested code that was intended to run in the kernel-space in the user-space. It was fine to some degree, but not exactly.
+Plus there was a problem that I was testing code that was supposed to run in the kernel-space in the user-space. It was fine to some degree, but not really.
 
 So, at the moment, the plan is:
 
 - [ ] Make this thing work with AArch64.
-- [ ] Write PL011 (UART) driver for it.
+- [ ] Write PL011 (UART) driver to get serial console.
 - [ ] Fix tons of warnings by GCC. (Nothing serious, I'm sure of it ;)
 - [ ] Make GCC generate more warnings to fix more warnings.
 - [ ] Unit-tests.
