@@ -7,20 +7,18 @@
 #include <stddef.h>
 
 struct console {
-#define CONSRC_OK       (0)
-#define CONSRC_NOTREADY (-1)
         const char *name;
-        void (*write)(struct console *, const char *msg, size_t len);
-        void (*clear)(struct console *);
-        int (*init)(struct console *);
-        void *data;
-#define CONSFLAG_EARLY (0x1)
-        unsigned flags;
-
         struct slist_ref active_consoles;
+        void *data;
+
+        struct {
+                void (*write)(struct console *, const char *msg, size_t len);
+                void (*clear)(struct console *);
+        } ops;
 };
 
-void console_init(void);
+void consoles_init(void);
+void console_register(struct console *c);
 void console_write(const char *msg, size_t len);
 void console_clear(void);
 

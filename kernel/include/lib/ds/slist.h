@@ -7,6 +7,8 @@ struct slist_ref {
         struct slist_ref *next;
 };
 
+#define SLIST_REF_EMPTY ((struct slist_ref){ .next = NULL })
+
 void slist_init(struct slist_ref *node);
 
 struct slist_ref *slist_next(struct slist_ref const *node);

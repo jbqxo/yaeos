@@ -146,9 +146,10 @@ static void register_mem_region(uintptr_t start, uintptr_t end, uint32_t type)
 static void register_bios_vga(void)
 {
         struct resource r = {
-                .device_id = "bios_vga",
+                .device_id = "video",
                 .type = RESOURCE_TYPE_DEV_BUFFER,
         };
+        resources_register_res(r);
 }
 
 void i686_register_resources(void)

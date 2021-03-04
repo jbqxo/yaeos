@@ -3,32 +3,27 @@
 #include "lib/cppdefs.h"
 #include "lib/ds/slist.h"
 #include "lib/elflist.h"
-
-ELFLIST_DECLARE(consoles);
+#include "lib/cstd/assert.h"
 
 static struct slist_ref ACTIVE_CONSOLES;
 
-void console_init(void)
+void consoles_init(void)
 {
-        struct console **c;
         slist_init(&ACTIVE_CONSOLES);
-        ELFLIST_FOREACH (struct console, consoles, c) {
-                if ((*c)->init != NULL) {
-                        int rc = (*c)->init(*c);
-                        if (rc != CONSRC_OK) {
-                                continue;
-                        }
-                }
-                slist_insert(&ACTIVE_CONSOLES, &(*c)->active_consoles);
-        }
+}
+
+void console_register(struct console *c)
+{
+        kassert(c != NULL);
+        slist_insert(&ACTIVE_CONSOLES, &c->active_consoles);
 }
 
 void console_clear()
 {
         SLIST_FOREACH (it, slist_next(&ACTIVE_CONSOLES)) {
                 struct console *c = container_of(it, struct console, active_consoles);
-                if (c->clear != NULL) {
-                        c->clear(c);
+                if (c->ops.clear != NULL) {
+                        c->ops.clear(c);
                 }
         }
 }
@@ -37,8 +32,8 @@ void console_write(const char *msg, size_t len)
 {
         SLIST_FOREACH (it, slist_next(&ACTIVE_CONSOLES)) {
                 struct console *c = container_of(it, struct console, active_consoles);
-                if (c->write != NULL) {
-                        c->write(c, msg, len);
+                if (c->ops.write != NULL) {
+                        c->ops.write(c, msg, len);
                 }
         }
 }
