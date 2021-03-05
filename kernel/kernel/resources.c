@@ -34,7 +34,7 @@ void resources_iter(resources_iter_fn_t iter_fn)
 
         size_t const last_ndx = RESOURCES_NEXT_FREE_NDX - 1;
 
-        for (size_t i = last_ndx; i <= last_ndx; i++) {
+        for (size_t i = 0; i <= last_ndx; i++) {
                 struct resource *r = &RESOURCES_STORAGE[i];
                 iter_fn(r);
         }
