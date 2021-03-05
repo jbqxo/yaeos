@@ -3,7 +3,7 @@
 #include "kernel/config.h"
 #include "kernel/console.h"
 #include "kernel/klog.h"
-#include "kernel/mm/highmem.h"
+#include "kernel/mm/addr.h"
 #include "kernel/mm/kheap.h"
 #include "kernel/mm/kmalloc.h"
 #include "kernel/mm/kmm.h"
@@ -23,23 +23,23 @@ struct vm_space *CURRENT_USER = NULL;
 
 static void init_kernel_vmspace(void)
 {
-        vm_space_init(&CURRENT_KERNEL, vm_arch_get_early_pgroot(), ptr2uiptr(highmem_get_offset()));
+        vm_space_init(&CURRENT_KERNEL, vm_arch_get_early_pgroot(), addr_get_offset());
 
         for (int i = 0; i < ARRAY_SIZE(KERNELBIN_AREAS); i++) {
                 struct vm_area *a = &KERNELBIN_AREAS[i];
 
-                union uiptr start = ptr2uiptr(NULL);
-                union uiptr end = ptr2uiptr(NULL);
-                kernel_arch_get_segment(i, &start.ptr, &end.ptr);
+                uintptr_t start = 0;
+                uintptr_t end = 0;
+                kernel_arch_get_segment(i, (void **)&start, (void **)&end);
 
                 /* Every segment must start and end at page boundaries. */
-                end.num = align_roundup(end.num, PLATFORM_PAGE_SIZE);
-                const size_t len = end.num - start.num;
+                end = align_roundup(end, PLATFORM_PAGE_SIZE);
+                const size_t len = end - start;
 
-                kassert(check_align(start.num, PLATFORM_PAGE_SIZE));
+                kassert(check_align(start, PLATFORM_PAGE_SIZE));
                 kassert(check_align(len, PLATFORM_PAGE_SIZE));
 
-                vm_area_init(a, start.ptr, len, &CURRENT_KERNEL);
+                vm_area_init(a, (void *)start, len, &CURRENT_KERNEL);
                 a->ops.handle_pg_fault = vm_pgfault_handle_default;
                 vm_space_append_area(&CURRENT_KERNEL, a);
         }
@@ -47,13 +47,13 @@ static void init_kernel_vmspace(void)
 
 static void register_zone_for_mem(void *base, size_t len)
 {
-        union uiptr chunk_base = ptr2uiptr(base);
-        union uiptr chunk_end = uint2uiptr(chunk_base.num + len);
-        chunk_base.num = align_roundup(chunk_base.num, PLATFORM_PAGE_SIZE);
-        chunk_end.num = align_rounddown(chunk_end.num, PLATFORM_PAGE_SIZE);
+        uintptr_t chunk_base = (uintptr_t)base;
+        uintptr_t chunk_end = chunk_base + len;
+        chunk_base = align_roundup(chunk_base, PLATFORM_PAGE_SIZE);
+        chunk_end = align_rounddown(chunk_end, PLATFORM_PAGE_SIZE);
 
-        const size_t chunk_len = chunk_end.num - chunk_base.num;
-        struct mm_zone *zone = mm_zone_create(chunk_base.ptr, chunk_len, &CURRENT_KERNEL);
+        const size_t chunk_len = chunk_end - chunk_base;
+        struct mm_zone *zone = mm_zone_create((void *)chunk_base, chunk_len, &CURRENT_KERNEL);
         mm_zone_register(zone);
 }
 
@@ -89,7 +89,7 @@ static void test_allocation(void)
 
 void kernel_init(void)
 {
-        console_init();
+        consoles_init();
         assertion_init(conwrite);
         LOGF_I("Platform Layer is... Up and running\n");
 

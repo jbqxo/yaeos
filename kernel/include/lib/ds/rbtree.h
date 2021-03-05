@@ -16,7 +16,7 @@ struct rbtree_node {
         void *data;
         struct rbtree_node *left;
         struct rbtree_node *right;
-        union uiptr parent;
+        struct rbtree_node *parent;
 
 #ifndef NDEBUG
         enum rbtree_colour colour : 1;

@@ -4,8 +4,6 @@ My small OS (kernel mostly, for now) I build to gain experience and knowledge.
 
 ** Now
 
-Although it is /horrifyingly/ horrible for now, it's a living(somewhat) and breathing(well, not exactly) thing.
-
 For now, the only achievement of note would be working (somewhat) Memory Management.
 
 "Working" in a sense that it can:

@@ -14,11 +14,11 @@ int vm_area_rbtcmpfn(const void *area_x, const void *area_y)
         kassert(area_y != NULL);
 
         const struct vm_area *x = area_x;
-        const uintptr_t x_start = ptr2uint(x->base_vaddr);
+        const uintptr_t x_start = (uintptr_t)x->base;
         const uintptr_t x_end = x_start + x->length - 1;
 
         const struct vm_area *y = area_y;
-        const uintptr_t y_start = ptr2uint(y->base_vaddr);
+        const uintptr_t y_start = (uintptr_t)y->base;
         const uintptr_t y_end = y_start + y->length - 1;
 
         if (x_start < y_start) {
@@ -37,8 +37,8 @@ int vm_area_rbtcmpfn_area_to_addr(const void *area, const void *addr)
         kassert(area != NULL);
 
         const struct vm_area *a = area;
-        const uintptr_t address = ptr2uint(addr);
-        const uintptr_t area_base = ptr2uint(a->base_vaddr);
+        const uintptr_t address = (uintptr_t)addr;
+        const uintptr_t area_base = (uintptr_t)a->base;
         const uintptr_t area_end = area_base + a->length - 1;
 
         if (address < area_base) {
@@ -52,22 +52,22 @@ int vm_area_rbtcmpfn_area_to_addr(const void *area, const void *addr)
         return (-1);
 }
 
-void vm_area_init(struct vm_area *area, void *vaddr, size_t length, const struct vm_space *owner)
+void vm_area_init(struct vm_area *area, virt_addr_t base, size_t length, const struct vm_space *owner)
 {
         kassert(area != NULL);
-        kassert(check_align(ptr2uint(vaddr), PLATFORM_PAGE_SIZE));
+        kassert(check_align((uintptr_t)base, PLATFORM_PAGE_SIZE));
         kassert(check_align(length, PLATFORM_PAGE_SIZE));
 
         kmemset(area, 0x0, sizeof(*area));
 
-        area->base_vaddr = vaddr;
+        area->base = base;
         area->length = length;
         area->owner = owner;
 
 #ifndef NDEBUG
-        if (!vm_arch_is_range_valid(area->base_vaddr, area->length)) {
-                LOGF_E("Area %p overlaps with invalid addresses: %p-%p\n", area, area->base_vaddr,
-                       uint2ptr(ptr2uint(area->base_vaddr) + area->length - 1));
+        if (!vm_arch_is_range_valid(area->base, area->length)) {
+                LOGF_E("Area %p overlaps with invalid addresses: %p-%p\n", area, area->base,
+                       area->base + area->length - 1);
         }
 #endif
 
@@ -76,7 +76,7 @@ void vm_area_init(struct vm_area *area, void *vaddr, size_t length, const struct
         slist_init(&area->sorted_areas);
 }
 
-void *vm_area_register_page(struct vm_area *area, void *page_addr)
+void *vm_area_register_page(struct vm_area *area, virt_addr_t *page_base)
 {
         kassert(area != NULL);
 
@@ -85,10 +85,10 @@ void *vm_area_register_page(struct vm_area *area, void *page_addr)
                 /* Although, the kernel should panic at this point. */
                 return (NULL);
         }
-        return (area->ops.register_page(area, page_addr));
+        return (area->ops.register_page(area, page_base));
 }
 
-void vm_area_unregister_page(struct vm_area *area, void *page_addr)
+void vm_area_unregister_page(struct vm_area *area, virt_addr_t *page_base)
 {
         kassert(area != NULL);
         kassert(area->ops.unregister_page != NULL);
@@ -97,5 +97,5 @@ void vm_area_unregister_page(struct vm_area *area, void *page_addr)
                 LOGF_P("Tried to unregister page but register function is undefined!\n");
                 /* Although, the kernel should panic at this point. */
         }
-        return (area->ops.unregister_page(area, page_addr));
+        return (area->ops.unregister_page(area, page_base));
 }

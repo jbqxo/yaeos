@@ -4,6 +4,7 @@
 #include "lib/cppdefs.h"
 #include "lib/cstd/stdio.h"
 #include "lib/cstd/string.h"
+#include "lib/utils.h"
 
 #include <limits.h>
 #include <stdarg.h>

@@ -1,6 +1,8 @@
 #ifndef _KERNEL_VM_AREA_H
 #define _KERNEL_VM_AREA_H
 
+#include "kernel/mm/addr.h"
+
 #include "lib/ds/rbtree.h"
 #include "lib/ds/slist.h"
 
@@ -16,7 +18,7 @@ enum vm_flags {
  * Describes properties of those *virtual* pages that are located in the area's space.
  */
 struct vm_area {
-        void *base_vaddr; /**< Beginning of the area. */
+        virt_addr_t base; /**< Beginning of the area. */
         size_t length;
         enum vm_flags flags;
 
@@ -32,7 +34,7 @@ struct vm_area {
         void *data;
 };
 
-void vm_area_init(struct vm_area *area, void *vaddr, size_t length, const struct vm_space *owner);
+void vm_area_init(struct vm_area *area, virt_addr_t base, size_t length, const struct vm_space *owner);
 
 /**
  * @brief Used as a comparison function to search addresses inside of Red-Black Tree.
@@ -43,21 +45,21 @@ void vm_area_init(struct vm_area *area, void *vaddr, size_t length, const struct
  * If the address lays inside the area, retval == 0.
  * @return Comparison result.
  */
-int vm_area_rbtcmpfn_area_to_addr(const void *area, const void *addr);
+int vm_area_rbtcmpfn_area_to_addr(const void *area, const void *vaddr);
 
 int vm_area_rbtcmpfn(const void *area_x, const void *area_y);
 
 /**
  * @brief Registers a page within the area.
- * @page_addr Desired page location. Could be NULL; in this case it'll be chosen automatically.
+ * @page_base Desired page location. Could be NULL; in this case it'll be chosen automatically.
  * @return A pointer to the allocated page or NULL on fail.
  * */
-void *vm_area_register_page(struct vm_area *area, void *page_addr);
+void *vm_area_register_page(struct vm_area *area, virt_addr_t *page_base);
 
 /**
  * @brief Unregisters the page within the area.
- * @page_addr Page to free.
+ * @page_base Page to free.
  * */
-void vm_area_unregister_page(struct vm_area *area, void *page_addr);
+void vm_area_unregister_page(struct vm_area *area, virt_addr_t *page_base);
 
 #endif /* _KERNEL_VM_AREA_H */

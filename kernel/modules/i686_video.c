@@ -1,17 +1,18 @@
 #include "kernel/console.h"
 #include "kernel/kernel.h"
-#include "kernel/mm/highmem.h"
+#include "kernel/mm/addr.h"
 #include "kernel/modules.h"
 
 #include "lib/cppdefs.h"
 #include "lib/cstd/ctype.h"
 #include "lib/cstd/string.h"
+#include "lib/cstd/nonstd.h"
 
 #include <stddef.h>
 #include <stdint.h>
 
-#define VIDEO_WIDTH       80
-#define VIDEO_HEIGHT      25
+#define VIDEO_WIDTH  80
+#define VIDEO_HEIGHT 25
 
 static struct {
         volatile uint16_t *buffer;
@@ -117,10 +118,13 @@ void video_write(struct console *c __unused, const char *restrict str, size_t si
         }
 }
 
-struct console video_console = (struct console){
+struct console video_console = (struct console)
+{
         .name = "video_console",
+#if 0
         .write = video_write,
         .clear = video_clear,
+#endif
 };
 
 static bool video_available(void)
@@ -137,14 +141,18 @@ static void video_load(void)
         STATE.row = 0;
         STATE.col = 0;
         STATE.color = video_mix_color(VIDEO_DEFAULT_FG, VIDEO_DEFAULT_BG);
-        STATE.buffer = uint2ptr(VIDEO_BUFFER_ADDR);
+#if 0
+        STATE.buffer = VIDEO_BUFFER_ADDR;
 
         video_clear(c);
+#endif
 }
 
 static void video_unload(void)
 {
+#if 0
         video_clear(c);
+#endif
 }
 
 struct module i686_video = (struct module){
@@ -154,5 +162,4 @@ struct module i686_video = (struct module){
                 .load = video_load,
                 .unload = video_unload,
         },
-        .state_list = SLIST_REF_EMPTY,
 };

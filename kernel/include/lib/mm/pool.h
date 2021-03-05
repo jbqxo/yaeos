@@ -10,8 +10,8 @@ struct mem_pool {
         struct slist_ref nodes;
 
 #ifndef NDEBUG
-        union uiptr mem_start;
-        union uiptr mem_end;
+        void *mem_start;
+        void *mem_end;
 #endif
 };
 

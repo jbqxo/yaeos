@@ -21,24 +21,29 @@ void mem_pool_init(struct mem_pool *pool, void *mem, size_t mem_size, size_t ele
         kassert(mem_size >= elem_size);
 
         elem_size = MAX(elem_size, sizeof(union node));
-        uintptr_t mblock = align_roundup(ptr2uint(mem), elem_align);
+        uintptr_t mblock = align_roundup((uintptr_t)mem, elem_align);
         size_t stride = align_roundup(elem_size, elem_align);
-        size_t limit = ptr2uiptr(mem).num + mem_size;
+        size_t limit = (uintptr_t)mem + mem_size;
 
         slist_init(&pool->nodes);
 #ifndef NDEBUG
-        pool->mem_start = ptr2uiptr(pool);
-        pool->mem_end = uint2uiptr(limit);
+        pool->mem_start = pool;
+        pool->mem_end = (void *)limit;
 #endif
 
         kassert(mblock + elem_size <= limit);
-        union node *node = uint2ptr(mblock);
+        union node *node = (void*)mblock;
+        kassert(properly_aligned(node));
+
         slist_insert(&pool->nodes, &node->nodes);
 
         while (mblock + stride + elem_size <= limit) {
-                union node *current = uint2ptr(mblock);
-                union node *next = uint2uiptr(mblock + stride).ptr;
-                mblock = ptr2uint(next);
+                union node *current = (void*)mblock;
+                union node *next = (void*)(mblock + stride);
+                kassert(properly_aligned(current));
+                kassert(properly_aligned(next));
+
+                mblock = (uintptr_t)(next);
 
                 slist_insert(&current->nodes, &next->nodes);
         }
@@ -62,10 +67,11 @@ void mem_pool_free(struct mem_pool *pool, void *mem)
         kassert(pool);
         kassert(mem);
 
-        union uiptr m = ptr2uiptr(mem);
 #ifndef NDEBUG
-        kassert(m.num > pool->mem_start.num && m.num < pool->mem_end.num);
+        kassert(mem > pool->mem_start && mem < pool->mem_end);
 #endif
 
-        slist_insert(&pool->nodes, &((union node*)m.ptr)->nodes);
+        union node *node = mem;
+        kassert(properly_aligned(node));
+        slist_insert(&pool->nodes, &node->nodes);
 }

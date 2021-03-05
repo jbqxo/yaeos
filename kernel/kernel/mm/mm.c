@@ -39,27 +39,28 @@ static struct linear_alloc *bootstrap_zone_alloc(void *virt_start, const size_t 
 
 struct mm_zone *mm_zone_create(void *phys_start, size_t length, struct vm_space *kernel_vmspace)
 {
+        uintptr_t area_start = (uintptr_t)phys_start;
+
         kassert(kernel_vmspace != NULL);
-        kassert(check_align(ptr2uint(phys_start), PLATFORM_PAGE_SIZE));
+        kassert(check_align(area_start, PLATFORM_PAGE_SIZE));
         kassert(check_align(length, PLATFORM_PAGE_SIZE));
 
         /* Place temporary area over the zone until we can allocate a zone object from itself.
          * Then we could copy the area to the zone. */
         struct vm_area tmp_area;
 
-        union uiptr area_start = ptr2uiptr(phys_start);
-        area_start.num += kernel_vmspace->offset.num;
+        area_start += kernel_vmspace->offset;
 
-        kassert(check_align(area_start.num, PLATFORM_PAGE_SIZE));
+        kassert(check_align(area_start, PLATFORM_PAGE_SIZE));
 
-        vm_area_init(&tmp_area, area_start.ptr, length, kernel_vmspace);
+        vm_area_init(&tmp_area, (void *)area_start, length, kernel_vmspace);
         vm_space_append_area(kernel_vmspace, &tmp_area);
 
         tmp_area.length = length;
         tmp_area.flags |= VM_WRITE;
         tmp_area.ops.handle_pg_fault = vm_pgfault_handle_direct;
 
-        struct linear_alloc *alloc = bootstrap_zone_alloc(area_start.ptr, length);
+        struct linear_alloc *alloc = bootstrap_zone_alloc((void *)area_start, length);
 
         struct mm_zone *zone = linear_alloc_alloc(alloc, sizeof(*zone));
         zone->buddym = linear_alloc_alloc(alloc, sizeof(*zone->buddym));
@@ -152,13 +153,14 @@ struct mm_page *mm_alloc_page(void)
 
 struct mm_page *mm_get_page_by_paddr(void *phys_addr)
 {
-        union uiptr paddr = ptr2uiptr(phys_addr);
+        uintptr_t paddr = (uintptr_t)phys_addr;
         struct mm_zone *zone = NULL;
         SLIST_FOREACH (it, slist_next(&MM_ZONES)) {
-                struct mm_zone *z = NULL;
-                uintptr_t zstart = ptr2uint(z->start);
+                struct mm_zone *z = container_of(it, struct mm_zone, sys_zones);
+
+                uintptr_t zstart = (uintptr_t)z->start;
                 uintptr_t zend = zstart + z->length;
-                if (paddr.num >= zstart && paddr.num < zend) {
+                if (paddr >= zstart && paddr < zend) {
                         zone = z;
                         break;
                 }
@@ -170,14 +172,14 @@ struct mm_page *mm_get_page_by_paddr(void *phys_addr)
                 return (NULL);
         }
 
-        paddr.num &= -PLATFORM_PAGE_SIZE;
-        paddr.num -= ptr2uint(zone->start);
-        paddr.num /= PLATFORM_PAGE_SIZE;
-        size_t page_ndx = paddr.num;
+        paddr &= -PLATFORM_PAGE_SIZE;
+        paddr -= (uintptr_t)zone->start;
+        paddr /= PLATFORM_PAGE_SIZE;
+        size_t page_ndx = paddr;
 
         kassert(page_ndx < zone->pages_count);
         struct mm_page *page = &zone->pages[page_ndx];
-        kassert(ptr2uint(page->paddr) == (ptr2uint(phys_addr) & -PLATFORM_PAGE_SIZE));
+        kassert(page->paddr == (void *)((uintptr_t)phys_addr & -PLATFORM_PAGE_SIZE));
 
         return (&zone->pages[page_ndx]);
 }

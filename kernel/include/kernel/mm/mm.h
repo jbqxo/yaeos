@@ -1,6 +1,7 @@
 #ifndef _KERNEL_MM_H
 #define _KERNEL_MM_H
 
+#include "kernel/mm/addr.h"
 #include "kernel/mm/vm.h"
 
 #include "lib/cppdefs.h"
@@ -10,7 +11,7 @@
 #include <stdint.h>
 
 struct mm_page {
-        void *paddr;
+        phys_addr_t paddr;
 
         enum page_state {
                 PAGESTATE_FREE,
@@ -22,7 +23,7 @@ struct mm_page {
 void mm_page_init_free(struct mm_page *, void *phys_addr);
 
 struct mm_zone {
-        void *start;
+        phys_addr_t start;
         size_t length;
 
         struct mm_page *pages;
@@ -37,7 +38,7 @@ struct mm_zone {
         struct slist_ref sys_zones;
 };
 
-struct mm_zone *mm_zone_create(void *phys_start, size_t length, struct vm_space *kernel_vmspace);
+struct mm_zone *mm_zone_create(phys_addr_t start, size_t length, struct vm_space *kernel_vmspace);
 
 void mm_zone_register(struct mm_zone *);
 
@@ -47,7 +48,7 @@ struct mm_page *mm_alloc_page_from(struct mm_zone *zone);
 
 struct mm_page *mm_alloc_page(void);
 
-struct mm_page *mm_get_page_by_paddr(void *phys_addr);
+struct mm_page *mm_get_page_by_paddr(phys_addr_t addr);
 
 void mm_init(void);
 

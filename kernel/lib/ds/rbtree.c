@@ -8,9 +8,9 @@ static void rbt_set_colour(struct rbtree_node *n, enum rbtree_colour c)
         n->colour = c;
 #else
         if (c == RBTREE_RED) {
-                n->parent.num |= 1;
+                n->parent |= 1;
         } else {
-                n->parent.num &= -2L;
+                n->parent &= -2L;
         }
 #endif
 }
@@ -23,7 +23,7 @@ static enum rbtree_colour rbt_get_colour(struct rbtree_node *n)
 #ifndef NDEBUG
         return (n->colour);
 #else
-        return (n->parent.num & 1L);
+        return ((uintptr_t)n->parent & 1L);
 #endif
 }
 
@@ -32,10 +32,10 @@ static void rbt_set_parent(struct rbtree_node *node, struct rbtree_node *parent)
         kassert(node);
 
 #ifndef NDEBUG
-        node->parent = ptr2uiptr(parent);
+        node->parent = parent;
 #else
-        node->parent.num &= 1L;
-        node->parent.num |= ptr2uiptr(parent).num;
+        node->parent &= 1L;
+        node->parent |= parent;
 #endif
 }
 
@@ -44,9 +44,11 @@ static struct rbtree_node *rbt_get_parent(struct rbtree_node *node)
         kassert(node);
 
 #ifndef NDEBUG
-        return (node->parent.ptr);
+        return (node->parent);
 #else
-        return (uint2uiptr(node->parent.num & -2L).ptr);
+        struct rbtree_node *parent = (uintptr_t)node->parent & -2L;
+        kassert(properly_aligned(parent));
+        return (parent);
 #endif
 }
 
@@ -219,7 +221,7 @@ void rbtree_init_node(struct rbtree_node *node)
         kassert(node);
         node->left = NULL;
         node->right = NULL;
-        node->parent = ptr2uiptr(NULL);
+        node->parent = NULL;
         rbt_set_colour(node, RBTREE_RED);
 }
 

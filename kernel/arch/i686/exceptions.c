@@ -6,6 +6,7 @@
 #include "kernel/panic.h"
 
 #include "lib/cstd/stdio.h"
+#include "lib/utils.h"
 
 static char DESCRIPTION_BUFFER[64];
 static int DESCBUFFER_POS = 0;
@@ -36,16 +37,16 @@ static struct kernel_panic_info prepare_panic_info(struct intr_ctx *ctx, const c
         info.regs = kvstore_create(mem, PLATFORM_REGISTERS_COUNT,
                                    (int (*)(void const *, void const *))kstrcmp);
 
-        kvstore_append(info.regs, "EDI", uint2ptr(ctx->edi));
-        kvstore_append(info.regs, "ESI", uint2ptr(ctx->esi));
-        kvstore_append(info.regs, "EBP", uint2ptr(ctx->ebp));
-        kvstore_append(info.regs, "ESP", uint2ptr(ctx->esp));
-        kvstore_append(info.regs, "EBX", uint2ptr(ctx->ebx));
-        kvstore_append(info.regs, "EDX", uint2ptr(ctx->edx));
-        kvstore_append(info.regs, "ECX", uint2ptr(ctx->ecx));
-        kvstore_append(info.regs, "EAX", uint2ptr(ctx->eax));
-        kvstore_append(info.regs, "EIP", uint2ptr(ctx->eip));
-        kvstore_append(info.regs, "ESP", uint2ptr(ctx->preint_esp));
+        kvstore_append(info.regs, "EDI", (void *)ctx->edi);
+        kvstore_append(info.regs, "ESI", (void *)ctx->esi);
+        kvstore_append(info.regs, "EBP", (void *)ctx->ebp);
+        kvstore_append(info.regs, "ESP", (void *)ctx->esp);
+        kvstore_append(info.regs, "EBX", (void *)ctx->ebx);
+        kvstore_append(info.regs, "EDX", (void *)ctx->edx);
+        kvstore_append(info.regs, "ECX", (void *)ctx->ecx);
+        kvstore_append(info.regs, "EAX", (void *)ctx->eax);
+        kvstore_append(info.regs, "EIP", (void *)ctx->eip);
+        kvstore_append(info.regs, "ESP", (void *)ctx->preint_esp);
 
         return (info);
 }

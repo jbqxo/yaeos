@@ -25,7 +25,6 @@ enum i686_vm_dir_flags {
         I686VM_DIR_FLAG_CACHE_OFF = 0x1 << 3,
         I686VM_DIR_FLAG_ACCESSED = 0x1 << 4,
         I686VM_DIR_FLAG_4MiB = 0x1 << 6,
-        I686VM_DIR_FLAG_GLOBAL = 0x1 << 7,
 };
 
 /**
@@ -46,10 +45,21 @@ struct i686_vm_pge {
                         uintptr_t paddr : 20;
                 } any;
                 struct {
-                        bool is_present : 1;
-                        enum i686_vm_dir_flags flags : 7;
-                        uint8_t kernel_data : 4;
-                        uintptr_t paddr : 20;
+                        union {
+                                struct {
+                                        bool is_present : 1;
+                                        enum i686_vm_dir_flags flags : 7;
+                                        uint8_t kernel_data : 4;
+                                        uintptr_t paddr : 20;
+                                };
+                                struct {
+                                        bool is_present : 1;
+                                        enum i686_vm_dir_flags flags : 7;
+                                        bool global : 1;
+                                        uint8_t kernel_data : 3;
+                                        uintptr_t paddr : 20;
+                                } if_4mib;
+                        };
                 } dir;
                 struct {
                         bool is_present : 1;
@@ -87,7 +97,7 @@ enum i686_vm_pg_lvls {
 * @param vaddr Virtual address.
 * @return Address of the Page Table entry.
 */
-struct i686_vm_pge *i686_vm_get_pge(enum i686_vm_pg_lvls lvl, struct i686_vm_pd *dir, void *vaddr);
+struct i686_vm_pge *i686_vm_get_pge(enum i686_vm_pg_lvls lvl, struct i686_vm_pd *dir, void const *vaddr);
 
 void i686_vm_tlb_flush(void);
 

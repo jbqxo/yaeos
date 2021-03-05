@@ -6,10 +6,11 @@
 #include "kernel/config.h"
 #include "kernel/kernel.h"
 #include "kernel/klog.h"
-#include "kernel/mm/highmem.h"
+#include "kernel/mm/addr.h"
 #include "kernel/mm/mm.h"
 #include "kernel/mm/vm.h"
 
+#include "lib/align.h"
 #include "lib/cppdefs.h"
 #include "lib/cstd/assert.h"
 #include "lib/cstd/string.h"
@@ -37,29 +38,27 @@ void vm_arch_iter_reserved_vaddresses(void (*fn)(void const *addr, size_t len, v
 
         for (size_t i = 0; i < page_directories; i++) {
                 uintptr_t start = (i << 22) | PTE_MASK;
-                fn(uint2ptr(start), PLATFORM_PAGE_SIZE, data);
+                fn((void *)start, PLATFORM_PAGE_SIZE, data);
         }
 }
 
 bool vm_arch_is_range_valid(void const *base, size_t len)
 {
-        union uiptr const start = ptr2uiptr(base);
-        union uiptr const end = uint2uiptr(start.num + len);
+        uintptr_t const base_addr = (uintptr_t)base;
+        uintptr_t const end_addr = base_addr + len;
 
         uintptr_t const pd_reserve_start = (I686VM_PD_LAST_VALID_PAGE + 1) << 22;
 
-        if (start.num >= pd_reserve_start || end.num >= pd_reserve_start) {
+        if ((base_addr >= pd_reserve_start) || (end_addr >= pd_reserve_start)) {
                 return (false);
         }
 
         /* Check for overlaps with Page Table's recursive mappings. */
-        if (((start.num & PTE_MASK) == PTE_MASK) || ((end.num & PTE_MASK) == PTE_MASK)) {
+        if (((base_addr & PTE_MASK) == PTE_MASK) || ((end_addr & PTE_MASK) == PTE_MASK)) {
                 return (false);
         }
 
-        /* Not sure about this one.
-         * Oh well, will debug it anyway... */
-        if (end.num - start.num >= PTE_MASK) {
+        if (end_addr - base_addr >= PTE_MASK) {
                 return (false);
         }
 
@@ -90,18 +89,18 @@ enum i686_vm_dir_flags i686_vm_to_dir_flags(enum vm_flags area_flags)
 static uint32_t get_pte_ndx(void const *vaddr)
 {
         /* The table index consists of 21:12 bits of an address. */
-        uint32_t index = (ptr2uint(vaddr) & PTE_MASK) >> 12;
+        uint32_t index = ((uintptr_t)vaddr & PTE_MASK) >> 12;
         return (index);
 }
 
 static uint32_t get_pde_ndx(void const *vaddr)
 {
         /* The directory index consists of 31:22 bits of an address. */
-        uint32_t index = (ptr2uint(vaddr) & PDE_MASK) >> 22;
+        uint32_t index = ((uintptr_t)vaddr & PDE_MASK) >> 22;
         return (index);
 }
 
-struct i686_vm_pge *i686_vm_get_pge(enum i686_vm_pg_lvls lvl, struct i686_vm_pd *dir, void *vaddr)
+struct i686_vm_pge *i686_vm_get_pge(enum i686_vm_pg_lvls lvl, struct i686_vm_pd *dir, void const *vaddr)
 {
         uint32_t ndx = 0;
         switch (lvl) {
@@ -134,13 +133,13 @@ void i686_vm_tlb_invlpg(void *addr)
 
 void i686_vm_pge_set_addr(struct i686_vm_pge *entry, const void *phys_addr)
 {
-        entry->any.paddr = ptr2uint(phys_addr) >> 12;
+        entry->any.paddr = (uintptr_t)phys_addr >> 12;
 }
 
 void *i686_vm_pge_get_addr(struct i686_vm_pge *entry)
 {
         kassert(entry->any.is_present);
-        return (uint2ptr(entry->any.paddr << 12));
+        return ((void *)(entry->any.paddr << 12));
 }
 
 void *i686_vm_get_cr2(void)
@@ -165,7 +164,8 @@ static struct i686_vm_pge *get_pge_for_vaddr(void const *vaddr)
 {
         size_t const pte_ndx = get_pte_ndx(vaddr);
         /* Use the recursive mapping at the end of the directory to get the address. */
-        struct i686_vm_pd *dir = uint2ptr((ptr2uint(vaddr) | 0x003FF000U) & 0xFFFFF000U);
+        struct i686_vm_pd *dir = (void *)(((uintptr_t)vaddr | 0x003FF000U) & 0xFFFFF000U);
+        kassert(properly_aligned(dir));
 
         return (&dir->entries[pte_ndx]);
 }
@@ -180,9 +180,9 @@ void *vm_arch_get_phys_page(void const *virt_page)
 
 void i686_vm_pg_fault_handler(struct intr_ctx *__unused ctx)
 {
-        union uiptr addr = ptr2uiptr(i686_vm_get_cr2());
+        void *const fault_at = i686_vm_get_cr2();
         struct vm_space *fault_space = NULL;
-        if (highmem_is_high(addr.ptr)) {
+        if (addr_is_high(fault_at)) {
                 fault_space = &CURRENT_KERNEL;
         } else {
                 kassert(CURRENT_USER != NULL);
@@ -190,18 +190,18 @@ void i686_vm_pg_fault_handler(struct intr_ctx *__unused ctx)
         }
 
         struct rbtree_node *rbtnode =
-                rbtree_search(&fault_space->rb_areas, addr.ptr, vm_area_rbtcmpfn_area_to_addr);
+                rbtree_search(&fault_space->rb_areas, fault_at, vm_area_rbtcmpfn_area_to_addr);
 
         if (rbtnode == NULL) {
-                LOGF_P("Page fault at the address (%p) not covered by any vm_area!\n", addr.ptr);
+                LOGF_P("Page fault at the address (%p) not covered by any vm_area!\n", fault_at);
         }
 
         struct vm_area *fault_area = rbtnode->data;
 
         if (__likely(fault_area->ops.handle_pg_fault != NULL)) {
-                fault_area->ops.handle_pg_fault(fault_area, addr.ptr);
+                fault_area->ops.handle_pg_fault(fault_area, fault_at);
         } else {
-                LOGF_P("Unhandled page fault at %p!\n", addr.ptr);
+                LOGF_P("Unhandled page fault at %p!\n", fault_at);
         }
 }
 
@@ -214,15 +214,14 @@ static void *create_new_dir(struct i686_vm_pd *root_pd)
         e->any.is_present = true;
         e->dir.flags |= I686VM_DIR_FLAG_RW;
 
-        uintptr_t const emerg_vaddr = (I686VM_PD_RECURSIVE_NDX << 22) |
-                                      (I686VM_PD_EMERGENCY_NDX << 12);
-        void *const vaddr = uint2ptr(emerg_vaddr);
+        void *const tmp_map_dir =
+                (void *)((I686VM_PD_RECURSIVE_NDX << 22) | (I686VM_PD_EMERGENCY_NDX << 12));
 
         barrier_compiler();
 
-        kmemset(vaddr, 0x0, PLATFORM_PAGE_SIZE);
+        kmemset(tmp_map_dir, 0x0, PLATFORM_PAGE_SIZE);
 
-        i686_vm_setup_recursive_mapping(vaddr, page->paddr);
+        i686_vm_setup_recursive_mapping(tmp_map_dir, page->paddr);
 
         e->any.is_present = false;
 
@@ -234,9 +233,7 @@ void vm_arch_pt_map(void *tree_root, const void *phys_addr, const void *at_virt_
 {
         kassert(tree_root != NULL);
 
-        const union uiptr vaddr = ptr2uiptr(at_virt_addr);
-
-        struct i686_vm_pge *pde = i686_vm_get_pge(I686VM_PGLVL_DIR, tree_root, vaddr.ptr);
+        struct i686_vm_pge *pde = i686_vm_get_pge(I686VM_PGLVL_DIR, tree_root, at_virt_addr);
         if (!pde->any.is_present) {
                 void *new_pd_paddr = create_new_dir(tree_root);
                 i686_vm_pge_set_addr(pde, new_pd_paddr);
@@ -244,7 +241,7 @@ void vm_arch_pt_map(void *tree_root, const void *phys_addr, const void *at_virt_
                 pde->dir.is_present = true;
         }
 
-        struct i686_vm_pge *pte = get_pge_for_vaddr(vaddr.ptr);
+        struct i686_vm_pge *pte = get_pge_for_vaddr(at_virt_addr);
         kassert(!pte->any.is_present);
 
         pte->table.flags = i686_vm_to_table_flags(flags);

@@ -4,7 +4,7 @@
 
 #include "kernel/kernel.h"
 #include "kernel/klog.h"
-#include "kernel/mm/highmem.h"
+#include "kernel/mm/addr.h"
 #include "kernel/platform_consts.h"
 #include "kernel/resources.h"
 
@@ -41,8 +41,8 @@ static void iter_without_unavail(struct multiboot_mmap_entry *mmap, iter_availab
                 return;
         }
 
-        uintptr_t kstart = ptr2uint(highmem_to_low(kernel_start));
-        uintptr_t kend = ptr2uint(highmem_to_low(kernel_end));
+        uintptr_t kstart = (uintptr_t)addr_to_low(kernel_start);
+        uintptr_t kend = (uintptr_t)addr_to_low(kernel_end);
         uintptr_t memstart = mmap->addr;
         uintptr_t memend = memstart + mmap->len;
 
@@ -125,7 +125,7 @@ static void iter_available_regions(iter_available_fn_t fn)
         }
 }
 
-static void register_mem_region(uintptr_t start, uintptr_t end, uint32_t type)
+static void register_mem_region(uintptr_t start, uintptr_t end, uint32_t type __unused)
 {
         const size_t length = end - start;
 
@@ -136,7 +136,7 @@ static void register_mem_region(uintptr_t start, uintptr_t end, uint32_t type)
         struct resource r = {
                 .device_id = "platform",
                 .type = RESOURCE_TYPE_MEMORY,
-                .data.mem_reg.base = uint2ptr(start),
+                .data.mem_reg.base = (void *)start,
                 /* ... if we can address some part of the chunk, cut remainders out. */
                 .data.mem_reg.len = MIN(length, max_addr() - start),
         };

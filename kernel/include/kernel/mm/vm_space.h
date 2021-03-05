@@ -13,18 +13,14 @@
  * Describes an address space of a user process or the kernel.
  */
 struct vm_space {
-        void *root_dir; /**< Top level directory of every *userspace* vm_space is always present.*/
-        union uiptr offset; /**< I think it will be used only by the kernel space. */
+        phys_addr_t root_dir; /**< Top level directory of every *userspace* vm_space is always present.*/
+        uintptr_t offset; /**< Offset of all allocations inside of a space. */
 
         struct rbtree rb_areas;
         struct slist_ref sorted_areas;
 };
 
-/**
- * Should be used for initialization of the kernel space only.
- * It does the same, except that it won't allocate top-level pagedir by itself.
- */
-void vm_space_init(struct vm_space *space, void *root_pdir, union uiptr offset);
+void vm_space_init(struct vm_space *space, phys_addr_t root_pdir, uintptr_t offset);
 
 void vm_space_append_area(struct vm_space *space, struct vm_area *area);
 

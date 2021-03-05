@@ -42,10 +42,10 @@ union bufctl {
  */
 static void *bufctl_small_get_mem(struct bufctl_small *ctl, struct kmm_cache *cache)
 {
-        uintptr_t ctl_addr = ptr2uint(ctl);
+        uintptr_t ctl_addr = (uintptr_t)ctl;
         uintptr_t buffer_addr = ctl_addr - cache->size;
         buffer_addr = align_rounddown(buffer_addr, cache->alignment);
-        return (uint2ptr(buffer_addr));
+        return ((void *)buffer_addr);
 }
 
 /**
@@ -70,11 +70,16 @@ static void *bufctl_mem(union bufctl *ctl, struct kmm_cache *cache)
 /**
  * Returns an address of a small bufctl that owns given buffer.
  */
-static void *get_bufctl_small(uintptr_t buffer_addr, struct kmm_cache *cache)
+static struct bufctl_small *get_bufctl_small(void *buffer, struct kmm_cache *cache)
 {
-        buffer_addr += cache->size;
-        buffer_addr = align_roundup(buffer_addr, sizeof(struct bufctl_small));
-        return (uint2ptr(buffer_addr));
+        uintptr_t b = (uintptr_t)buffer;
+        b += cache->size;
+        b = align_roundup(b, sizeof(struct bufctl_small));
+
+        struct bufctl_small *s = (struct bufctl_small *)b;
+        kassert(properly_aligned(s));
+
+        return (s);
 }
 
 /**
@@ -125,7 +130,7 @@ static struct page *page_alloc(struct kmm_cache *cache)
                 LOGF_E("There are no more free pages in the kernel's heap.\n");
         }
 
-        kassert(check_align(ptr2uint(page), PLATFORM_PAGE_SIZE));
+        kassert(check_align((uintptr_t)page, PLATFORM_PAGE_SIZE));
 
         return (page);
 }
@@ -195,7 +200,7 @@ void kmm_cache_trim(struct kmm_cache *cache)
 
 void kmm_cache_trim_all(void)
 {
-        SLIST_FOREACH(it, slist_next(&ALLOCATED_CACHES_HEAD)) {
+        SLIST_FOREACH (it, slist_next(&ALLOCATED_CACHES_HEAD)) {
                 struct kmm_cache *c = container_of(it, struct kmm_cache, sys_caches);
                 kmm_cache_trim(c);
         }
@@ -206,9 +211,13 @@ void kmm_cache_trim_all(void)
  */
 static struct page *page_get_by_addr(void *addr)
 {
-        uintptr_t p = ptr2uint(addr);
+        uintptr_t p = (uintptr_t)addr;
         p &= -PLATFORM_PAGE_SIZE;
-        return (uint2ptr(p));
+
+        struct page *page = (struct page *)p;
+        kassert(properly_aligned(page));
+
+        return (page);
 }
 
 /**
@@ -228,12 +237,14 @@ static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colo
                 return (NULL);
         }
 
-        union uiptr cursor = ptr2uiptr(page->data);
+        uintptr_t cursor = (uintptr_t)page->data;
 
-        struct kmm_slab *slab = cursor.ptr;
-        cursor.num += sizeof(*slab);
-        cursor.num += colour;
-        cursor.num = align_roundup(cursor.num, cache->alignment);
+        struct kmm_slab *slab = (void *)cursor;
+        kassert(properly_aligned(slab));
+
+        cursor += sizeof(*slab);
+        cursor += colour;
+        cursor = align_roundup(cursor, cache->alignment);
 
         page->owner = slab;
 
@@ -242,15 +253,17 @@ static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colo
         slist_init(&slab->slabs_list);
         slist_init(&slab->free_buffers);
 
-        /* Check that leftover space is less than a full stride. */
-        kassert((ptr2uint(page) + PLATFORM_PAGE_SIZE) -
-                        (cursor.num + cache->slab_capacity * cache->stride) <
-                cache->stride);
-        for (int i = 0; i < cache->slab_capacity; i++, cursor.num += cache->stride) {
-                union uiptr ctl_mem = ptr2uiptr(get_bufctl_small(cursor.num, cache));
-                kassert(ctl_mem.num < cursor.num + cache->stride);
+        {
+                uintptr_t const page_end = (uintptr_t)page + PLATFORM_PAGE_SIZE;
+                uintptr_t const slab_elems_end = cursor + cache->slab_capacity * cache->stride;
+                /* Check that leftover space is less than a full stride. */
+                kassert(page_end - slab_elems_end < cache->stride);
+        }
+        for (int i = 0; i < cache->slab_capacity; i++, cursor += cache->stride) {
+                void *buffer = (void *)cursor;
+                struct bufctl_small *ctl = get_bufctl_small(buffer, cache);
+                kassert((uintptr_t)ctl < cursor + cache->stride);
 
-                struct bufctl_small *ctl = ctl_mem.ptr;
                 slist_init(&ctl->slist);
                 slist_insert(&slab->free_buffers, &ctl->slist);
 
@@ -278,7 +291,7 @@ static struct kmm_slab *slab_create_large(struct kmm_cache *cache, unsigned colo
         }
         page->owner = slab;
 
-        uintptr_t obj_addr = ptr2uint(page->data);
+        uintptr_t obj_addr = (uintptr_t)page->data;
         obj_addr += colour;
         obj_addr = align_roundup(obj_addr, cache->alignment);
 
@@ -292,7 +305,7 @@ static struct kmm_slab *slab_create_large(struct kmm_cache *cache, unsigned colo
                 slist_init(&ctl->slist);
                 slist_insert(&slab->free_buffers, &ctl->slist);
 
-                void *obj = uint2ptr(obj_addr);
+                void *obj = (void *)obj_addr;
                 ctl->memory = obj;
                 if (cache->ctor) {
                         cache->ctor(obj);
@@ -317,7 +330,7 @@ static void object_free(void *mem, struct kmm_slab *slab, struct kmm_cache *cach
                 ctl = kmm_cache_alloc(&CACHES.large_bufctls);
                 ctl->large.memory = mem;
         } else {
-                ctl = get_bufctl_small(ptr2uint(mem), cache);
+                ctl = (union bufctl *)get_bufctl_small(mem, cache);
         }
         slist_insert(&slab->free_buffers, &ctl->slist);
 }

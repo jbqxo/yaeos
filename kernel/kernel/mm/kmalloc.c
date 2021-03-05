@@ -73,23 +73,25 @@ void *kmalloc(size_t size)
         kassert(c != NULL);
 
         struct kmalloc_ident_info *info = kmm_cache_alloc(c);
-        kassert(check_align(ptr2uint(info), alignof(max_align_t)));
+        kassert(check_align((uintptr_t)info, alignof(max_align_t)));
+
         info->cache_index = cache_index;
 
-        void *mem = uint2ptr(align_roundup(ptr2uint(info) + sizeof(*info), alignof(max_align_t)));
+        void *mem = (void *)(align_roundup((uintptr_t)info + sizeof(*info), alignof(max_align_t)));
 
         return (mem);
 }
 
 void kfree(void *mem)
 {
-        union uiptr const m = ptr2uiptr(mem);
+        kassert(mem != NULL);
 
-        kassert(m.ptr != NULL);
-        kassert(check_align(m.num, alignof(max_align_t)));
+        uintptr_t const mem_addr = (uintptr_t)mem;
+
+        kassert(check_align(mem_addr, alignof(max_align_t)));
 
         struct kmalloc_ident_info *info =
-                uint2ptr(align_rounddown(m.num - 1, alignof(max_align_t)));
+                (void *)align_rounddown(mem_addr - 1, alignof(max_align_t));
         uint8_t cache_index = info->cache_index;
         kassert(cache_index < POWERS);
 

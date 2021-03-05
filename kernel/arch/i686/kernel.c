@@ -1,16 +1,16 @@
 #include "kernel/kernel.h"
 
-#include "arch_i686/resources.h"
 #include "arch_i686/descriptors.h"
 #include "arch_i686/early_paging.h"
 #include "arch_i686/exceptions.h"
 #include "arch_i686/intr.h"
 #include "arch_i686/kernel.h"
+#include "arch_i686/resources.h"
 #include "arch_i686/vm.h"
 
 #include "kernel/kernel.h"
 #include "kernel/klog.h"
-#include "kernel/mm/highmem.h"
+#include "kernel/mm/addr.h"
 #include "kernel/platform_consts.h"
 
 #include "lib/cppdefs.h"
@@ -54,8 +54,7 @@ void i686_init(multiboot_info_t *info, uint32_t magic)
         }
 
         setup_boot_paging();
-
-        highmem_set_offset(ptr2uint(kernel_vma));
+        addr_set_offset(KERNEL_VM_OFFSET);
 
         boot_setup_gdt();
         boot_setup_idt();
@@ -63,9 +62,7 @@ void i686_init(multiboot_info_t *info, uint32_t magic)
         i686_setup_exception_handlers();
         intr_handler_cpu(INTR_CPU_PAGEFAULT, i686_vm_pg_fault_handler);
 
-        union uiptr info_addr = ptr2uiptr(info);
-        info_addr.ptr = highmem_to_high(info_addr.ptr);
-        I686_INFO.multiboot = info_addr.ptr;
+        I686_INFO.multiboot = addr_to_high(info);
         patch_multiboot_info(I686_INFO.multiboot);
 
         i686_register_resources();

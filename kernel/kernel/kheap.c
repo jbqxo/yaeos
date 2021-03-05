@@ -18,7 +18,7 @@
 static struct vm_area KHEAP_AREA = { 0 };
 
 struct find_largest_data {
-        union uiptr max_base;
+        virt_addr_t max_base;
         size_t max_length;
 };
 
@@ -27,7 +27,7 @@ static bool find_largest(void *base, size_t len, void *data)
         struct find_largest_data *d = data;
 
         if (len > d->max_length) {
-                d->max_base.ptr = base;
+                d->max_base = base;
                 d->max_length = len;
         }
 
@@ -41,20 +41,20 @@ struct vm_area_heap_data {
 
 static bool area_page_ndx(struct vm_area *area, void *addr, size_t *result)
 {
-        const union uiptr wanted = ptr2uiptr(addr);
+        uintptr_t const wanted = (uintptr_t)addr;
 
-        const union uiptr area_start = ptr2uiptr(area->base_vaddr);
-        const union uiptr area_end = uint2uiptr(area_start.num + area->length - 1);
+        uintptr_t const area_start = (uintptr_t)area->base;
+        uintptr_t const area_end = area_start + area->length - 1;
 
-        if (wanted.num < area_start.num || wanted.num > area_end.num) {
+        if (wanted < area_start || wanted > area_end) {
                 return (false);
         }
 
-        *result = (ptr2uint(addr) - ptr2uint(area->base_vaddr)) / PLATFORM_PAGE_SIZE;
+        *result = (wanted - area_start) / PLATFORM_PAGE_SIZE;
         return (true);
 }
 
-static bool is_registered_page(struct vm_area *area, union uiptr page_addr)
+static bool is_registered_page(struct vm_area *area, virt_addr_t page)
 {
         kassert(area != NULL);
 
@@ -62,7 +62,7 @@ static bool is_registered_page(struct vm_area *area, union uiptr page_addr)
         kassert(data != NULL);
 
         size_t pg_ndx = 0;
-        if (!area_page_ndx(area, page_addr.ptr, &pg_ndx)) {
+        if (!area_page_ndx(area, page, &pg_ndx)) {
                 return (false);
         }
         return (buddy_is_free(&data->buddy, pg_ndx));
@@ -70,8 +70,8 @@ static bool is_registered_page(struct vm_area *area, union uiptr page_addr)
 
 static void vmarea_heap_fault_handler(struct vm_area *area, void *fault_addr)
 {
-        union uiptr const page_addr =
-                uint2uiptr(align_rounddown(ptr2uint(fault_addr), PLATFORM_PAGE_SIZE));
+        void *const page_addr =
+                (void *)(align_rounddown((uintptr_t)fault_addr, PLATFORM_PAGE_SIZE));
 
         if (is_registered_page(area, page_addr)) {
                 /* The page isn't registered in the heap.
@@ -91,7 +91,7 @@ static void vmarea_heap_fault_handler(struct vm_area *area, void *fault_addr)
                         LOGF_P("Couldn't trim enough space. Bye.\n");
                 }
         }
-        vm_arch_pt_map(area->owner->root_dir, page->paddr, page_addr.ptr, area->flags);
+        vm_arch_pt_map(area->owner->root_dir, page->paddr, page_addr, area->flags);
 }
 
 static void *heap_register_page(struct vm_area *area, void *page_addr)
@@ -99,8 +99,7 @@ static void *heap_register_page(struct vm_area *area, void *page_addr)
         kassert(area != NULL);
 
         struct vm_area_heap_data *data = area->data;
-        const union uiptr area_start = ptr2uiptr(area->base_vaddr);
-        const union uiptr desired_addr = ptr2uiptr(page_addr);
+        uintptr_t const area_start = (uintptr_t)area->base;
 
         size_t page_ndx = 0;
         if (page_addr != NULL && !area_page_ndx(area, page_addr, &page_ndx)) {
@@ -108,7 +107,7 @@ static void *heap_register_page(struct vm_area *area, void *page_addr)
         }
 
         bool alloc_failed = false;
-        if (desired_addr.ptr != NULL) {
+        if (page_addr != NULL) {
                 alloc_failed = !buddy_try_alloc(&data->buddy, 0, page_ndx);
         } else {
                 alloc_failed = !buddy_alloc(&data->buddy, 0, &page_ndx);
@@ -118,8 +117,8 @@ static void *heap_register_page(struct vm_area *area, void *page_addr)
                 return (NULL);
         }
 
-        const union uiptr result_addr = uint2uiptr(area_start.num + page_ndx * PLATFORM_PAGE_SIZE);
-        return (result_addr.ptr);
+        void *const result_addr = (void *)(area_start + page_ndx * PLATFORM_PAGE_SIZE);
+        return (result_addr);
 }
 
 static void heap_unregister_page(struct vm_area *area, void *page_addr)
@@ -138,23 +137,23 @@ static void heap_unregister_page(struct vm_area *area, void *page_addr)
 
 static void register_invalid_pages(void const *addr, size_t len, void *data __unused)
 {
-        union uiptr const inv_start = ptr2uiptr(addr);
-        uintptr_t const inv_end = inv_start.num + len - 1;
+        uintptr_t const inv_start = (uintptr_t)addr;
+        uintptr_t const inv_end = inv_start + len - 1;
 
-        union uiptr const area_start = ptr2uiptr(KHEAP_AREA.base_vaddr);
-        uintptr_t const area_end = area_start.num + KHEAP_AREA.length - 1;
+        uintptr_t const area_start = (uintptr_t)KHEAP_AREA.base;
+        uintptr_t const area_end = area_start + KHEAP_AREA.length - 1;
 
-        if ((inv_end < area_start.num) || (inv_start.num > area_end)) {
+        if ((inv_end < area_start) || (inv_start > area_end)) {
                 /* There is no overlap. */
                 return;
         }
 
-        union uiptr const overlap_start = uint2uiptr(MAX(area_start.num, inv_start.num));
+        uintptr_t const overlap_start = (MAX(area_start, inv_start));
         uintptr_t const overlap_end = MIN(area_end, inv_end);
-        size_t const overlap_len = overlap_end - overlap_start.num + 1;
+        size_t const overlap_len = overlap_end - overlap_start + 1;
 
         size_t page_ndx = 0;
-        if (__unlikely(!area_page_ndx(&KHEAP_AREA, overlap_start.ptr, &page_ndx))) {
+        if (__unlikely(!area_page_ndx(&KHEAP_AREA, (void *)overlap_start, &page_ndx))) {
                 LOGF_P("There is a bug somewhere. We can't possibly be here.");
         }
 
@@ -173,9 +172,9 @@ void kheap_init(struct vm_space *space)
         vm_space_find_gap(space, find_largest, &fld);
         /* NOTE: An area describes properties of the *pages*.
          * So it makes 0 sense to not align it at page boundaries. */
-        const union uiptr start = uint2uiptr(align_roundup(fld.max_base.num, PLATFORM_PAGE_SIZE));
-        const size_t len = fld.max_length - (start.num - fld.max_base.num);
-        vm_area_init(&KHEAP_AREA, start.ptr, len, space);
+        void *const start = (void *)align_roundup((uintptr_t)fld.max_base, PLATFORM_PAGE_SIZE);
+        const size_t len = fld.max_length - (start - fld.max_base);
+        vm_area_init(&KHEAP_AREA, start, len, space);
 
         KHEAP_AREA.ops.handle_pg_fault = vmarea_heap_fault_handler;
         KHEAP_AREA.ops.register_page = heap_register_page;
@@ -191,16 +190,16 @@ void kheap_init(struct vm_space *space)
 
         /* Map first pages by hands to allow kernel heap to start. */
         for (int i = 0; i < req_pages; i++) {
-                union uiptr map_addr = ptr2uiptr(KHEAP_AREA.base_vaddr);
-                map_addr.num += i * PLATFORM_PAGE_SIZE;
+                uintptr_t map_addr = (uintptr_t)KHEAP_AREA.base;
+                map_addr += i * PLATFORM_PAGE_SIZE;
 
                 struct mm_page *p = mm_alloc_page();
                 p->state = PAGESTATE_FIXED;
-                vm_arch_pt_map(KHEAP_AREA.owner->root_dir, p->paddr, map_addr.ptr,
+                vm_arch_pt_map(KHEAP_AREA.owner->root_dir, p->paddr, (void *)map_addr,
                                KHEAP_AREA.flags);
         }
 
-        linear_alloc_init(&KHEAP_DATA.buddy_alloc, KHEAP_AREA.base_vaddr,
+        linear_alloc_init(&KHEAP_DATA.buddy_alloc, KHEAP_AREA.base,
                           req_pages * PLATFORM_PAGE_SIZE);
         buddy_init(&KHEAP_DATA.buddy, heap_pages, &KHEAP_DATA.buddy_alloc);
         linear_forbid_further_alloc(&KHEAP_DATA.buddy_alloc);

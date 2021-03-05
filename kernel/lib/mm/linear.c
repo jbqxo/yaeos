@@ -10,8 +10,8 @@ void linear_alloc_init(struct linear_alloc *a, void *mem, size_t len)
         kassert(mem != NULL);
         kassert(len > 0);
 
-        union uiptr p = ptr2uiptr(mem);
-        a->base = p.num;
+        uintptr_t const p = (uintptr_t)mem;
+        a->base = p;
         a->limit = a->base + len;
         a->position = a->base;
 }
@@ -20,15 +20,15 @@ void *linear_alloc_alloc(struct linear_alloc *a, size_t len)
 {
         kassert(a != NULL);
 
-        union uiptr pos = uint2uiptr(a->position);
+        uintptr_t const pos = a->position;
 
-        if (__unlikely(pos.num + len >= a->limit)) {
+        if (__unlikely(pos + len >= a->limit)) {
                 return (NULL);
         }
 
-        a->position = pos.num + len;
+        a->position = pos + len;
 
-        return (pos.ptr);
+        return ((void *)pos);
 }
 
 void *linear_alloc_alloc_aligned(struct linear_alloc *a, size_t const len, size_t const align)
@@ -37,16 +37,16 @@ void *linear_alloc_alloc_aligned(struct linear_alloc *a, size_t const len, size_
         /* Just use linear_alloc_alloc(). */
         kassert(align > 0);
 
-        union uiptr pos = uint2uiptr(a->position);
-        pos.num = align_roundup(pos.num, align);
+        uintptr_t pos = a->position;
+        pos = align_roundup(pos, align);
 
-        if (__unlikely(pos.num + len >= a->limit)) {
+        if (__unlikely(pos + len >= a->limit)) {
                 return (NULL);
         }
 
-        a->position = pos.num + len;
+        a->position = pos + len;
 
-        return (pos.ptr);
+        return ((void *)pos);
 }
 
 void linear_alloc_free(struct linear_alloc *a, size_t len)
@@ -79,9 +79,6 @@ void linear_alloc_used_mem_range(struct linear_alloc *alloc, void **start, void 
         kassert(start != NULL);
         kassert(end != NULL);
 
-        const union uiptr mem_start = uint2uiptr(alloc->base);
-        const union uiptr mem_end = uint2uiptr(alloc->position);
-
-        *start = mem_start.ptr;
-        *end = mem_end.ptr;
+        *start = (void *)alloc->base;
+        *end = (void *)alloc->position;
 }

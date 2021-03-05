@@ -14,7 +14,7 @@ static int conwrite(const char *msg, size_t len)
 static void print_register(void *key, void *value, void *data __unused)
 {
         char const *reg = key;
-        uintptr_t val = ptr2uint(value);
+        uintptr_t val = (uintptr_t)(value);
         kfprintf(conwrite, "%s: %08X\n", reg, val);
 }
 

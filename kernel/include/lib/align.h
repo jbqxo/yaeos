@@ -4,6 +4,7 @@
 #include "lib/cppdefs.h"
 #include "lib/cstd/assert.h"
 
+#include <stdalign.h>
 #include <stdbool.h>
 
 /**
@@ -37,5 +38,7 @@ static inline bool check_align(uintptr_t value, uintptr_t alignment)
 {
         return (value == align_rounddown(value, alignment));
 }
+
+#define properly_aligned(EXP) (check_align((uintptr_t)(EXP), alignof(__typeof(*(EXP)))))
 
 #endif /* _LIB_ALIGN_H */

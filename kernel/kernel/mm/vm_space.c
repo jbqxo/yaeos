@@ -13,34 +13,34 @@ void *vm_space_find_gap(struct vm_space *space,
         kassert(space != NULL);
         kassert(predicate != NULL);
 
-        union uiptr next_after_last_area_end = space->offset;
+        uintptr_t next_after_last_area_end = space->offset;
 
         SLIST_FOREACH (it, slist_next(&space->sorted_areas)) {
                 struct vm_area *a = container_of(it, struct vm_area, sorted_areas);
 
-                union uiptr current_base = next_after_last_area_end;
-                size_t current_length = ptr2uint(a->base_vaddr) - current_base.num;
+                uintptr_t current_base = next_after_last_area_end;
+                size_t current_length = (uintptr_t)a->base - current_base;
 
-                bool hit = predicate(current_base.ptr, current_length, pred_data);
+                bool hit = predicate((void *)current_base, current_length, pred_data);
                 if (hit) {
-                        return (current_base.ptr);
+                        return ((void *)current_base);
                 }
 
-                next_after_last_area_end.num = ptr2uint(a->base_vaddr) + a->length;
+                next_after_last_area_end = (uintptr_t)a->base + a->length;
         }
 
         const uintptr_t LAST_AVAILABLE_ADDR = ~0UL;
-        const size_t length_til_space_end = LAST_AVAILABLE_ADDR - next_after_last_area_end.num + 1;
+        const size_t length_til_space_end = LAST_AVAILABLE_ADDR - next_after_last_area_end + 1;
 
-        bool hit = predicate(next_after_last_area_end.ptr, length_til_space_end, pred_data);
+        bool hit = predicate((void *)next_after_last_area_end, length_til_space_end, pred_data);
         if (hit) {
-                return (next_after_last_area_end.ptr);
+                return ((void *)next_after_last_area_end);
         }
 
         return (NULL);
 }
 
-void vm_space_init(struct vm_space *space, void *root_pdir, union uiptr offset)
+void vm_space_init(struct vm_space *space, phys_addr_t root_pdir, uintptr_t offset)
 {
         kassert(space != NULL);
         kassert(root_pdir != NULL);

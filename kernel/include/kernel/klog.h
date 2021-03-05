@@ -4,6 +4,7 @@
 #include "kernel/console.h"
 
 #include "lib/cppdefs.h"
+#include "lib/utils.h"
 
 #include <stdarg.h>
 

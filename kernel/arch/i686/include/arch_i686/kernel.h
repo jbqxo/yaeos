@@ -14,7 +14,7 @@ extern char kernel_bootstack_start[] asm("bootstack_top");
 extern char kernel_bootstack_end[] asm("bootstack_bottom");
 
 extern char kernel_vma[] asm("__kernel_vma");
-#define KERNEL_VM_OFFSET (ptr2uint(kernel_vma))
+#define KERNEL_VM_OFFSET ((uintptr_t)(kernel_vma))
 
 extern char kernel_start[] asm("__kernel_start");
 extern char kernel_end[] asm("__kernel_end");
