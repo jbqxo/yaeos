@@ -7,12 +7,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-typedef void *phys_addr_t;
-typedef void *virt_addr_t;
-
 void vm_pgfault_handle_default(struct vm_area *area, virt_addr_t addr);
-/* TODO: Rename to "highmem" */
-void vm_pgfault_handle_direct(struct vm_area *area, virt_addr_t addr);
 
 void vm_arch_iter_reserved_vaddresses(void (*fn)(void const *addr, size_t len, void *data),
                                       void *data);

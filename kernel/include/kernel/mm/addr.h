@@ -14,4 +14,6 @@ void *addr_to_low(const void *high_addr);
 void *addr_to_high(const void *low_addr);
 bool addr_is_high(const void *addr);
 
+struct vm_area;
+void addr_pgfault_handler_maplow(struct vm_area *area, virt_addr_t addr);
 #endif /* _KERNEL_MM_ADDR_H */

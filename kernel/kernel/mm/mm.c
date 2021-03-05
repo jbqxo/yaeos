@@ -58,7 +58,7 @@ struct mm_zone *mm_zone_create(void *phys_start, size_t length, struct vm_space 
 
         tmp_area.length = length;
         tmp_area.flags |= VM_WRITE;
-        tmp_area.ops.handle_pg_fault = vm_pgfault_handle_direct;
+        tmp_area.ops.handle_pg_fault = addr_pgfault_handler_maplow;
 
         struct linear_alloc *alloc = bootstrap_zone_alloc((void *)area_start, length);
 
