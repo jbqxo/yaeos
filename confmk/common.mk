@@ -43,7 +43,43 @@ BUILDDIR_DEPS   ?= $(BUILDDIR_BUILD)/$(DIR_DEPS)
 # floating point, sse, mmx, sse2, 3dnow and avx instructions will be available.
 CFLAGS_DEBUG     += -O0 -g
 CFLAGS_RELEASE   += -O3 -flto
-CFLAGS_COMMON    += -std=gnu18 -mgeneral-regs-only
+CFLAGS_COMMON    += -std=gnu18 \
+                    -mgeneral-regs-only \
+                    -fshort-enums \
+                    -funsafe-loop-optimizations \
+                    -fstrict-aliasing \
+                    -fipa-pure-const
+
+# Warnings
+CFLAGS_COMMON += -Wall \
+                 -Wextra \
+                 -Wformat=2 \
+                 -Wformat-overflow=2 \
+                 -Wshift-overflow=2 \
+                 -Wduplicated-branches \
+                 -Wshadow \
+                 -Wduplicated-cond \
+                 -Wswitch-default \
+                 -Wmaybe-uninitialized \
+                 -Wunsafe-loop-optimizations \
+                 -Wcast-qual \
+                 -Wcast-align=strict \
+                 -Wconversion \
+                 -Wdangling-else \
+                 -Wlogical-op \
+                 -Wstrict-prototypes \
+                 -Wmissing-prototypes \
+                 -Wmissing-field-initializers \
+                 -Winline \
+                 -Wdisabled-optimization \
+                 -Wstrict-aliasing=3 \
+                 -Wsuggest-attribute=const \
+                 -Wsuggest-attribute=noreturn \
+                 -Wsuggest-attribute=malloc \
+                 -Wsuggest-attribute=format \
+                 -fanalyzer
+
+
 
 CPPFLAGS_COMMON  +=
 CPPFLAGS_DEBUG   +=
@@ -52,11 +88,6 @@ CPPFLAGS_RELEASE += -DNDEBUG
 LDFLAGS_COMMON  += -lgcc
 LDFLAGS_DEBUG   += -g
 LDFLAGS_RELEASE += -Wl,-O3 -flto
-
-# Compiler diagnostics
-# All of these diagnostics there for a reason right?
-CFLAGS_COMMON += -Wall
-CFLAGS_COMMON += -Wno-unused-command-line-argument
 
 # Basic commands
 MAKE   := make --no-print-directory
