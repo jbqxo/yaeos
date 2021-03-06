@@ -5,6 +5,8 @@
 #include "lib/cppdefs.h"
 #include "lib/cstd/stdio.h"
 
+#include "lib/cstd/inttypes.h"
+
 static int conwrite(const char *msg, size_t len)
 {
         console_write(msg, len);
@@ -15,7 +17,7 @@ static void print_register(void *key, void *value, void *data __unused)
 {
         char const *reg = key;
         uintptr_t val = (uintptr_t)(value);
-        kfprintf(conwrite, "%s: %08X\n", reg, val);
+        kfprintf(conwrite, "%s: %08" PRIXPTR "\n", reg, val);
 }
 
 __noreturn void kernel_panic(struct kernel_panic_info *info)

@@ -6,6 +6,7 @@
 #include "kernel/klog.h"
 
 #include "lib/cstd/assert.h"
+#include "lib/cstd/inttypes.h"
 
 #include <stdint.h>
 
@@ -82,7 +83,8 @@ static void call_handler(struct intr_ctx *ctx)
         } else if (DEFAULT_HANDLER) {
                 DEFAULT_HANDLER(ctx);
         } else {
-                LOGF_E("Received an interrupt #%d, but there are no registered handlers...\n",
+                LOGF_E("Received an interrupt #%" PRIu32
+                       ", but there are no registered handlers...\n",
                        intn);
         }
 }
