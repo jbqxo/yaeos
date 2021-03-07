@@ -135,6 +135,28 @@ static struct page *page_alloc(struct kmm_cache *cache __unused)
         return (page);
 }
 
+static void free_large_buffers(struct slist_ref *list_head, struct kmm_cache *cache)
+{
+        kassert(list_head != NULL);
+        kassert(cache != NULL);
+
+        /* Can't use SLIST_FOREACH 'cause it would use a slab after freeing. */
+        struct slist_ref *next = NULL;
+        struct slist_ref *current = slist_next(list_head);
+        while (current != NULL) {
+                union bufctl *b = container_of(current, union bufctl, slist);
+                next = slist_next(current);
+
+                if (cache->dtor) {
+                        void *mem = bufctl_large_get_mem(&b->large);
+                        cache->dtor(mem);
+                }
+                kmm_cache_free(cache, b);
+
+                current = next;
+        }
+}
+
 static void slab_destroy(struct kmm_slab *slab, struct kmm_cache *cache)
 {
         kassert(slab);
@@ -146,15 +168,7 @@ static void slab_destroy(struct kmm_slab *slab, struct kmm_cache *cache)
         }
 
         if (cache->flags & KMM_CACHE_LARGE) {
-                SLIST_FOREACH (it, slist_next(&slab->free_buffers)) {
-                        union bufctl *b = container_of(it, union bufctl, slist);
-
-                        if (cache->dtor) {
-                                void *mem = bufctl_large_get_mem(&b->large);
-                                cache->dtor(mem);
-                        }
-                        kmm_cache_free(&CACHES.large_bufctls, b);
-                }
+                free_large_buffers(&slab->free_buffers, cache);
                 kmm_cache_free(&CACHES.slabs, slab);
         } else {
                 SLIST_FOREACH (it, slist_next(&slab->free_buffers)) {
@@ -180,6 +194,7 @@ static void slab_destroy(struct kmm_slab *slab, struct kmm_cache *cache)
 static void free_slabs_list(struct slist_ref *list_head, struct kmm_cache *from_cache)
 {
         kassert(list_head != NULL);
+        kassert(from_cache != NULL);
 
         /* Can't use SLIST_FOREACH 'cause it would use a slab after freeing. */
         struct slist_ref *next = NULL;
