@@ -3,14 +3,17 @@
 #include "kernel/console.h"
 
 #include "lib/cppdefs.h"
+#include "lib/cstd/assert.h"
+#include "lib/cstd/inttypes.h"
 #include "lib/cstd/stdio.h"
 
-#include "lib/cstd/inttypes.h"
+#include <limits.h>
 
 static int conwrite(const char *msg, size_t len)
 {
         console_write(msg, len);
-        return (len);
+        kassert(len <= INT_MAX);
+        return ((int)len);
 }
 
 static void print_register(void *key, void *value, void *data __unused)

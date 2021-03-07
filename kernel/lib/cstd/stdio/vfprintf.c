@@ -43,14 +43,27 @@ enum conv_length {
         CL_LDOUBLE,
         CL_NONE
 };
-#define WIDTH_EMPTY (-2)
-#define WIDTH_VAR   (-1)
-#define PREC_EMPTY  (-2)
-#define PREC_VAR    (-1)
+
 struct conv_spec {
         int flags;
-        int width;
-        int precision;
+        union {
+/* Width can hold maximum of SIZE_MAX - 2. */
+#define WIDTH_MAX (SIZE_MAX - 2)
+                size_t width;
+                enum width_special {
+                        WIDTH_VAR = -1,
+                        WIDTH_EMPTY = -2,
+                } special;
+        } width;
+        union {
+/* Precision can hold maximum of SIZE_MAX - 2. */
+#define PRECISION_MAX (SIZE_MAX - 2)
+                size_t precision;
+                enum precision_special {
+                        PREC_VAR = -1,
+                        PREC_EMPTY = -2,
+                } special;
+        } precision;
         enum conv_length length;
         enum conv_specifiers spec;
 };
@@ -61,42 +74,43 @@ static unsigned vfprintf_atoi(const char *s)
 
         for (;; s++) {
                 switch (*s) {
-                case '0' ... '9': res = 10 * res + (*s - '0'); break;
+                /* Won't overflow because of the case's condition. */
+                case '0' ... '9': res = 10 * res + (unsigned)(*s - '0'); break;
                 default: return res;
                 }
         }
 }
 
-static struct conv_spec parse_conv_spec(const char *_format, int *spec_len)
+static struct conv_spec parse_conv_spec(const char *format, size_t *spec_len)
 {
-        const char *format = _format;
+        const char *cursor = format;
         struct conv_spec result = { 0 };
         // The first symbol must be '%'.
-        format++;
+        cursor++;
 
         // Flags
-        while (*format != '\0') {
+        while (*cursor != '\0') {
                 bool done = false;
-                switch (*format) {
+                switch (*cursor) {
                 case '-': {
                         result.flags |= CF_MINUS;
-                        format++;
+                        cursor++;
                 } break;
                 case '+': {
                         result.flags |= CF_PLUS;
-                        format++;
+                        cursor++;
                 } break;
                 case ' ': {
                         result.flags |= CF_SPACE;
-                        format++;
+                        cursor++;
                 } break;
                 case '#': {
                         result.flags |= CF_HASH;
-                        format++;
+                        cursor++;
                 } break;
                 case '0': {
                         result.flags |= CF_ZERO;
-                        format++;
+                        cursor++;
                 } break;
                 default: done = true;
                 }
@@ -108,74 +122,76 @@ static struct conv_spec parse_conv_spec(const char *_format, int *spec_len)
         // Field width
 
         {
-                if (*format == '*') {
-                        result.width = WIDTH_VAR;
-                        format++;
+                if (*cursor == '*') {
+                        result.width.special = WIDTH_VAR;
+                        cursor++;
                         goto skip_width;
                 }
-                const char *begin = format;
-                unsigned len = 0;
+                const char *begin = cursor;
+                size_t len = 0;
                 while (begin[len] >= '0' && begin[len] <= '9') {
                         len++;
                 }
+                kassert(len <= WIDTH_MAX);
                 if (len == 0) {
                         // Width was not specified.
-                        result.width = WIDTH_EMPTY;
+                        result.width.special = WIDTH_EMPTY;
                         goto skip_width;
                 }
 
-                result.width = (int)vfprintf_atoi(begin);
-                format += len;
+                result.width.width = vfprintf_atoi(begin);
+                cursor += len;
 
         skip_width:;
         }
 
         // Precision
         {
-                if (*format != '.') {
-                        result.precision = PREC_EMPTY;
+                if (*cursor != '.') {
+                        result.precision.special = PREC_EMPTY;
                         goto skip_precision;
                 } else {
-                        format++;
+                        cursor++;
                 }
 
-                if (*format == '*') {
-                        result.precision = PREC_VAR;
-                        format++;
+                if (*cursor == '*') {
+                        result.precision.special = PREC_VAR;
+                        cursor++;
                         goto skip_precision;
                 }
 
-                const char *begin = format;
-                unsigned len = 0;
+                const char *begin = cursor;
+                size_t len = 0;
                 while (begin[len] >= '0' && begin[len] <= '9') {
                         len++;
                 }
+                kassert(len <= PRECISION_MAX);
                 if (len == 0) {
                         // "If only the period specified, the precision is taken as zero."
-                        result.precision = 0;
+                        result.precision.precision = 0;
                         goto skip_precision;
                 }
-                result.precision = (int)vfprintf_atoi(begin);
-                format += len;
+                result.precision.precision = vfprintf_atoi(begin);
+                cursor += len;
 
         skip_precision:;
         }
 
         // Length modifier
         {
-                switch (*format) {
+                switch (*cursor) {
                 case 'h': {
-                        if (format[1] == 'h') {
+                        if (cursor[1] == 'h') {
                                 result.length = CL_CHAR;
-                                format++;
+                                cursor++;
                         } else {
                                 result.length = CL_SHORT;
                         }
                 } break;
                 case 'l': {
-                        if (format[1] == 'l') {
+                        if (cursor[1] == 'l') {
                                 result.length = CL_LLONG;
-                                format++;
+                                cursor++;
                         } else {
                                 result.length = CL_LONG;
                         }
@@ -188,13 +204,13 @@ static struct conv_spec parse_conv_spec(const char *_format, int *spec_len)
                 }
 
                 if (result.length != CL_NONE) {
-                        format++;
+                        cursor++;
                 }
         }
 
         // Conversion specifier
         {
-                switch (*format) {
+                switch (*cursor) {
                 case 'd':
                 case 'i': result.spec = CS_INT; break;
                 case 'o': result.spec = CS_UOCTAL; break;
@@ -208,16 +224,17 @@ static struct conv_spec parse_conv_spec(const char *_format, int *spec_len)
                 case '%': result.spec = CS_PERCENTAGE; break;
                 default: result.spec = CS_INVALID;
                 }
-                format++;
+                cursor++;
         }
 
-        *spec_len = format - _format;
+        *spec_len = (uintptr_t)cursor - (uintptr_t)format;
         return (result);
 }
 
 struct argument {
         union {
-                uintmax_t d;
+                uintmax_t ud;
+                intmax_t d;
                 char *str;
         } val;
         bool negative;
@@ -243,9 +260,10 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args)
                 case CL_LONG: CASE_BODY(long, long); break;
                 case CL_LLONG: CASE_BODY(long long, long long); break;
                 case CL_INTMAX: CASE_BODY(intmax_t, intmax_t); break;
-                case CL_SIZET: CASE_BODY(size_t, size_t); break;
                 case CL_NONE: CASE_BODY(int, int); break;
+                case CL_SIZET:
                 case CL_PTRDIFF: CASE_BODY(ptrdiff_t, ptrdiff_t); break;
+                default: kassert(false);
 #undef CASE_BODY
                 }
         } break;
@@ -254,186 +272,216 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args)
         case CS_UOCTAL:
         case CS_UDEC: {
                 switch (s.length) {
-                case CL_CHAR: arg.val.d = (unsigned char)va_arg(*args, int); break;
-                case CL_SHORT: arg.val.d = (unsigned short)va_arg(*args, int); break;
-                case CL_LONG: arg.val.d = (unsigned long)va_arg(*args, long); break;
-                case CL_LLONG: arg.val.d = (unsigned long long)va_arg(*args, long long); break;
-                case CL_INTMAX: arg.val.d = (uintmax_t)va_arg(*args, intmax_t); break;
-                case CL_SIZET: arg.val.d = (size_t)va_arg(*args, size_t); break;
-                case CL_NONE: arg.val.d = (unsigned)va_arg(*args, int); break;
-                case CL_PTRDIFF: arg.val.d = (ptrdiff_t)va_arg(*args, ptrdiff_t); break;
+                case CL_CHAR: arg.val.d = va_arg(*args, int); break;
+                case CL_SHORT: arg.val.d = va_arg(*args, int); break;
+                case CL_LONG: arg.val.d = va_arg(*args, long); break;
+                case CL_LLONG: arg.val.d = va_arg(*args, long long); break;
+                case CL_INTMAX: arg.val.d = va_arg(*args, intmax_t); break;
+                case CL_SIZET: arg.val.d = va_arg(*args, size_t); break;
+                case CL_NONE: arg.val.d = va_arg(*args, int); break;
+                case CL_PTRDIFF: arg.val.d = va_arg(*args, ptrdiff_t); break;
+                default: kassert(false);
                 }
         } break;
         case CS_PTR: arg.val.d = va_arg(*args, uintptr_t); break;
         case CS_STR: arg.val.str = va_arg(*args, char *); break;
         case CS_UCHAR: arg.val.d = va_arg(*args, int); break;
+        default: kassert(false);
         }
         return (arg);
 }
 
 struct conv_spec_funcs {
         // Print the format specifier.
-        void (*print)(fprintf_fn f, struct conv_spec *s, struct argument *a);
+        int (*print)(fprintf_fn f, struct conv_spec *s, struct argument *a);
         // Calculate the length of the result of print function.
-        int (*length)(struct conv_spec *s, struct argument *a);
+        size_t (*length)(struct conv_spec *s, struct argument *a);
         // Function that returns string to prepend to the value ("0x" for ptr/hex values, for example)
         // and it's length. Could be NULL.
-        const char *(*prefix)(struct conv_spec *s, struct argument *a, unsigned *length);
+        const char *(*prefix)(struct conv_spec *s, struct argument *a, size_t *length);
 };
 
-static int length_for_intnumbase(uintmax_t num, unsigned base, unsigned max_num_digits)
+static size_t length_for_intnumbase(uintmax_t num, unsigned base, unsigned max_num_digits)
 {
-        for (int i = max_num_digits - 1; i >= 0; i--) {
+        kassert(max_num_digits <= INT_MAX);
+        for (int i = (int)max_num_digits - 1; i >= 0; i--) {
                 uintmax_t power = 1;
                 for (int j = 0; j < i; j++) {
                         power *= base;
                 }
                 if (num >= power) {
-                        return (i + 1);
+                        /* i can't be negative, so the cast is fine. */
+                        return ((size_t)i + 1);
                 }
         }
         return (1);
 }
 
-static int oct_length(struct conv_spec *s, struct argument *a)
+static size_t oct_length(struct conv_spec *s, struct argument *a)
 {
         // Special case:
         // The result of converting a zero value with a precision of zero is no characters.
-        if (s->precision == 0 && a->val.d == 0) {
+        if (s->precision.precision == 0 && a->val.ud == 0) {
                 return (0);
         }
 
-        int length = length_for_intnumbase(a->val.d, 8, 22);
+        unsigned const length = length_for_intnumbase(a->val.ud, 8, 22);
 
-        if (s->precision != PREC_EMPTY) {
-                if (s->precision >= length) {
-                        return (s->precision);
+        if (s->precision.special != PREC_EMPTY) {
+                if (s->precision.precision >= length) {
+                        return (s->precision.precision);
                 }
         }
 
         return (length);
 }
 
-static void oct_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
+static int oct_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 {
-        char buffer[22];
-        int buffer_size = ARRAY_SIZE(buffer);
-        int buffer_i = buffer_size;
+        unsigned char buffer[22];
+        size_t const buffer_size = ARRAY_SIZE(buffer);
+        size_t buffer_i = buffer_size;
 
         // Special case:
         // The result of converting a zero value with a precision of zero is no characters.
-        if (s->precision == 0 && a->val.d == 0) {
-                return;
-        }
-
-        do {
-                buffer_i--;
-                buffer[buffer_i] = a->val.d % 8 + '0';
-        } while ((a->val.d /= 8) != 0 && buffer_i > 0);
-
-        if (s->precision != PREC_EMPTY) {
-                int already_printed = buffer_size - buffer_i;
-                s->precision -= already_printed;
-                for (int i = 0; i < s->precision; i++) {
-                        f("0", 1);
-                }
-        }
-
-        f(&buffer[buffer_i], buffer_size - buffer_i);
-}
-
-static int dec_length(struct conv_spec *s, struct argument *a)
-{
-        // Special case:
-        // The result of converting a zero value with a precision of zero is no characters.
-        if (s->precision == 0 && a->val.d == 0) {
+        if (s->precision.precision == 0 && a->val.d == 0) {
                 return (0);
         }
 
-        int length = length_for_intnumbase(a->val.d, 10, 20);
+        kassert(buffer_i > 0);
+        do {
+                buffer_i--;
+                buffer[buffer_i] = a->val.ud % 8 + '0';
+        } while ((a->val.ud /= 8) != 0 && buffer_i > 0);
 
-        if (s->precision != PREC_EMPTY) {
-                if (s->precision >= length) {
-                        return (s->precision);
+        size_t const val_len = buffer_size - buffer_i;
+        size_t printed = 0;
+
+        if (s->precision.special != PREC_EMPTY) {
+                intptr_t padding = (intptr_t)(s->precision.precision - val_len);
+                for (intptr_t i = 0; i < padding; i++) {
+                        int rc = f("0", 1);
+                        if (__unlikely(rc < 0)) {
+                                return (rc);
+                        }
+                        printed += (unsigned)rc;
+                }
+        }
+
+        int rc = f((char*)&buffer[buffer_i], val_len);
+        if (__unlikely(rc < 0)) {
+                return (rc);
+        }
+
+        kassert(printed <= INT_MAX);
+        return (rc + (int)printed);
+}
+
+static size_t dec_length(struct conv_spec *s, struct argument *a)
+{
+        // Special case:
+        // The result of converting a zero value with a precision of zero is no characters.
+        if (s->precision.precision == 0 && a->val.d == 0) {
+                return (0);
+        }
+
+        size_t const length = length_for_intnumbase(a->val.ud, 10, 20);
+
+        if (s->precision.special != PREC_EMPTY) {
+                if (s->precision.precision >= length) {
+                        return (s->precision.precision);
                 }
         }
 
         return (length);
 }
 
-static void dec_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
+static int dec_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 {
-        char buffer[20];
-        int buffer_size = ARRAY_SIZE(buffer);
-        int buffer_i = buffer_size;
+        unsigned char buffer[20] = { 0 };
+        size_t const buffer_size = ARRAY_SIZE(buffer);
+        size_t buffer_i = buffer_size;
 
         // Special case:
         // The result of converting a zero value with a precision of zero is no characters.
-        if (s->precision == 0 && a->val.d == 0) {
-                return;
+        if (s->precision.precision == 0 && a->val.d == 0) {
+                return (0);
         }
 
+        kassert(buffer_i > 0);
         do {
                 buffer_i--;
-                buffer[buffer_i] = a->val.d % 10 + '0';
-        } while ((a->val.d /= 10) != 0 && buffer_i > 0);
+                buffer[buffer_i] = (unsigned char)(a->val.ud % 10 + '0');
+        } while ((a->val.ud /= 10) != 0 && buffer_i > 0);
 
-        if (s->precision != PREC_EMPTY) {
-                int already_printed = buffer_size - buffer_i;
-                s->precision -= already_printed;
-                for (int i = 0; i < s->precision; i++) {
-                        f("0", 1);
+        size_t const value_len = buffer_size - buffer_i;
+        size_t printed = 0;
+
+        if (s->precision.special != PREC_EMPTY) {
+                /* Padding may be negative if precision is less than the length of the value. */
+                intptr_t const padding = (intptr_t)(s->precision.precision - value_len);
+                for (intptr_t i = 0; i < padding; i++) {
+                        int rc = f("0", 1);
+                        if (__unlikely(rc < 0)) {
+                                return (rc);
+                        }
+                        printed += (unsigned)rc;
                 }
         }
 
-        f(&buffer[buffer_i], buffer_size - buffer_i);
+        int rc = f((char *)&buffer[buffer_i], value_len);
+        if (__unlikely(rc < 0)) {
+                return (rc);
+        }
+
+        kassert(printed <= INT_MAX);
+        return (rc + (int)printed);
 }
 
-static int hex_length(struct conv_spec *s, struct argument *a)
+static size_t hex_length(struct conv_spec *s, struct argument *a)
 {
         if (s->spec == CS_UHEX || s->spec == CS_UHEX_BIG) {
-                if (s->precision == 0 && a->val.d == 0) {
+                if (s->precision.precision == 0 && a->val.ud == 0) {
                         return (0);
                 }
         }
-        return (length_for_intnumbase(a->val.d, 16, 16));
+        return (length_for_intnumbase(a->val.ud, 16, 16));
 }
 
-static void hex_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
+static int hex_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 {
-        char buffer[16];
-        int buffer_size = ARRAY_SIZE(buffer);
-        int buffer_i = buffer_size;
+        unsigned char buffer[16] = { 0 };
+        size_t const buffer_size = ARRAY_SIZE(buffer);
+
+        size_t buffer_i = buffer_size;
 
         // A little bit hacky, but it makes no sense to write the same code for the second and third time.
         if (s->spec == CS_UHEX || s->spec == CS_UHEX_BIG) {
-                if (s->precision == 0 && a->val.d == 0) {
-                        return;
+                if (s->precision.precision == 0 && a->val.ud == 0) {
+                        return (0);
                 }
         }
 
-        char hex_offset;
-        if (s->spec == CS_UHEX) {
-                hex_offset = 'a';
-        } else {
-                // CS_UHEX_BIG or CS_PTR
-                hex_offset = 'A';
-        }
+        /* 'A' for CS_UHEX_BIG and CS_PTR */
+        unsigned char const hex_offset = s->spec == CS_UHEX ? 'a' : 'A';
 
+        kassert(buffer_i > 0);
         do {
                 buffer_i--;
-                unsigned char n = a->val.d % 16;
+                unsigned char n = (unsigned char)(a->val.ud % 16);
                 if (n < 10) {
                         buffer[buffer_i] = n + '0';
                 } else {
-                        buffer[buffer_i] = (n - 10) + hex_offset;
+                        buffer[buffer_i] = (unsigned char)((n - 10) + hex_offset);
                 }
-        } while ((a->val.d /= 16) != 0 && buffer_i > 0);
+        } while ((a->val.ud /= 16) != 0 && buffer_i > 0);
 
-        f(&buffer[buffer_i], buffer_size - buffer_i);
+        size_t const value_len = buffer_size - buffer_i;
+
+        return (f((char *)&buffer[buffer_i], value_len));
 }
 
-static const char *hex_prefix(struct conv_spec *s, struct argument *a, unsigned *len)
+static const char *hex_prefix(struct conv_spec *s, struct argument *a __unused, size_t *len)
 {
         static const char zx[] = "0x";
         // Do not count null-terminator.
@@ -453,32 +501,32 @@ static const char *hex_prefix(struct conv_spec *s, struct argument *a, unsigned 
         return ("");
 }
 
-static int str_length(struct conv_spec *s, struct argument *a)
+static size_t str_length(struct conv_spec *s, struct argument *a)
 {
-        int l = kstrlen(a->val.str);
-        if (s->precision != PREC_EMPTY && s->precision < l) {
-                return (s->precision);
+        size_t len = kstrlen(a->val.str);
+        if (s->precision.special != PREC_EMPTY && s->precision.precision < len) {
+                return (s->precision.precision);
         }
-        return (l);
+        return (len);
 }
 
-static void str_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
+static int str_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 {
         const char *str = a->val.str;
         // TODO: Find a way to reuse the result.
-        int len = str_length(s, a);
+        size_t len = str_length(s, a);
 
-        f(str, len);
+        return (f(str, len));
 }
 
-static int char_length(struct conv_spec *s, struct argument *a)
+static size_t char_length(struct conv_spec *s __unused, struct argument *a __unused)
 {
         return (1);
 }
 
-static void char_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
+static int char_print(fprintf_fn f, struct conv_spec *s __unused, struct argument *a)
 {
-        f((char *)&a->val.d, 1);
+        return (f((char *)&a->val.d, 1));
 }
 
 static struct conv_spec_funcs cs_funcs_table[] = {
@@ -503,8 +551,9 @@ static struct conv_spec_funcs cs_funcs_table[] = {
         [CS_UCHAR] = (struct conv_spec_funcs){ .print = char_print,
                                                .length = char_length,
                                                .prefix = NULL },
-        [CS_UOCTAL] =
-                (struct conv_spec_funcs){ .print = oct_print, .length = oct_length, .prefix = NULL }
+        [CS_UOCTAL] = (struct conv_spec_funcs){ .print = oct_print,
+                                                .length = oct_length,
+                                                .prefix = NULL },
 };
 
 /**
@@ -516,14 +565,23 @@ static int put_flags(fprintf_fn f, struct conv_spec s, struct argument arg)
 {
         int printed = 0;
         if (arg.negative) {
-                f("-", 1);
-                printed++;
+                int rc = f("-", 1);
+                if (__unlikely(rc < 0)) {
+                        return (rc);
+                }
+                printed += rc;
         } else if (s.flags & CF_PLUS) {
-                f("+", 1);
-                printed++;
+                int rc = f("-", 1);
+                if (__unlikely(rc < 0)) {
+                        return (rc);
+                }
+                printed += rc;
         } else if (s.flags & CF_SPACE) {
-                f(" ", 1);
-                printed++;
+                int rc = f("-", 1);
+                if (__unlikely(rc < 0)) {
+                        return (rc);
+                }
+                printed += rc;
         }
         return (printed);
 }
@@ -540,86 +598,134 @@ static int print_conv_spec(fprintf_fn f, struct conv_spec s, va_list *args)
         }
 
         struct argument arg = fetch_arg(s, args);
-        int num_len = cs_funcs_table[s.spec].length(&s, &arg);
-        int printed = 0;
+        size_t const num_len = cs_funcs_table[s.spec].length(&s, &arg);
+        size_t printed = 0;
 
         const char *prefix = NULL;
-        unsigned prefix_len = 0;
+        size_t prefix_len = 0;
         if (cs_funcs_table[s.spec].prefix) {
                 prefix = cs_funcs_table[s.spec].prefix(&s, &arg, &prefix_len);
         }
 
         bool flag_present = arg.negative || (s.flags & (CF_PLUS | CF_SPACE));
-        int width_to_fill = s.width - num_len - prefix_len - (flag_present ? 1 : 0);
+
+        kassert(s.width.width < INTPTR_MAX);
+        kassert(num_len < INTPTR_MAX);
+        kassert(prefix_len < INTPTR_MAX);
+        intptr_t width_to_fill = (intptr_t)s.width.width - (intptr_t)num_len -
+                                 (intptr_t)prefix_len - (flag_present ? 1 : 0);
 
         // If Width != 0 and the flag '-' was not specified, result must be right-justified
-        if (!(s.flags & CF_MINUS) && s.width != WIDTH_EMPTY) {
+        if (!(s.flags & CF_MINUS) && s.width.special != WIDTH_EMPTY) {
                 if (s.flags & CF_ZERO) {
                         if (prefix != NULL) {
-                                f(prefix, prefix_len);
-                                printed += prefix_len;
+                                int rc = f(prefix, prefix_len);
+                                if (__unlikely(rc < 0)) {
+                                        return (rc);
+                                }
+                                printed += (unsigned)rc;
                         }
-                        printed += put_flags(f, s, arg);
+                        int rc = put_flags(f, s, arg);
+                        if (__unlikely(rc < 0)) {
+                                return (rc);
+                        }
+                        printed += (unsigned)rc;
                 }
                 while (width_to_fill > 0) {
                         // remained_width could be < 0, so decrement in the loop
                         char c = s.flags & CF_ZERO ? '0' : ' ';
-                        f(&c, 1);
-                        printed++;
+                        int rc = f(&c, 1);
+                        if (__unlikely(rc < 0)) {
+                                return (rc);
+                        }
+                        printed += (unsigned)rc;
                         width_to_fill--;
                 }
         }
         if (!(s.flags & CF_ZERO)) {
                 if (prefix != NULL) {
-                        f(prefix, prefix_len);
-                        printed += prefix_len;
+                        int rc = f(prefix, prefix_len);
+                        if (__unlikely(rc < 0)) {
+                                return (rc);
+                        }
+                        printed += (unsigned)rc;
                 }
-                printed += put_flags(f, s, arg);
+                int rc = put_flags(f, s, arg);
+                if (__unlikely(rc < 0)) {
+                        return (rc);
+                }
+                printed += (unsigned)rc;
         }
-        cs_funcs_table[s.spec].print(f, &s, &arg);
-        printed += num_len;
+        int rc = cs_funcs_table[s.spec].print(f, &s, &arg);
+        if (__unlikely(rc < 0)) {
+                return (rc);
+        }
+        printed += (unsigned)rc;
 
         // If Width != 0 and the flag '-' was specified, result must be left-justified
-        if (s.flags & CF_MINUS && s.width != WIDTH_EMPTY) {
+        if (s.flags & CF_MINUS && s.width.special != WIDTH_EMPTY) {
                 while (width_to_fill > 0) {
                         // remained_width could be < 0, so decrement in the loop
-                        f(" ", 1);
-                        printed++;
+                        int frc = f(" ", 1);
+                        if (__unlikely(frc < 0)) {
+                                return (frc);
+                        }
+                        printed += (unsigned)frc;
                         width_to_fill--;
                 }
         }
-        return (printed);
+
+        kassert(printed <= INT_MAX);
+        return ((int)printed);
 }
 
 int kvfprintf(fprintf_fn f, const char *restrict format, va_list args)
 {
         va_list ap;
         va_copy(ap, args);
-        int printed = 0;
+        size_t printed = 0;
 
         while (*format != '\0') {
                 if (*format == '%') {
-                        int spec_len = 0;
+                        size_t spec_len = 0;
                         struct conv_spec s = parse_conv_spec(format, &spec_len);
-                        printed += print_conv_spec(f, s, &ap);
+
+                        int rc = print_conv_spec(f, s, &ap);
+                        if (__unlikely(rc < 0)) {
+                                return (rc);
+                        }
+
+                        printed += (unsigned)rc;
                         format += spec_len;
-                        continue;
-                }
-
-                const char *cspec = kstrchr(format, '%');
-                size_t toprint;
-                if (cspec) {
-                        toprint = cspec - format;
                 } else {
-                        toprint = kstrlen(format);
-                }
+                        /* TODO: Clean this. */
+                        union {
+                                char *nc;
+                                char const *c;
+                        } tmp;
+                        tmp.c = format;
+                        tmp.nc = kstrchr(tmp.nc, '%');
+                        const char *cspec = tmp.c;
 
-                f(format, toprint);
-                printed += toprint;
-                format += toprint;
+                        size_t toprint;
+                        if (cspec != NULL) {
+                                toprint = (uintptr_t)cspec - (uintptr_t)format;
+                        } else {
+                                toprint = kstrlen(format);
+                        }
+
+                        int rc = f(format, toprint);
+                        if (__unlikely(rc < 0)) {
+                                return (rc);
+                        }
+
+                        printed += (unsigned)rc;
+                        format += toprint;
+                }
         }
         va_end(ap);
-        return (printed);
+        kassert(printed <= INT_MAX);
+        return ((int)printed);
 }
 
 int kfprintf(fprintf_fn f, const char *restrict format, ...)

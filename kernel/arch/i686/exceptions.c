@@ -24,7 +24,8 @@ static int descbuffer_write(const char *msg, size_t len)
         for (int i = 0; i < towrite; i++) {
                 buffer[DESCBUFFER_POS++] = msg[i];
         }
-        return (towrite);
+        kassert(towrite <= INT_MAX);
+        return ((int)towrite);
 }
 
 static struct kernel_panic_info prepare_panic_info(struct intr_ctx *ctx, const char *desc)

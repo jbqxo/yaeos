@@ -17,6 +17,8 @@
 #include "lib/cstd/nonstd.h"
 #include "lib/cstd/string.h"
 
+#include <limits.h>
+
 struct vm_area KERNELBIN_AREAS[KSEGMENT_COUNT] = { 0 };
 struct vm_space CURRENT_KERNEL = { 0 };
 struct vm_space *CURRENT_USER = NULL;
@@ -69,6 +71,7 @@ static void register_mem_zones(struct resource *r)
 static int conwrite(const char *msg, size_t len)
 {
         console_write(msg, len);
+        kassert(len <= INT_MAX);
         return (len);
 }
 
