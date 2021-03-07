@@ -424,8 +424,8 @@ void kmm_cache_init(struct kmm_cache *restrict cache, const char *name, size_t s
         }
         cache->slab_capacity = cache_get_capacity(cache);
 
-        cache->colour_max = cache_get_wasted(cache) & (sizeof(void *) * -1);
-        cache->colour_off = sizeof(void *);
+        cache->colour_max = cache_get_wasted(cache);
+        cache->colour_off = cache->alignment;
         cache->colour_next = 0;
 
         cache->ctor = ctor;
@@ -529,8 +529,10 @@ static struct kmm_slab *get_new_slab(struct kmm_cache *cache)
         } else {
                 slab = slab_create_small(cache, cache->colour_next);
         }
-        kassert(cache->colour_max > 0);
-        cache->colour_next = (cache->colour_next + cache->colour_off) % cache->colour_max;
+        cache->colour_next += cache->colour_off;
+        if (cache->colour_next >= cache->colour_max) {
+                cache->colour_next = 0;
+        }
 
         if (__unlikely(slab == NULL)) {
                 return (NULL);
