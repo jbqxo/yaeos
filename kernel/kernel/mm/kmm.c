@@ -253,12 +253,12 @@ static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colo
         slist_init(&slab->slabs_list);
         slist_init(&slab->free_buffers);
 
-        {
+        kassert(({
                 uintptr_t const page_end = (uintptr_t)page + PLATFORM_PAGE_SIZE;
                 uintptr_t const slab_elems_end = cursor + cache->slab_capacity * cache->stride;
                 /* Check that leftover space is less than a full stride. */
-                kassert(page_end - slab_elems_end < cache->stride);
-        }
+                (page_end - slab_elems_end < cache->stride);
+        }));
         for (size_t i = 0; i < cache->slab_capacity; i++, cursor += cache->stride) {
                 void *buffer = (void *)cursor;
                 struct bufctl_small *ctl = get_bufctl_small(buffer, cache);

@@ -178,8 +178,10 @@ struct mm_page *mm_get_page_by_paddr(void *phys_addr)
         size_t page_ndx = paddr;
 
         kassert(page_ndx < zone->pages_count);
-        struct mm_page *page = &zone->pages[page_ndx];
-        kassert(page->paddr == (void *)((uintptr_t)phys_addr & -PLATFORM_PAGE_SIZE));
+        kassert(({
+                struct mm_page *page = &zone->pages[page_ndx];
+                page->paddr == (void *)((uintptr_t)phys_addr & -PLATFORM_PAGE_SIZE);
+        }));
 
         return (&zone->pages[page_ndx]);
 }

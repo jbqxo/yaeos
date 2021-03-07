@@ -52,8 +52,11 @@ struct intr_ctx {
 typedef void (*intr_handler_fn)(struct intr_ctx *);
 
 void intr_init(void);
-void intr_handler_cpu_default(intr_handler_fn defaulth);
+void intr_handler_cpu_default(intr_handler_fn handler_fn);
 void intr_handler_cpu(uint8_t int_no, intr_handler_fn);
 void intr_handler_pic(uint8_t int_no, intr_handler_fn);
+
+void irq_handler(struct intr_ctx ctx);
+void isr_handler(struct intr_ctx ctx);
 
 #endif // _KERNEL_ARCH_I686_INTR_H

@@ -106,10 +106,10 @@ void isr_handler(struct intr_ctx ctx)
         call_handler(&ctx);
 }
 
-void intr_handler_cpu_default(intr_handler_fn f)
+void intr_handler_cpu_default(intr_handler_fn handler_fn)
 {
         kassert(DEFAULT_HANDLER == NULL);
-        DEFAULT_HANDLER = f;
+        DEFAULT_HANDLER = handler_fn;
 }
 
 void intr_handler_cpu(uint8_t int_no, intr_handler_fn f)

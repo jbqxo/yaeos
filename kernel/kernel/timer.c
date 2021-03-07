@@ -33,5 +33,4 @@ void timer_init(void)
 
 void timer_call_after(unsigned ms, callback_fn f)
 {
-        struct event ev = (struct event){ .cb = f, .wake_time = TIME + ms };
 }

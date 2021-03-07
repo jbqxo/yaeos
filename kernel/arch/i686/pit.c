@@ -4,6 +4,7 @@
 #include "kernel/timer.h"
 
 #include "lib/cppdefs.h"
+#include "lib/cstd/assert.h"
 #include "lib/elflist.h"
 
 #include <stddef.h>
@@ -32,14 +33,14 @@ static uint16_t divisor(unsigned ms)
         return ((uint16_t)(PIT_FREQUENCY / hz));
 }
 
-int pit_init(callback_fn f)
+static int pit_init(callback_fn f)
 {
         CALLBACK = f;
         intr_handler_pic(0, callback);
         return (TIMER_RC_OK);
 }
 
-void pit_inter_after(unsigned ms)
+static void pit_inter_after(unsigned ms)
 {
         iowrite(PIT_CMD, PIT_TCOUNT);
 

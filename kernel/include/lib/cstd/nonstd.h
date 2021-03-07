@@ -51,17 +51,17 @@ __const static inline unsigned find_first_zero(unsigned x)
         return (find_first_one(~x));
 }
 
-#define MAX(x, y)                          \
-        ({                                 \
-                __typeof(x) __v1 = (x);      \
-                __typeof(y) __v2 = (y);      \
-                __v1 < __v2 ? __v2 : __v1; \
+#define MAX(x, y)                                          \
+        ({                                                 \
+                typeof(x) __v1 = (x);                      \
+                typeof(y) __v2 = (y);                      \
+                (typeof(__v1))(__v1 < __v2 ? __v2 : __v1); \
         })
-#define MIN(x, y)                          \
-        ({                                 \
-                __typeof(x) __v1 = (x);      \
-                __typeof(y) __v2 = (y);      \
-                __v1 > __v2 ? __v2 : __v1; \
+#define MIN(x, y)                                          \
+        ({                                                 \
+                typeof(x) __v1 = (x);                      \
+                typeof(y) __v2 = (y);                      \
+                (typeof(__v1))(__v1 > __v2 ? __v2 : __v1); \
         })
 
 #endif /* _LIB_NONSTD_H */

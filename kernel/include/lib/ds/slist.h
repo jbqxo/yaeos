@@ -15,9 +15,8 @@ struct slist_ref *slist_next(struct slist_ref const *node);
 
 bool slist_is_empty(struct slist_ref const *node);
 
-#define SLIST_FOREACH(iterv, first)                                      \
-        for (struct slist_ref const *(iterv) = (first); (iterv) != NULL; \
-             (iterv) = slist_next(iterv))
+#define SLIST_FOREACH(iterv, first) \
+        for (struct slist_ref * (iterv) = (first); (iterv) != NULL; (iterv) = slist_next(iterv))
 
 void slist_insert(struct slist_ref *prev_node, struct slist_ref *new_node);
 

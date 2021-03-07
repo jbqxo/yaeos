@@ -1,4 +1,10 @@
 #include "lib/ds/rbtree.h"
+#include "lib/cppdefs.h"
+
+union nodeptr {
+        struct rbtree_node *ptr;
+        uintptr_t num;
+};
 
 static void rbt_set_colour(struct rbtree_node *n, enum rbtree_colour c)
 {
@@ -7,11 +13,13 @@ static void rbt_set_colour(struct rbtree_node *n, enum rbtree_colour c)
 #ifndef NDEBUG
         n->colour = c;
 #else
+        union nodeptr p = (union nodeptr){ .ptr = n->parent };
         if (c == RBTREE_RED) {
-                n->parent |= 1;
+                p.num |= 0x1U;
         } else {
-                n->parent &= -2L;
+                p.num &= ~(0x1U);
         }
+        n->parent = p.ptr;
 #endif
 }
 
@@ -23,7 +31,9 @@ __const static enum rbtree_colour rbt_get_colour(struct rbtree_node *n)
 #ifndef NDEBUG
         return (n->colour);
 #else
-        return ((uintptr_t)n->parent & 1L);
+        union nodeptr p = (union nodeptr){ .ptr = n->parent };
+        enum rbtree_colour c = p.num & 0x1U;
+        return (c);
 #endif
 }
 
@@ -34,8 +44,10 @@ static void rbt_set_parent(struct rbtree_node *node, struct rbtree_node *parent)
 #ifndef NDEBUG
         node->parent = parent;
 #else
-        node->parent &= 1L;
-        node->parent |= parent;
+        union nodeptr p = (union nodeptr){ .ptr = node->parent };
+        p.num &= 0x1U;
+        p.num |= (uintptr_t)parent;
+        node->parent = p.ptr;
 #endif
 }
 
@@ -46,9 +58,10 @@ __const static struct rbtree_node *rbt_get_parent(struct rbtree_node *node)
 #ifndef NDEBUG
         return (node->parent);
 #else
-        struct rbtree_node *parent = (uintptr_t)node->parent & -2L;
-        kassert(properly_aligned(parent));
-        return (parent);
+        union nodeptr p = (union nodeptr){ .ptr = node->parent };
+        p.num &= ~(0x1U);
+        kassert(properly_aligned(p.ptr));
+        return (p.ptr);
 #endif
 }
 
@@ -225,7 +238,7 @@ void rbtree_init_node(struct rbtree_node *node)
         rbt_set_colour(node, RBTREE_RED);
 }
 
-void rbt_rotate_left(struct rbtree *rbt, struct rbtree_node *old_root)
+static void rbt_rotate_left(struct rbtree *rbt, struct rbtree_node *old_root)
 {
         kassert(old_root);
 

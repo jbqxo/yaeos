@@ -15,17 +15,21 @@ int vm_area_rbtcmpfn(const void *area_x, const void *area_y)
 
         const struct vm_area *x = area_x;
         const uintptr_t x_start = (uintptr_t)x->base;
-        const uintptr_t x_end = x_start + x->length - 1;
 
         const struct vm_area *y = area_y;
         const uintptr_t y_start = (uintptr_t)y->base;
-        const uintptr_t y_end = y_start + y->length - 1;
 
         if (x_start < y_start) {
-                kassert(x_end < y_start);
+                kassert(({
+                        const uintptr_t x_end = x_start + x->length - 1;
+                        (x_end < y_start);
+                }));
                 return (-1);
         } else if (x_start > y_start) {
-                kassert(y_end < x_start);
+                kassert(({
+                        const uintptr_t y_end = y_start + y->length - 1;
+                        (y_end < x_start);
+                }));
                 return (1);
         } else {
                 return (0);
@@ -52,7 +56,8 @@ int vm_area_rbtcmpfn_area_to_addr(const void *area, const void *addr)
         return (-1);
 }
 
-void vm_area_init(struct vm_area *area, virt_addr_t base, size_t length, const struct vm_space *owner)
+void vm_area_init(struct vm_area *area, virt_addr_t base, size_t length,
+                  const struct vm_space *owner)
 {
         kassert(area != NULL);
         kassert(check_align((uintptr_t)base, PLATFORM_PAGE_SIZE));

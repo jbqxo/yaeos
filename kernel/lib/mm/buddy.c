@@ -37,7 +37,7 @@ size_t buddy_predict_req_space(size_t const pages)
 
 uint32_t buddy_init(struct buddy_manager *bmgr, size_t const pages, struct linear_alloc *alloc)
 {
-        const size_t alloc_space_before = linear_alloc_occupied(alloc);
+        const size_t alloc_space_before __maybe_unused = linear_alloc_occupied(alloc);
 
         bmgr->lvls = log2_floor(pages);
         bmgr->alloc = alloc;

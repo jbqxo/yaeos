@@ -54,7 +54,9 @@ __noreturn void klog_logf_panic(const char *location, const char *format, ...)
 {
         // TODO: Formatting
         struct kernel_panic_info info = { 0 };
-        info.location = (char *)location;
-        info.description = (char *)format;
+        info.location = location;
+        info.description = format;
         kernel_panic(&info);
+
+        __builtin_unreachable();
 }

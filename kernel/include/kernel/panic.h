@@ -6,8 +6,8 @@
 #include "lib/ds/kvstore.h"
 
 struct kernel_panic_info {
-        char *description;
-        char *location;
+        char const *description;
+        char const *location;
 
         struct kvstore *regs;
 };

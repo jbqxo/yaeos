@@ -17,8 +17,7 @@ size_t kvstore_predict_reqmem(size_t const cap)
         return (space);
 }
 
-struct kvstore *kvstore_create(void *const mem, size_t const cap,
-                                     kvstore_fn_cmpkeys_t const cmpfn)
+struct kvstore *kvstore_create(void *const mem, size_t const cap, kvstore_fn_cmpkeys_t const cmpfn)
 {
         kassert(cmpfn != NULL);
 
@@ -36,10 +35,10 @@ struct kvstore *kvstore_create(void *const mem, size_t const cap,
                 kv->values[i] = NULL;
         }
 
-        {
+        kassert(({
                 size_t const mem_occupied = linear_alloc_occupied(&alloc);
-                kassert(mem_occupied == kvstore_predict_reqmem(cap));
-        }
+                mem_occupied == kvstore_predict_reqmem(cap);
+        }));
 
         return (kv);
 }
@@ -83,10 +82,10 @@ void kvstore_append(struct kvstore *kv, void *key, void *val)
         /* We use the NULL value to mark an empty key. */
         kassert(key != NULL);
         /* We can't deal with duplicate keys. */
-        void *present_key = NULL;
+        void *present_key __unused = NULL;
         kassert(!kvstore_find(kv, key, &present_key));
 
-        bool found = false;
+        bool found __maybe_unused = false;
         size_t ndx = 0;
         for (; ndx < kv->cap; ndx++) {
                 if (kv->keys[ndx] == NULL) {
