@@ -8,9 +8,9 @@
 
 #include "lib/align.h"
 #include "lib/cppdefs.h"
-#include "lib/cstd/nonstd.h"
 #include "lib/mm/buddy.h"
 #include "lib/mm/linear.h"
+#include "lib/utils.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -201,8 +201,7 @@ void kheap_init(struct vm_space *space)
                                KHEAP_AREA.flags);
         }
 
-        linear_alloc_init(&KHEAP_DATA.buddy_alloc, KHEAP_AREA.base,
-                          req_pages * PLATFORM_PAGE_SIZE);
+        linear_alloc_init(&KHEAP_DATA.buddy_alloc, KHEAP_AREA.base, req_pages * PLATFORM_PAGE_SIZE);
         buddy_init(&KHEAP_DATA.buddy, heap_pages, &KHEAP_DATA.buddy_alloc);
         linear_forbid_further_alloc(&KHEAP_DATA.buddy_alloc);
 

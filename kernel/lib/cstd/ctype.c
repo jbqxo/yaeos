@@ -22,8 +22,8 @@ int kisblank(int c)
 
 int kiscntrl(int c)
 {
-        // ASCII code of the last control character
-        // in the sequence placed at the start of the ASCII.
+        /* ASCII code of the last control character
+         * in the sequence placed at the start of the ASCII. */
         int unit_sep_code = 31;
         if (c <= unit_sep_code) {
                 return (true);
@@ -72,7 +72,7 @@ int kispunct(int c)
 
 int kisspace(int c)
 {
-        // The standard white-space characters according to C99 standard.
+        /* The standard white-space characters according to the C99 standard. */
         static char white_space_chars[] = { ' ', '\f', '\n', '\r', '\t', '\v' };
         static size_t wsc_len = sizeof(white_space_chars) / sizeof(char);
 

@@ -70,7 +70,7 @@ static void cant_allocate_more_than_own(void)
 
 static void free_works(void)
 {
-        // Allocate memory while there is any.
+        /* Allocate memory while there is any. */
         void *last;
         void *cur;
         while ((cur = buddy_alloc(&allocator, 0))) {

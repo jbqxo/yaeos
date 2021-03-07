@@ -52,7 +52,7 @@ void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, const char *res
 
 __noreturn void klog_logf_panic(const char *location, const char *format, ...)
 {
-        // TODO: Formatting
+        /* TODO: Formatting */
         struct kernel_panic_info info = { 0 };
         info.location = location;
         info.description = format;

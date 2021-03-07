@@ -27,7 +27,7 @@ static uint16_t divisor(unsigned ms)
         kassert(ms > 0);
         uint16_t hz = (uint16_t)(1000 / ms);
         if (hz < 19) {
-                // It's the slowest PIT can go.
+                /* It's the slowest PIT can go. */
                 return (65535);
         }
         return ((uint16_t)(PIT_FREQUENCY / hz));

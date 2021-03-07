@@ -1,6 +1,6 @@
 // UNITY_TEST DEPENDS ON: kernel/test_fakes/panic.c
 
-// TODO: Is it good idea for unit testing?
+/* TODO: Is it good idea for unit testing? */
 #include "rbtree.c"
 
 #include "lib/cppdefs.h"
@@ -11,7 +11,7 @@
 #include <time.h>
 #include <unity.h>
 
-// As we are using random numbers in a tree deletion, we run tests multiple times.
+/* As we are using random numbers in a tree deletion, we run tests multiple times. */
 static const unsigned RANDOM_ITERS = 50;
 
 void setUp(void)
@@ -80,13 +80,15 @@ static struct rbtree *create_tree_calling_back(void (*on_node_creation)(struct r
 
 static void delete_random_elem(struct rbtree *rbt, struct rbtree_node *subroot)
 {
-        // To use random isn't very good idea.
-        // TODO: Make proper test cases for RBT deletion.
+        /* To use random isn't very good idea.
+         * TODO: Make proper test cases for RBT deletion.
+         */
 
         while (true) {
-                // 0 - step left
-                // 1 - delete
-                // 2 - step right
+                /* 0 - step left
+                 * 1 - delete
+                 * 2 - step right
+                 */
                 unsigned action = rand() % 3;
                 switch (action) {
                 case 0: {

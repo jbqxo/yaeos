@@ -4,6 +4,7 @@
 
 #include "lib/cstd/assert.h"
 #include "lib/ds/slist.h"
+#include "lib/utils.h"
 
 #include <stddef.h>
 

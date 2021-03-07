@@ -108,14 +108,14 @@ static void rbt_replace_subtree(struct rbtree *rbt, struct rbtree_node *replacee
 {
         struct rbtree_node *replacee_parent = rbt_get_parent(replacee);
         if (replacee_parent) {
-                // Fix parent's reference.
+                /* Fix parent's reference. */
                 if (replacee_parent->left == replacee) {
                         replacee_parent->left = replacement;
                 } else {
                         replacee_parent->right = replacement;
                 }
         } else {
-                // Replacement is a new root.
+                /* Replacement is a new root. */
                 rbt->root = replacement;
         }
         if (replacement) {
@@ -136,10 +136,11 @@ static void rbt_swap_nodes(struct rbtree *rbt, struct rbtree_node *x, struct rbt
         kassert(x);
         kassert(y);
 
-        // If Xp == Y, swap them
-        // So only Yp == X is possible.
+        /* If Xp == Y, swap them
+         * So only Yp == X is possible.
+         */
         if (rbt_get_parent(x) == y) {
-                // X node is always a parent of the node Y.
+                /* X node is always a parent of the node Y. */
                 struct rbtree_node *tmp = y;
                 y = x;
                 x = tmp;
@@ -159,14 +160,15 @@ static void rbt_swap_nodes(struct rbtree *rbt, struct rbtree_node *x, struct rbt
                 }
                 rbt_set_parent(y, Xp);
         } else {
-                // X was a root.
-                // Make Y a root.
+                /* X was a root.
+                 * Make Y a root.
+                 */
                 kassert(rbt->root == x);
                 rbt_set_parent(y, NULL);
                 rbt->root = y;
         }
 
-        // Also, handle special case when Y is a child of X.
+        /* Also, handle special case when Y is a child of X. */
         y->left = x->left != y ? x->left : x;
         y->right = x->right != y ? x->right : x;
         rbt_set_colour(y, rbt_get_colour(x));
@@ -176,7 +178,7 @@ static void rbt_swap_nodes(struct rbtree *rbt, struct rbtree_node *x, struct rbt
 
         struct rbtree_node *Yp = rbt_get_parent(&y_copy);
         if (Yp) {
-                // If Y was the child of X, then Y was already appropriately altered.
+                /* If Y was the child of X, then Y was already appropriately altered. */
                 if (Yp != x) {
                         if (Yp->left == y) {
                                 Yp->left = x;
@@ -188,8 +190,8 @@ static void rbt_swap_nodes(struct rbtree *rbt, struct rbtree_node *x, struct rbt
                         rbt_set_parent(x, y);
                 }
         } else {
-                // Y was a root.
-                // Make X a root.
+                /* Y was a root.
+                 * Make X a root. */
                 kassert(rbt->root == y);
                 rbt_set_parent(x, NULL);
                 rbt->root = x;
@@ -201,7 +203,7 @@ static void rbt_swap_nodes(struct rbtree *rbt, struct rbtree_node *x, struct rbt
 
 #undef TRY_SET_PARENT
 
-        // Assertions.
+        /* Assertions. */
         if (x->left) {
                 kassert(rbt_get_parent(x->left) == x);
         }
@@ -276,34 +278,34 @@ static void rbt_insert_fix(struct rbtree *rbt, struct rbtree_node *new)
         while (true) {
                 struct rbtree_node *parent = rbt_get_parent(node);
                 if (!parent) {
-                        // New node is a new root.
+                        /* New node is a new root. */
                         rbt_set_colour(node, RBTREE_BLACK);
                         break;
                 }
 
                 if (rbt_get_colour(parent) == RBTREE_BLACK) {
-                        // BLACK + RED => Tree is valid.
+                        /* BLACK + RED => Tree is valid. */
                         break;
                 }
 
-                // Parent and Uncle are red.
+                /* Parent and Uncle are red. */
                 struct rbtree_node *uncle = rbt_get_uncle(node);
                 if (rbt_get_colour(uncle) == RBTREE_RED) {
                         struct rbtree_node *grandparent = rbt_get_grandparent(node);
-                        // Grandparent can't be NULL because node's parent is red.
+                        /* Grandparent can't be NULL because node's parent is red. */
                         kassert(grandparent);
 
                         rbt_set_colour(parent, RBTREE_BLACK);
                         rbt_set_colour(uncle, RBTREE_BLACK);
                         rbt_set_colour(grandparent, RBTREE_RED);
 
-                        // Current node should not violate any properties now.
-                        // But grandparent may.
+                        /* Current node should not violate any properties now.
+                         * But grandparent may. */
                         node = grandparent;
                         continue;
                 }
 
-                // Parent is red but an Uncle is black. Also G->P->N relation forms a triangle.
+                /* Parent is red but an Uncle is black. Also G->P->N relation forms a triangle. */
                 struct rbtree_node *grandparent = rbt_get_grandparent(node);
                 kassert(grandparent);
                 if ((node == parent->right) && (parent == grandparent->left)) {
@@ -313,22 +315,22 @@ static void rbt_insert_fix(struct rbtree *rbt, struct rbtree_node *new)
                         rbt_rotate_right(rbt, parent);
                         node = node->right;
                 }
-                // Update after potential rotations.
+                /* Update after potential rotations. */
                 parent = rbt_get_parent(node);
                 grandparent = rbt_get_grandparent(node);
                 kassert(parent);
                 kassert(grandparent);
 
-                // Parent is red but an Uncle is black. But G->P->N relation forms a line.
+                /* Parent is red but an Uncle is black. But G->P->N relation forms a line. */
                 if ((node == parent->left) && (parent == grandparent->left)) {
                         rbt_rotate_right(rbt, grandparent);
                 } else if ((node == parent->right) && (parent == grandparent->right)) {
                         rbt_rotate_left(rbt, grandparent);
                 } else {
-                        // How did we get here?
+                        /* How did we get here? */
                         kassert(false);
                 }
-                // Grandparent becomes the parent's child. Strange times.
+                /* Grandparent becomes the parent's child. Strange times. */
                 rbt_set_colour(parent, RBTREE_BLACK);
                 rbt_set_colour(grandparent, RBTREE_RED);
 
@@ -345,7 +347,7 @@ void rbtree_insert(struct rbtree *rbt, struct rbtree_node *new, rbtree_cmp_fn cm
 
         struct rbtree_node *parent = NULL;
         struct rbtree_node *cursor = rbt->root;
-        // It will hold a result of the last comparison, which will be used later.
+        /* It will hold a result of the last comparison, which will be used later. */
         int cmp_result = 0;
         while (cursor != NULL) {
                 parent = cursor;
@@ -365,7 +367,7 @@ void rbtree_insert(struct rbtree *rbt, struct rbtree_node *new, rbtree_cmp_fn cm
                         parent->right = new;
                 }
         } else {
-                // Tree is empty.
+                /* Tree is empty. */
                 kassert(!rbt->root);
                 rbt->root = new;
         }
@@ -387,7 +389,7 @@ static void rbt_delete_fix(struct rbtree *rbt, struct rbtree_node *node)
         while (true) {
                 struct rbtree_node *parent = rbt_get_parent(node);
                 if (!parent) {
-                        // We have removed black node from every path; no properties were violated.
+                        /* We have removed black node from every path; no properties were violated. */
                         break;
                 }
 
@@ -395,7 +397,7 @@ static void rbt_delete_fix(struct rbtree *rbt, struct rbtree_node *node)
                 if (rbt_get_colour(sibling) == RBTREE_RED) {
                         kassert(rbt_get_colour(parent) == RBTREE_BLACK);
 
-                        // Convert to a one of the cases with a black sibling.
+                        /* Convert to a one of the cases with a black sibling. */
                         if (parent->right == sibling) {
                                 rbt_rotate_left(rbt, parent);
                         } else {
@@ -404,7 +406,7 @@ static void rbt_delete_fix(struct rbtree *rbt, struct rbtree_node *node)
                         rbt_set_colour(sibling, RBTREE_BLACK);
                         rbt_set_colour(parent, RBTREE_RED);
 
-                        // Update after rotation.
+                        /* Update after rotation. */
                         parent = rbt_get_parent(node);
                         sibling = rbt_get_sibling(node);
                 }
@@ -424,7 +426,7 @@ static void rbt_delete_fix(struct rbtree *rbt, struct rbtree_node *node)
                 }
 
                 if (rbt_get_colour(sibling) == RBTREE_BLACK) {
-                        // Sibling or node?
+                        /* Sibling or node? */
                         if (parent->right == node &&
                             rbt_get_colour(sibling->left) == RBTREE_BLACK &&
                             rbt_get_colour(sibling->right) == RBTREE_RED) {
@@ -439,7 +441,7 @@ static void rbt_delete_fix(struct rbtree *rbt, struct rbtree_node *node)
                                 rbt_rotate_right(rbt, sibling);
                         }
 
-                        // Update after rotate.
+                        /* Update after rotate. */
                         sibling = rbt_get_sibling(node);
                         parent = rbt_get_parent(node);
                 }
@@ -474,7 +476,7 @@ void rbtree_delete(struct rbtree *rbt, struct rbtree_node *deletee)
         kassert(deletee->left == NULL || deletee->right == NULL);
 
         struct rbtree_node *child = deletee->right ? deletee->right : deletee->left;
-        // When a child is black and a deletee is red, we don't need to do anything.
+        /* When a child is black and a deletee is red, we don't need to do anything. */
         if (rbt_get_colour(deletee) == RBTREE_BLACK) {
                 if (rbt_get_colour(child) == RBTREE_RED) {
                         rbt_set_colour(child, RBTREE_BLACK);
@@ -521,7 +523,7 @@ struct rbtree_node *rbtree_search_min(struct rbtree *rbt, void *limit, rbtree_cm
                 }
 
                 while (cmp_result < 0 && cursor->right != NULL) {
-                        // We could overstep the limit, so try to return to the limit's boundaries.
+                        /* We could overstep the limit, so try to return to the limit's boundaries. */
                         cursor = cursor->right;
                         cmp_result = cmpf(cursor->data, limit);
                 }
@@ -604,9 +606,10 @@ void rbtree_iter_range(struct rbtree *rbt, void *value_from, void *value_to, rbt
 
         struct rbtree_node *cursor = rbtree_search_min(rbt, value_from, cmpf);
 
-        // TODO: Rewrite. It's working fine but it's ugly.
-        // A hacky way to start from the current node and not to iterate over
-        // the left subtree which is smaller than the lower boundary.
+        /* TODO: Rewrite. It's working fine but it's ugly.
+         * A hacky way to start from the current node and not to iterate over
+         * the left subtree which is smaller than the lower boundary.
+         */
         struct rbtree_node *prev = cursor->left;
         while (cursor) {
                 if (prev == cursor->left) {
@@ -633,7 +636,7 @@ void rbtree_iter_range(struct rbtree *rbt, void *value_from, void *value_to, rbt
                                 prev = cursor;
                                 cursor = cursor->left;
                         } else {
-                                // There is no left child. Pretend that we've already iterated over it.
+                                /* There is no left child. Pretend that we've already iterated over it. */
                                 prev = cursor->left;
                         }
                 }

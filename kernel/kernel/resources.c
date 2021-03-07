@@ -1,8 +1,9 @@
 #include "kernel/resources.h"
 
 #include "lib/cppdefs.h"
-#include "lib/cstd/string.h"
 #include "lib/cstd/assert.h"
+#include "lib/cstd/string.h"
+#include "lib/utils.h"
 
 #include <stdbool.h>
 

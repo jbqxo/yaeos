@@ -13,9 +13,9 @@
 static intr_handler_fn HANDLERS[0x100] = { NULL };
 static intr_handler_fn DEFAULT_HANDLER = NULL;
 
-// TODO: PIC. Mask unused interrupt lines.
+/* TODO: PIC. Mask unused interrupt lines. */
 
-// See: https://pdos.csail.mit.edu/6.828/2010/readings/hardware/8259A.pdf
+/* See: https://pdos.csail.mit.edu/6.828/2010/readings/hardware/8259A.pdf */
 
 #define MASTER_PIC  (uint8_t)(0x20)
 #define MASTER_CMD  (uint8_t)(MASTER_PIC)
@@ -42,22 +42,22 @@ static void pic_remap(uint8_t master_offset, uint8_t slave_offset)
         ioread(MASTER_DATA, master_mask);
         ioread(SLAVE_DATA, slave_mask);
 
-        // ICW1
+        /* ICW1 */
         uint8_t icw1 = ICW1_INIT | ICW1_IC4;
         iowrite(MASTER_CMD, icw1);
         iowrite(SLAVE_CMD, icw1);
 
-        // ICW2
+        /* ICW2 */
         iowrite(MASTER_DATA, master_offset);
         iowrite(SLAVE_DATA, slave_offset);
 
-        // ICW3
+        /* ICW3 */
         uint8_t slave_to_master_irq = 0x1 << 2;
         uint8_t slave_id = 0x2;
         iowrite(MASTER_DATA, slave_to_master_irq);
         iowrite(SLAVE_DATA, slave_id);
 
-        // ICW4
+        /* ICW4 */
         uint8_t icw4 = ICW4_8086;
         iowrite(MASTER_DATA, icw4);
         iowrite(SLAVE_DATA, icw4);
@@ -122,7 +122,7 @@ void intr_handler_cpu(uint8_t int_no, intr_handler_fn f)
 void intr_handler_pic(uint8_t int_no, intr_handler_fn f)
 {
         kassert(int_no < 0x10);
-        // Cascade IRQ. It's never raised.
+        /* Cascade IRQ. It's never raised. */
         kassert(int_no != 0x2);
 
         uint8_t isr_no = IRQ_MASTER_OFFSET + int_no;
@@ -168,7 +168,7 @@ void intr_init(void)
 
         SET_IRQ(0);
         SET_IRQ(1);
-        // IRQ2 is never raised.
+        /* IRQ2 is never raised. */
         SET_IRQ(3);
         SET_IRQ(4);
         SET_IRQ(5);

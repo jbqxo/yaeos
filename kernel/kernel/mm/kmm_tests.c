@@ -18,7 +18,7 @@
 #include <string.h>
 #include <unity.h>
 
-// TODO Add actual memory assertions.
+/* TODO Add actual memory assertions. */
 
 #define TESTVAL (0xAB)
 
@@ -244,22 +244,22 @@ static void ctor_and_dtor(void)
 
         kmm_cache_free(cache, obj);
 
-// Dtor testing isn't very robust. In fact, it reads the heap after free. So enable it by hands :)
+/* Dtor testing isn't very robust. In fact, it reads the heap after free. So enable it by hands :) */
 #if 0
-	struct kmm_cache *new_cache = kmm_cache_create("new_cache", sizeof(*obj), 0, 0, NULL, NULL);
-	TEST_ASSERT(new_cache);
+        struct kmm_cache *new_cache = kmm_cache_create("new_cache", sizeof(*obj), 0, 0, NULL, NULL);
+        TEST_ASSERT(new_cache);
 
-	// Force new cache to reclaim memory.
-	TEST_MESSAGE("Allocating all available memory...");
-	while ((kmm_cache_alloc(new_cache)))
-		;
+        /* Force new cache to reclaim memory. */
+        TEST_MESSAGE("Allocating all available memory...");
+        while ((kmm_cache_alloc(new_cache)))
+                ;
 
-	TEST_ASSERT_EQUAL_INT_MESSAGE(ctor_dtor__dtor_foo, obj->foo,
-				      "'foo' field hasn't been deinitialized");
-	TEST_ASSERT_EQUAL_INT_MESSAGE(ctor_dtor__dtor_bar, obj->bar,
-				      "'bar' field hasn't been deinitialized");
-	TEST_ASSERT_EQUAL_PTR_MESSAGE(NULL, obj->pfoo, "'pfoo' field hasn't been deinitialized");
-	kmm_cache_destroy(new_cache);
+        TEST_ASSERT_EQUAL_INT_MESSAGE(ctor_dtor__dtor_foo, obj->foo,
+                                      "'foo' field hasn't been deinitialized");
+        TEST_ASSERT_EQUAL_INT_MESSAGE(ctor_dtor__dtor_bar, obj->bar,
+                                      "'bar' field hasn't been deinitialized");
+        TEST_ASSERT_EQUAL_PTR_MESSAGE(NULL, obj->pfoo, "'pfoo' field hasn't been deinitialized");
+        kmm_cache_destroy(new_cache);
 #endif
         kmm_cache_destroy(cache);
 }
@@ -378,7 +378,7 @@ static void test_cache_static(void)
                 (*ptrs)[allocated] = new;
                 allocated++;
         }
-        // Allocate reserved static.
+        /* Allocate reserved static. */
         elem_t *obj = kmm_cache_alloc(second_cache);
         TEST_ASSERT_MESSAGE(obj, "Couldn't allocate memory from the second_cache");
 

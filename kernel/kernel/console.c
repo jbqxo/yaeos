@@ -1,9 +1,10 @@
 #include "kernel/console.h"
 
 #include "lib/cppdefs.h"
+#include "lib/cstd/assert.h"
 #include "lib/ds/slist.h"
 #include "lib/elflist.h"
-#include "lib/cstd/assert.h"
+#include "lib/utils.h"
 
 static struct slist_ref ACTIVE_CONSOLES;
 

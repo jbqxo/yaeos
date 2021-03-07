@@ -164,7 +164,7 @@ void boot_setup_gdt(void)
 
 void idt_set_gatedesc(uint8_t gate_num, void *offset, enum idt_flag flags, enum gate_type gt)
 {
-        // Selector is not going to change, as we use flat memory model.
+        /* Selector is not going to change, as we use flat memory model. */
         uint16_t selector = offsetof(struct gdt_structure, code_descriptor);
         struct idt_entry *e = &IDT.gates[gate_num];
 

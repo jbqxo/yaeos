@@ -3,4 +3,4 @@
 
 void i686_setup_exception_handlers(void);
 
-#endif // _KERNEL_ARCH_I686_EXCEPTIONS_H
+#endif /* _KERNEL_ARCH_I686_EXCEPTIONS_H */

@@ -13,22 +13,22 @@ i686_vm_set_pt:
 .type   i686_vm_paging_enable, @function
 
 i686_vm_paging_enable:
-        // Offset at which kernel will be loaded
+        /* Offset at which kernel will be loaded */
         movl 4(%esp), %edi
 
-        // Enable paging
+        /* Enable paging */
         movl %cr0, %eax
         orl  $(0x1 << 31), %eax
         movl %eax, %cr0
 
-        // Update stack pointers
+        /* Update stack pointers */
         addl %edi, %esp
         addl %edi, %ebp
 
-        // Fix return address
+        /* Fix return address */
         addl %edi, (%esp)
 
-        // Jump to the current half addresses.
+        /* Jump to the current half addresses. */
         leal 1f, %eax
         jmp  *%eax
 

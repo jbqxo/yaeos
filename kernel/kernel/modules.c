@@ -1,9 +1,10 @@
 #include "kernel/modules.h"
 
+#include "lib/cppdefs.h"
 #include "lib/cstd/assert.h"
 #include "lib/ds/slist.h"
 #include "lib/elflist.h"
-#include "lib/cppdefs.h"
+#include "lib/utils.h"
 
 #include <stddef.h>
 
@@ -42,7 +43,7 @@ void modules_init(void)
 
 void modules_load_available(void)
 {
-        SLIST_FOREACH(it, slist_next(&INACTIVE_MODULES)) {
+        SLIST_FOREACH (it, slist_next(&INACTIVE_MODULES)) {
                 struct module *m = container_of(it, struct module, state_list);
                 if (m->fns.load != NULL) {
                         m->fns.load();

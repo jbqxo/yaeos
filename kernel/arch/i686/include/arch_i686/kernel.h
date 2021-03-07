@@ -61,4 +61,4 @@ __noreturn static inline void halt(bool serve_irq)
 
 void i686_init(multiboot_info_t *info, uint32_t magic);
 
-#endif // _KERNEL_ARCH_I686_KERNEL_H
+#endif /* _KERNEL_ARCH_I686_KERNEL_H */

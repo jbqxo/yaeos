@@ -3,7 +3,6 @@
 #undef kassert
 
 #include "lib/cppdefs.h"
-#include "lib/utils.h"
 #include "lib/cstd/stdio.h"
 
 /* Dirty hack. Don't want to include utils.h because of recursive includes. */

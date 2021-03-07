@@ -49,7 +49,7 @@ struct arch_info_i686 I686_INFO;
 void i686_init(multiboot_info_t *info, uint32_t magic)
 {
         if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
-                // TODO: Panic
+                /* TODO: Panic */
                 return;
         }
 

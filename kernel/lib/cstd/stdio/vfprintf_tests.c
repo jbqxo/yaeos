@@ -67,21 +67,21 @@ static void conv_int(void)
         KVFPRINTF("2 + 14 = 16", "2 + 14 = %i", 16);
         KVFPRINTF("2 + 14 = -16", "2 + 14 = %i", -16);
 
-        // Width
+        /* Width */
         KVFPRINTF("  16", "%4d", 16);
 
-        // Precision
+        /* Precision */
         KVFPRINTF("16", "%.0d", 16);
         KVFPRINTF("", "%.0d", 0);
         KVFPRINTF("0", "%.1d", 0);
 
-        // Length
+        /* Length */
         KVFPRINTF("-128", "%hhd", 0x7F + 1);
         KVFPRINTF("-32768", "%hd", 0x7FFF + 1);
 
-        // TODO: Test all length modifiers
+        /* TODO: Test all length modifiers */
 
-        // Flags
+        /* Flags */
         KVFPRINTF("16 ", "%-3d", 16);
         KVFPRINTF("+16", "%+d", 16);
         KVFPRINTF("-16", "%+d", -16);
@@ -99,21 +99,21 @@ static void conv_uint(void)
 {
         KVFPRINTF("2 + 14 = 16", "2 + 14 = %u", 16);
 
-        // Width
+        /* Width */
         KVFPRINTF("  16", "%4u", 16);
 
-        // Precision
+        /* Precision */
         KVFPRINTF("16", "%.0u", 16);
         KVFPRINTF("", "%.0u", 0);
         KVFPRINTF("0", "%.1u", 0);
 
-        // Length
+        /* Length */
         KVFPRINTF("0", "%hhu", 0xFF + 1);
         KVFPRINTF("0", "%hu", 0xFFFF + 1);
 
-        // TODO: Test all length modifiers
+        /* TODO: Test all length modifiers */
 
-        // Flag
+        /* Flag */
         KVFPRINTF("16 ", "%-3u", 16);
         KVFPRINTF("0016", "%04u", 16);
 }
@@ -122,11 +122,11 @@ static void conv_str(void)
 {
         KVFPRINTF("Test string!", "Test %s!", "string");
 
-        // Precision
+        /* Precision */
         KVFPRINTF("Test str!", "Test %.3s!", "string");
         KVFPRINTF("Test string!", "Test %.10s!", "string");
 
-        // TODO: Wide characters
+        /* TODO: Wide characters */
 }
 
 static void conv_ptr(void)
@@ -143,22 +143,22 @@ static void conv_uhex(void)
         KVFPRINTF("0x1 + 0xe = f", "0x1 + 0xe = %x", 0x1 + 0xe);
         KVFPRINTF("0x1 + 0xE = F", "0x1 + 0xE = %X", 0x1 + 0xE);
 
-        // Width
+        /* Width */
         KVFPRINTF("  f", "%3x", 0xf);
         KVFPRINTF("  F", "%3X", 0xf);
 
-        // Precision
+        /* Precision */
         KVFPRINTF("f", "%.0x", 0xf);
         KVFPRINTF("", "%.0x", 0);
         KVFPRINTF("0", "%.1x", 0);
 
-        // Length
+        /* Length */
         KVFPRINTF("0", "%hhx", 0xFF + 1);
         KVFPRINTF("0", "%hx", 0xFFFF + 1);
 
-        // TODO: Test all length modifiers
+        /* TODO: Test all length modifiers */
 
-        // Flags
+        /* Flags */
         KVFPRINTF("10 ", "%-3x", 16);
         KVFPRINTF("0010", "%04x", 16);
         KVFPRINTF("0xf", "%#x", 15);
@@ -170,21 +170,21 @@ static void conv_uoctal(void)
 {
         KVFPRINTF("7 + 3 = 12", "7 + 3 = %o", 07 + 03);
 
-        // Width
+        /* Width */
         KVFPRINTF("  12", "%4o", 012);
 
-        // Precision
+        /* Precision */
         KVFPRINTF("12", "%.0o", 012);
         KVFPRINTF("", "%.0o", 00);
         KVFPRINTF("0", "%.1o", 00);
 
-        // Length
+        /* Length */
         KVFPRINTF("0", "%hho", 0400);
         KVFPRINTF("0", "%ho", 0200000);
 
-        // TODO: Test all length modifiers
+        /* TODO: Test all length modifiers */
 
-        // Flags
+        /* Flags */
         KVFPRINTF("12 ", "%-3o", 012);
         KVFPRINTF("0012", "%04o", 012);
 }

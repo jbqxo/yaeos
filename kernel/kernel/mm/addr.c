@@ -3,6 +3,7 @@
 #include "kernel/mm/vm.h"
 #include "kernel/platform_consts.h"
 
+#include "lib/align.h"
 #include "lib/cstd/assert.h"
 
 #include <stdbool.h>

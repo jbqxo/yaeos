@@ -85,10 +85,10 @@ static struct conv_spec parse_conv_spec(const char *format, size_t *spec_len)
 {
         const char *cursor = format;
         struct conv_spec result = { 0 };
-        // The first symbol must be '%'.
+        /* The first symbol must be '%'. */
         cursor++;
 
-        // Flags
+        /* Flags */
         while (*cursor != '\0') {
                 bool done = false;
                 switch (*cursor) {
@@ -119,7 +119,7 @@ static struct conv_spec parse_conv_spec(const char *format, size_t *spec_len)
                 }
         }
 
-        // Field width
+        /* Field width */
 
         {
                 if (*cursor == '*') {
@@ -134,7 +134,7 @@ static struct conv_spec parse_conv_spec(const char *format, size_t *spec_len)
                 }
                 kassert(len <= WIDTH_MAX);
                 if (len == 0) {
-                        // Width was not specified.
+                        /* Width was not specified. */
                         result.width.special = WIDTH_EMPTY;
                         goto skip_width;
                 }
@@ -145,7 +145,7 @@ static struct conv_spec parse_conv_spec(const char *format, size_t *spec_len)
         skip_width:;
         }
 
-        // Precision
+        /* Precision */
         {
                 if (*cursor != '.') {
                         result.precision.special = PREC_EMPTY;
@@ -167,7 +167,7 @@ static struct conv_spec parse_conv_spec(const char *format, size_t *spec_len)
                 }
                 kassert(len <= PRECISION_MAX);
                 if (len == 0) {
-                        // "If only the period specified, the precision is taken as zero."
+                        /* "If only the period specified, the precision is taken as zero." */
                         result.precision.precision = 0;
                         goto skip_precision;
                 }
@@ -177,7 +177,7 @@ static struct conv_spec parse_conv_spec(const char *format, size_t *spec_len)
         skip_precision:;
         }
 
-        // Length modifier
+        /* Length modifier */
         {
                 switch (*cursor) {
                 case 'h': {
@@ -208,7 +208,7 @@ static struct conv_spec parse_conv_spec(const char *format, size_t *spec_len)
                 }
         }
 
-        // Conversion specifier
+        /* Conversion specifier */
         {
                 switch (*cursor) {
                 case 'd':
@@ -292,12 +292,12 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args)
 }
 
 struct conv_spec_funcs {
-        // Print the format specifier.
+        /* Print the format specifier. */
         int (*print)(fprintf_fn f, struct conv_spec *s, struct argument *a);
-        // Calculate the length of the result of print function.
+        /* Calculate the length of the result of print function. */
         size_t (*length)(struct conv_spec *s, struct argument *a);
-        // Function that returns string to prepend to the value ("0x" for ptr/hex values, for example)
-        // and it's length. Could be NULL.
+        /* Function that returns string to prepend to the value ("0x" for ptr/hex values, for example)
+         * and it's length. Could be NULL. */
         const char *(*prefix)(struct conv_spec *s, struct argument *a, size_t *length);
 };
 
@@ -319,8 +319,8 @@ __const static size_t length_for_intnumbase(uintmax_t num, unsigned base, unsign
 
 static size_t oct_length(struct conv_spec *s, struct argument *a)
 {
-        // Special case:
-        // The result of converting a zero value with a precision of zero is no characters.
+        /* Special case:
+         * The result of converting a zero value with a precision of zero is no characters. */
         if (s->precision.precision == 0 && a->val.ud == 0) {
                 return (0);
         }
@@ -342,8 +342,8 @@ static int oct_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
         size_t const buffer_size = ARRAY_SIZE(buffer);
         size_t buffer_i = buffer_size;
 
-        // Special case:
-        // The result of converting a zero value with a precision of zero is no characters.
+        /* Special case:
+         * The result of converting a zero value with a precision of zero is no characters. */
         if (s->precision.precision == 0 && a->val.d == 0) {
                 return (0);
         }
@@ -379,8 +379,8 @@ static int oct_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 
 static size_t dec_length(struct conv_spec *s, struct argument *a)
 {
-        // Special case:
-        // The result of converting a zero value with a precision of zero is no characters.
+        /* Special case:
+         * The result of converting a zero value with a precision of zero is no characters. */
         if (s->precision.precision == 0 && a->val.d == 0) {
                 return (0);
         }
@@ -402,8 +402,8 @@ static int dec_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
         size_t const buffer_size = ARRAY_SIZE(buffer);
         size_t buffer_i = buffer_size;
 
-        // Special case:
-        // The result of converting a zero value with a precision of zero is no characters.
+        /* Special case:
+         * The result of converting a zero value with a precision of zero is no characters. */
         if (s->precision.precision == 0 && a->val.d == 0) {
                 return (0);
         }
@@ -455,7 +455,7 @@ static int hex_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 
         size_t buffer_i = buffer_size;
 
-        // A little bit hacky, but it makes no sense to write the same code for the second and third time.
+        /* A little bit hacky, but it makes no sense to write the same code for the second and third time. */
         if (s->spec == CS_UHEX || s->spec == CS_UHEX_BIG) {
                 if (s->precision.precision == 0 && a->val.ud == 0) {
                         return (0);
@@ -484,7 +484,7 @@ static int hex_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 static const char *hex_prefix(struct conv_spec *s, struct argument *a __unused, size_t *len)
 {
         static const char zx[] = "0x";
-        // Do not count null-terminator.
+        /* Do not count null-terminator. */
         static const unsigned zx_len = sizeof(zx) - 1;
 
         if (s->spec == CS_PTR) {
@@ -513,7 +513,7 @@ static size_t str_length(struct conv_spec *s, struct argument *a)
 static int str_print(fprintf_fn f, struct conv_spec *s, struct argument *a)
 {
         const char *str = a->val.str;
-        // TODO: Find a way to reuse the result.
+        /* TODO: Find a way to reuse the result. */
         size_t len = str_length(s, a);
 
         return (f(str, len));
@@ -615,7 +615,7 @@ static int print_conv_spec(fprintf_fn f, struct conv_spec s, va_list *args)
         intptr_t width_to_fill = (intptr_t)s.width.width - (intptr_t)num_len -
                                  (intptr_t)prefix_len - (flag_present ? 1 : 0);
 
-        // If Width != 0 and the flag '-' was not specified, result must be right-justified
+        /* If Width != 0 and the flag '-' was not specified, result must be right-justified */
         if (!(s.flags & CF_MINUS) && s.width.special != WIDTH_EMPTY) {
                 if (s.flags & CF_ZERO) {
                         if (prefix != NULL) {
@@ -632,7 +632,7 @@ static int print_conv_spec(fprintf_fn f, struct conv_spec s, va_list *args)
                         printed += (unsigned)rc;
                 }
                 while (width_to_fill > 0) {
-                        // remained_width could be < 0, so decrement in the loop
+                        /* remained_width could be < 0, so decrement in the loop */
                         char c = s.flags & CF_ZERO ? '0' : ' ';
                         int rc = f(&c, 1);
                         if (__unlikely(rc < 0)) {
@@ -662,10 +662,10 @@ static int print_conv_spec(fprintf_fn f, struct conv_spec s, va_list *args)
         }
         printed += (unsigned)rc;
 
-        // If Width != 0 and the flag '-' was specified, result must be left-justified
+        /* If Width != 0 and the flag '-' was specified, result must be left-justified */
         if (s.flags & CF_MINUS && s.width.special != WIDTH_EMPTY) {
                 while (width_to_fill > 0) {
-                        // remained_width could be < 0, so decrement in the loop
+                        /* remained_width could be < 0, so decrement in the loop */
                         int frc = f(" ", 1);
                         if (__unlikely(frc < 0)) {
                                 return (frc);

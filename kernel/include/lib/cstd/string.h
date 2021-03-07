@@ -26,4 +26,4 @@ void *kmemset(void *str, int ch, size_t n);
 char *kstrerror(int errnum);
 size_t kstrlen(const char *str);
 
-#endif //  _LIB_STRING_H
+#endif /*  _LIB_STRING_H */

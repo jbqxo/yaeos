@@ -24,4 +24,4 @@ void boot_setup_gdt(void);
 void boot_setup_idt(void);
 void idt_set_gatedesc(uint8_t gate_num, void *offset, enum idt_flag flags, enum gate_type gt);
 
-#endif // _KERNEL_ARCH_I686_DESCRIPTORS_H
+#endif /* _KERNEL_ARCH_I686_DESCRIPTORS_H */

@@ -10,7 +10,7 @@
                 jmp isr_handler                ;\
         .size isr ## number, . - isr ## number
 
-// Macros to generate ISR for exceptions/interrupts without error codes.
+/* Macros to generate ISR for exceptions/interrupts without error codes. */
 #define GEN_ISR_ERR(number)                     \
         .global isr ## number                  ;\
         .type isr ## number, @function         ;\
@@ -31,13 +31,13 @@
         .size irq ## number, . - irq ## number
 
 .section .text
-// The routine prepares environment for interrupt handler.
+/* The routine prepares environment for interrupt handler. */
 stub_isr_handler:
-        // Save GP registers of the interrupted task.
+        /* Save GP registers of the interrupted task. */
         pusha
 
-        // TODO: Save all segment selectors.
-        // Save Data segment selector.
+        /* TODO: Save all segment selectors. */
+        /* Save Data segment selector. */
         movw %ds, %ax
         pushl %eax
 
@@ -56,18 +56,18 @@ stub_isr_handler:
         movw %ax, %gs
 
         popa
-        // Erase error code and Vector number
+        /* Erase error code and Vector number */
         addl $8, %esp
         sti
         iret
 
-// The routine prepares environment for interrupt handler.
+/* The routine prepares environment for interrupt handler. */
 stub_irq_handler:
-        // Save GP registers of the interrupted task.
+        /* Save GP registers of the interrupted task. */
         pusha
 
-        // TODO: Save all segment selectors.
-        // Save Data segment selector.
+        /* TODO: Save all segment selectors. */
+        /* Save Data segment selector. */
         movw %ds, %ax
         pushl %eax
 
@@ -86,7 +86,7 @@ stub_irq_handler:
         movw %ax, %gs
 
         popa
-        // Erase error code and Vector number
+        /* Erase error code and Vector number */
         addl $8, %esp
         sti
         iret
@@ -116,7 +116,7 @@ GEN_ISR_ERR(21)
 
 GEN_IRQ(0)
 GEN_IRQ(1)
-// IRQ2 is never raised.
+/* IRQ2 is never raised. */
 GEN_IRQ(3)
 GEN_IRQ(4)
 GEN_IRQ(5)

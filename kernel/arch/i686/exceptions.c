@@ -6,7 +6,6 @@
 #include "kernel/panic.h"
 
 #include "lib/cstd/inttypes.h"
-#include "lib/cstd/nonstd.h"
 #include "lib/cstd/stdio.h"
 #include "lib/utils.h"
 

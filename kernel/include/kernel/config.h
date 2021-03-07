@@ -3,7 +3,7 @@
 
 #ifndef __ASSEMBLER__
 #include "kernel/platform_consts.h"
-#endif // __ASSEMBLER__
+#endif /* __ASSEMBLER__ */
 
 #define CONF_STACK_SIZE         (16 << 10)
 #define CONF_TIMER_QUEUE_LENGTH (100)
@@ -14,4 +14,4 @@
 #define CONF_VM_RECURSIVE_PAGE (PLATFORM_PAGEDIR_PAGES - 1 - 1)
 #define CONF_VM_ERRORS_PAGE    (PLATFORM_PAGEDIR_PAGES - 1)
 
-#endif // _KERNEL_CONFIG_H
+#endif /* _KERNEL_CONFIG_H */

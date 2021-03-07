@@ -3,8 +3,8 @@
 #include "lib/align.h"
 #include "lib/cppdefs.h"
 #include "lib/cstd/assert.h"
-#include "lib/cstd/nonstd.h"
 #include "lib/ds/slist.h"
+#include "lib/utils.h"
 
 #include <stddef.h>
 
@@ -32,14 +32,14 @@ void mem_pool_init(struct mem_pool *pool, void *mem, size_t mem_size, size_t ele
 #endif
 
         kassert(mblock + elem_size <= limit);
-        union node *node = (void*)mblock;
+        union node *node = (void *)mblock;
         kassert(properly_aligned(node));
 
         slist_insert(&pool->nodes, &node->nodes);
 
         while (mblock + stride + elem_size <= limit) {
-                union node *current = (void*)mblock;
-                union node *next = (void*)(mblock + stride);
+                union node *current = (void *)mblock;
+                union node *next = (void *)(mblock + stride);
                 kassert(properly_aligned(current));
                 kassert(properly_aligned(next));
 

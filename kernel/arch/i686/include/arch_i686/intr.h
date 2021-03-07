@@ -59,4 +59,4 @@ void intr_handler_pic(uint8_t int_no, intr_handler_fn);
 void irq_handler(struct intr_ctx ctx);
 void isr_handler(struct intr_ctx ctx);
 
-#endif // _KERNEL_ARCH_I686_INTR_H
+#endif /* _KERNEL_ARCH_I686_INTR_H */
