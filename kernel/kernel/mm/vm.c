@@ -11,7 +11,7 @@
 #include "lib/ds/rbtree.h"
 #include "lib/ds/slist.h"
 
-void vm_pgfault_handle_default(struct vm_area *area, void *addr)
+__noreturn void vm_pgfault_handle_default(struct vm_area *area, void *addr)
 {
         LOGF_P("Page fault at the address %p inside area %p-%p!\n", addr, area->base,
                (void *)((uintptr_t)area->base + area->length - 1));

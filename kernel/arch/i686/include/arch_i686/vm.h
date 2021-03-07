@@ -30,12 +30,12 @@ enum i686_vm_dir_flags {
 /**
  * @brief Converts vm_flags to i686_table flags.
  */
-enum i686_vm_table_flags i686_vm_to_table_flags(enum vm_flags area_flags);
+__const enum i686_vm_table_flags i686_vm_to_table_flags(enum vm_flags area_flags);
 
 /**
  * @brief Converts vm_flags to i686_dir flags.
  */
-enum i686_vm_dir_flags i686_vm_to_dir_flags(enum vm_flags area_flags);
+__const enum i686_vm_dir_flags i686_vm_to_dir_flags(enum vm_flags area_flags);
 
 struct i686_vm_pge {
         union {
@@ -98,7 +98,8 @@ enum i686_vm_pg_lvls {
 * @param vaddr Virtual address.
 * @return Address of the Page Table entry.
 */
-struct i686_vm_pge *i686_vm_get_pge(enum i686_vm_pg_lvls lvl, struct i686_vm_pd *dir, void const *vaddr);
+__const struct i686_vm_pge *i686_vm_get_pge(enum i686_vm_pg_lvls lvl, struct i686_vm_pd *dir,
+                                            void const *vaddr);
 
 void i686_vm_tlb_flush(void);
 

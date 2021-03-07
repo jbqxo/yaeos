@@ -1,4 +1,5 @@
 #include "lib/cstd/string.h"
+#include "lib/cppdefs.h"
 
 void *kmemcpy(void *restrict _dest, const void *restrict _src, size_t n)
 {
@@ -11,8 +12,4 @@ void *kmemcpy(void *restrict _dest, const void *restrict _src, size_t n)
         return (_dest);
 }
 
-// A compiler may make use of the memcpy function.
-void *memcpy(void *restrict _dest, const void *restrict _src, size_t n)
-{
-        return (kmemcpy(_dest, _src, n));
-}
+void *memcpy(void *restrict dest, const void *restrict src, size_t n) __alias("kmemcpy");

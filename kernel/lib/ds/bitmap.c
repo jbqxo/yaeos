@@ -10,8 +10,8 @@
 
 #define BITS_IN_SET (sizeof((((struct bitmap *)NULL)->bitsets[0])) * 8)
 
-static __force_inline void assert_bounds(struct bitmap *bitmap, uint32_t bitset_ndx,
-                                         uint32_t bitndx)
+static inline void assert_bounds(struct bitmap *bitmap __maybe_unused,
+                                 uint32_t bitset_ndx __maybe_unused, uint32_t bitndx __maybe_unused)
 {
         /* Check that we're not using a bit past bitmap->length. */
         kassert(bitset_ndx * BITS_IN_SET + bitndx < bitmap->length);

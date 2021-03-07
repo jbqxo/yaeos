@@ -301,7 +301,7 @@ struct conv_spec_funcs {
         const char *(*prefix)(struct conv_spec *s, struct argument *a, size_t *length);
 };
 
-static size_t length_for_intnumbase(uintmax_t num, unsigned base, unsigned max_num_digits)
+__const static size_t length_for_intnumbase(uintmax_t num, unsigned base, unsigned max_num_digits)
 {
         kassert(max_num_digits <= INT_MAX);
         for (int i = (int)max_num_digits - 1; i >= 0; i--) {

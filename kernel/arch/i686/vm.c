@@ -86,21 +86,22 @@ enum i686_vm_dir_flags i686_vm_to_dir_flags(enum vm_flags area_flags)
         return (f);
 }
 
-static uint32_t get_pte_ndx(void const *vaddr)
+__const static inline uint32_t get_pte_ndx(void const *vaddr)
 {
         /* The table index consists of 21:12 bits of an address. */
         uint32_t index = ((uintptr_t)vaddr & PTE_MASK) >> 12;
         return (index);
 }
 
-static uint32_t get_pde_ndx(void const *vaddr)
+__const static inline uint32_t get_pde_ndx(void const *vaddr)
 {
         /* The directory index consists of 31:22 bits of an address. */
         uint32_t index = ((uintptr_t)vaddr & PDE_MASK) >> 22;
         return (index);
 }
 
-struct i686_vm_pge *i686_vm_get_pge(enum i686_vm_pg_lvls lvl, struct i686_vm_pd *dir, void const *vaddr)
+struct i686_vm_pge *i686_vm_get_pge(enum i686_vm_pg_lvls lvl, struct i686_vm_pd *dir,
+                                    void const *vaddr)
 {
         uint32_t ndx = 0;
         switch (lvl) {
@@ -149,7 +150,7 @@ void *i686_vm_pge_get_addr(struct i686_vm_pge *entry)
 void *i686_vm_get_cr2(void)
 {
         void *vaddr;
-        asm volatile ("mov %%cr2, %0" : "=r"(vaddr));
+        asm volatile("mov %%cr2, %0" : "=r"(vaddr));
 
         return (vaddr);
 }
@@ -182,7 +183,7 @@ void *vm_arch_get_phys_page(void const *virt_page)
         return (i686_vm_pge_get_addr(e));
 }
 
-void i686_vm_pg_fault_handler(struct intr_ctx *__unused ctx)
+void i686_vm_pg_fault_handler(struct intr_ctx *ctx __unused)
 {
         void *const fault_at = i686_vm_get_cr2();
         struct vm_space *fault_space = NULL;

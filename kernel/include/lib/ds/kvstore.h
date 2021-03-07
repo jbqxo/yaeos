@@ -18,7 +18,7 @@ struct kvstore {
         kvstore_fn_cmpkeys_t cmpfn;
 };
 
-size_t kvstore_predict_reqmem(size_t cap);
+__const size_t kvstore_predict_reqmem(size_t cap);
 
 struct kvstore *kvstore_create(void *mem, size_t capacity, kvstore_fn_cmpkeys_t cmpfn);
 size_t kvstore_capacity(struct kvstore const *kv);

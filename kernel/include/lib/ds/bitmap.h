@@ -1,6 +1,8 @@
 #ifndef _LIB_DS_BITMAP_H
 #define _LIB_DS_BITMAP_H
 
+#include "lib/cppdefs.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -25,7 +27,6 @@ bool bitmap_search_false(struct bitmap *bitmap, uint32_t *result);
 
 void bitmap_resize(struct bitmap *bitmap, size_t new_length_bits);
 
-size_t bitmap_predict_size(uint32_t length_bits);
-
+__const size_t bitmap_predict_size(uint32_t length_bits);
 
 #endif /* _LIB_DS_BITMAP_H */

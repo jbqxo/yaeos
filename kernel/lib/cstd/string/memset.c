@@ -1,4 +1,5 @@
 #include "lib/cstd/string.h"
+#include "lib/cppdefs.h"
 
 #include <stdint.h>
 
@@ -11,8 +12,4 @@ void *kmemset(void *_data, int val, size_t len)
         return (data);
 }
 
-// A compiler may expect the function memset to be present.
-void *memset(void *_data, int val, size_t len)
-{
-        return (kmemset(_data, val, len));
-}
+void *memset(void *_data, int val, size_t len) __alias("kmemset");

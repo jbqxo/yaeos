@@ -15,7 +15,7 @@ static void rbt_set_colour(struct rbtree_node *n, enum rbtree_colour c)
 #endif
 }
 
-static enum rbtree_colour rbt_get_colour(struct rbtree_node *n)
+__const static enum rbtree_colour rbt_get_colour(struct rbtree_node *n)
 {
         if (!n) {
                 return (RBTREE_BLACK);
@@ -39,7 +39,7 @@ static void rbt_set_parent(struct rbtree_node *node, struct rbtree_node *parent)
 #endif
 }
 
-static struct rbtree_node *rbt_get_parent(struct rbtree_node *node)
+__const static struct rbtree_node *rbt_get_parent(struct rbtree_node *node)
 {
         kassert(node);
 
@@ -52,7 +52,7 @@ static struct rbtree_node *rbt_get_parent(struct rbtree_node *node)
 #endif
 }
 
-static struct rbtree_node *rbt_get_grandparent(struct rbtree_node *node)
+__const static struct rbtree_node *rbt_get_grandparent(struct rbtree_node *node)
 {
         kassert(node);
 
@@ -65,7 +65,7 @@ static struct rbtree_node *rbt_get_grandparent(struct rbtree_node *node)
         return (grandparent);
 }
 
-static struct rbtree_node *rbt_get_sibling(struct rbtree_node *node)
+__const static struct rbtree_node *rbt_get_sibling(struct rbtree_node *node)
 {
         kassert(node);
 

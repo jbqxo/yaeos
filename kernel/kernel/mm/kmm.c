@@ -121,7 +121,7 @@ static void page_free(struct page *p)
  * If the allocation fails again and the cache is capable of using static storage,
  * it will get memory from static memory pool as a last resort.
  */
-static struct page *page_alloc(struct kmm_cache *cache)
+static struct page *page_alloc(struct kmm_cache *cache __unused)
 {
         kassert(cache);
 

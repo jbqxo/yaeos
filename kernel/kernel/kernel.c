@@ -77,7 +77,7 @@ static int conwrite(const char *msg, size_t len)
         return ((int)len);
 }
 
-static void test_allocation(void)
+__noreturn static void test_allocation(void)
 {
         size_t overall = 0;
         for (int i = 0;; i++) {
@@ -92,7 +92,7 @@ static void test_allocation(void)
         }
 }
 
-void kernel_init(void)
+__noreturn void kernel_init(void)
 {
         consoles_init();
         assertion_init(conwrite);

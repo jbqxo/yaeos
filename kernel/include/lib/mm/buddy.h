@@ -50,6 +50,6 @@ bool buddy_is_free(struct buddy_manager *bmgr, uint32_t page_ndx);
 /**
  * @brief Predict space required by a buddy manager for a specified number of pages.
  */
-size_t buddy_predict_req_space(size_t pages);
+__const size_t buddy_predict_req_space(size_t pages);
 
 #endif /* _LIB_MM_BUDDY_H */

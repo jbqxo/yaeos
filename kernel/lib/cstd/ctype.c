@@ -1,5 +1,7 @@
 #include "lib/cstd/ctype.h"
 
+#include "lib/cppdefs.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 

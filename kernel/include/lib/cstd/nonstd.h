@@ -21,18 +21,18 @@ static inline uint8_t log2_ceil(uint32_t x)
         return (log2_floor(x - 1) + 1);
 }
 
-static inline uint32_t div_ceil(uint32_t x, uint32_t y)
+__const static inline uint32_t div_ceil(uint32_t x, uint32_t y)
 {
         return ((x + y - 1) / y);
 }
 
-static inline uint32_t div_near(uint32_t x, uint32_t y)
+__const static inline uint32_t div_near(uint32_t x, uint32_t y)
 {
         return ((x + y / 2) / y);
 }
 
 /* Find First One bit */
-static inline unsigned find_first_one(unsigned x)
+__const static inline unsigned find_first_one(unsigned x)
 {
         unsigned ndx = 0;
 
@@ -46,7 +46,7 @@ static inline unsigned find_first_one(unsigned x)
         return (ndx);
 }
 
-static inline unsigned find_first_zero(unsigned x)
+__const static inline unsigned find_first_zero(unsigned x)
 {
         return (find_first_one(~x));
 }
