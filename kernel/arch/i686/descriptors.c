@@ -167,8 +167,9 @@ void idt_set_gatedesc(uint8_t gate_num, void *offset, enum idt_flag flags, enum 
         // Selector is not going to change, as we use flat memory model.
         uint16_t selector = offsetof(struct gdt_structure, code_descriptor);
         struct idt_entry *e = &IDT.gates[gate_num];
-        e->offset_low = (uintptr_t)offset & 0xFFFF;
-        e->offset_high = ((uintptr_t)offset >> 0x10) & 0xFFFF;
+
+        e->offset_low = (uint16_t)(uintptr_t)offset;
+        e->offset_high = (uint16_t)((uintptr_t)offset >> 0x10);
 
         e->seg_selector = selector;
         e->must_be_0 = 0;

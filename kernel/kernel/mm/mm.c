@@ -85,7 +85,7 @@ struct mm_zone *mm_zone_create(void *phys_start, size_t length, struct vm_space 
         zone->info_area.length =
                 align_roundup(linear_alloc_occupied(zone->alloc), PLATFORM_PAGE_SIZE);
 
-        for (int i = 0; i < free_pages; i++) {
+        for (size_t i = 0; i < free_pages; i++) {
                 kassert(i * PLATFORM_PAGE_SIZE <= zone->length);
                 mm_page_init_free(&zone->pages[i], zone->start + i * PLATFORM_PAGE_SIZE);
         }

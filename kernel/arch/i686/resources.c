@@ -17,15 +17,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static uintptr_t max_addr(void)
-{
-        unsigned width = sizeof(void *) * 8;
-        uintptr_t mask = 0;
-        for (unsigned i = 0; i < width; i++) {
-                mask |= (uintptr_t)(0x1) << i;
-        }
-        return ((uintptr_t)(-0x1) & mask);
-}
+#define MAX_ADDR (~((uintptr_t)0))
 
 typedef void (*iter_available_fn_t)(uintptr_t start, uintptr_t end, uint32_t type);
 
@@ -37,14 +29,17 @@ static void iter_without_unavail(struct multiboot_mmap_entry *mmap, iter_availab
         }
 
         /* ... if the chunk is entirely out of our reach, ignore it. */
-        if (mmap->addr > max_addr()) {
+        if (mmap->addr > MAX_ADDR) {
                 return;
         }
 
         uintptr_t kstart = (uintptr_t)addr_to_low(kernel_start);
         uintptr_t kend = (uintptr_t)addr_to_low(kernel_end);
-        uintptr_t memstart = mmap->addr;
-        uintptr_t memend = memstart + mmap->len;
+
+        /* NOTE: We don't work with 64 bit memory on i686 so we ignore it.
+         * Therefore the casts are valid. */
+        uintptr_t memstart = (uintptr_t)mmap->addr;
+        uintptr_t memend = memstart + (size_t)mmap->len;
 
         /*
          * There are following cases:
@@ -138,7 +133,7 @@ static void register_mem_region(uintptr_t start, uintptr_t end, uint32_t type __
                 .type = RESOURCE_TYPE_MEMORY,
                 .data.mem_reg.base = (void *)start,
                 /* ... if we can address some part of the chunk, cut remainders out. */
-                .data.mem_reg.len = MIN(length, max_addr() - start),
+                .data.mem_reg.len = MIN(length, MAX_ADDR - start),
         };
         resources_register_res(r);
 }

@@ -63,7 +63,8 @@ struct i686_vm_pge {
                 } dir;
                 struct {
                         bool is_present : 1;
-                        enum i686_vm_table_flags flags : 8;
+                        enum i686_vm_table_flags flags : 7;
+                        bool global : 1;
                         uint8_t kernel_data : 3;
                         uintptr_t paddr : 20;
                 } table;

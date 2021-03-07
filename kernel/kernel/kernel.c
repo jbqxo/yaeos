@@ -27,12 +27,14 @@ static void init_kernel_vmspace(void)
 {
         vm_space_init(&CURRENT_KERNEL, vm_arch_get_early_pgroot(), addr_get_offset());
 
-        for (int i = 0; i < ARRAY_SIZE(KERNELBIN_AREAS); i++) {
+        for (size_t i = 0; i < ARRAY_SIZE(KERNELBIN_AREAS); i++) {
                 struct vm_area *a = &KERNELBIN_AREAS[i];
+                /* TODO: Reimplement init of segments areas. */
+                enum kernel_segments const seg = (enum kernel_segments)i;
 
                 uintptr_t start = 0;
                 uintptr_t end = 0;
-                kernel_arch_get_segment(i, (void **)&start, (void **)&end);
+                kernel_arch_get_segment(seg, (void **)&start, (void **)&end);
 
                 /* Every segment must start and end at page boundaries. */
                 end = align_roundup(end, PLATFORM_PAGE_SIZE);
@@ -72,7 +74,7 @@ static int conwrite(const char *msg, size_t len)
 {
         console_write(msg, len);
         kassert(len <= INT_MAX);
-        return (len);
+        return ((int)len);
 }
 
 static void test_allocation(void)
@@ -83,7 +85,7 @@ static void test_allocation(void)
                 if (mem != NULL) {
                         overall += 0x700;
                         kmemset(mem, 0x0, 0x700);
-                        LOGF_I("Allocation #%d. Overall allocated %x bytes\n", i, overall);
+                        LOGF_I("Allocation #%d. Overall allocated %lx bytes\n", i, overall);
                 } else {
                         LOGF_P("Failed to allocate #%d\n", i);
                 }

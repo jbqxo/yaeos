@@ -10,13 +10,13 @@
 
 #include <stdalign.h>
 
-#define KMALLOC_MAX_CACHES (7)
+#define KMALLOC_MAX_CACHES (UINT8_C(7))
 
 static struct kmm_cache *KMALLOC_CACHES[KMALLOC_MAX_CACHES];
 
-static uint32_t LOW_POW = 0;
-static uint32_t MAX_POW = 0;
-#define POWERS (MAX_POW - LOW_POW + 1)
+static uint8_t LOW_POW = 0;
+static uint8_t MAX_POW = 0;
+#define POWERS (MAX_POW - LOW_POW + 1U)
 
 /* We store index of cache level along with every allocated piece of memory. */
 struct kmalloc_ident_info {
@@ -27,7 +27,7 @@ kstatic_assert(sizeof(struct kmalloc_ident_info) <= alignof(max_align_t),
 kstatic_assert((uint8_t)(~0) >= ARRAY_SIZE(KMALLOC_CACHES),
                "KMALLOC_CACHES length exceeds maximum length");
 
-void kmalloc_init(unsigned lowest_pow2_size, unsigned max_pow2_size)
+void kmalloc_init(uint8_t lowest_pow2_size, uint8_t max_pow2_size)
 {
         LOW_POW = lowest_pow2_size;
         MAX_POW = max_pow2_size;
@@ -42,7 +42,7 @@ void kmalloc_init(unsigned lowest_pow2_size, unsigned max_pow2_size)
         };
         kassert(ARRAY_SIZE(heap_names) >= max_pow2_size);
 
-        for (int i = 0; i < POWERS; i++) {
+        for (size_t i = 0; i < POWERS; i++) {
                 const char *heap_name = heap_names[i + lowest_pow2_size];
 
                 size_t obj_size = sizeof(struct kmalloc_ident_info);
@@ -57,9 +57,10 @@ void kmalloc_init(unsigned lowest_pow2_size, unsigned max_pow2_size)
 void *kmalloc(size_t size)
 {
         size_t const req_space = size + sizeof(struct kmalloc_ident_info);
-        int pow = log2_ceil(req_space);
+        uint8_t pow = log2_ceil(req_space);
         pow = MAX(pow, LOW_POW);
-        unsigned const cache_index = pow - LOW_POW;
+
+        uint8_t const cache_index = pow - LOW_POW;
 
         if (cache_index >= POWERS) {
                 const size_t max_available = 1 << MAX_POW;
@@ -67,7 +68,6 @@ void *kmalloc(size_t size)
                        req_space, max_available);
                 return (NULL);
         }
-        kassert(cache_index >= 0);
 
         struct kmm_cache *c = KMALLOC_CACHES[cache_index];
         kassert(c != NULL);

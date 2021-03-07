@@ -172,8 +172,8 @@ void kheap_init(struct vm_space *space)
         vm_space_find_gap(space, find_largest, &fld);
         /* NOTE: An area describes properties of the *pages*.
          * So it makes 0 sense to not align it at page boundaries. */
-        void *const start = (void *)align_roundup((uintptr_t)fld.max_base, PLATFORM_PAGE_SIZE);
-        const size_t len = fld.max_length - (start - fld.max_base);
+        char *const start = (void *)align_roundup((uintptr_t)fld.max_base, PLATFORM_PAGE_SIZE);
+        const size_t len = fld.max_length - ((uintptr_t)start - (uintptr_t)fld.max_base);
         vm_area_init(&KHEAP_AREA, start, len, space);
 
         KHEAP_AREA.ops.handle_pg_fault = vmarea_heap_fault_handler;
@@ -189,11 +189,13 @@ void kheap_init(struct vm_space *space)
         const size_t req_pages = div_ceil(req_space, PLATFORM_PAGE_SIZE);
 
         /* Map first pages by hands to allow kernel heap to start. */
-        for (int i = 0; i < req_pages; i++) {
+        for (size_t i = 0; i < req_pages; i++) {
                 uintptr_t map_addr = (uintptr_t)KHEAP_AREA.base;
                 map_addr += i * PLATFORM_PAGE_SIZE;
 
                 struct mm_page *p = mm_alloc_page();
+                kassert(p != NULL);
+
                 p->state = PAGESTATE_FIXED;
                 vm_arch_pt_map(KHEAP_AREA.owner->root_dir, p->paddr, (void *)map_addr,
                                KHEAP_AREA.flags);

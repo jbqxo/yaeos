@@ -133,7 +133,11 @@ void i686_vm_tlb_invlpg(void *addr)
 
 void i686_vm_pge_set_addr(struct i686_vm_pge *entry, const void *phys_addr)
 {
+        /* -Wconversion gives a bit controversal warning on an assignment to a bit-field. */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
         entry->any.paddr = (uintptr_t)phys_addr >> 12;
+#pragma GCC diagnostic pop
 }
 
 void *i686_vm_pge_get_addr(struct i686_vm_pge *entry)
@@ -145,7 +149,7 @@ void *i686_vm_pge_get_addr(struct i686_vm_pge *entry)
 void *i686_vm_get_cr2(void)
 {
         void *vaddr;
-        asm("mov %%cr2, %0" : "=r"(vaddr));
+        asm volatile ("mov %%cr2, %0" : "=r"(vaddr));
 
         return (vaddr);
 }

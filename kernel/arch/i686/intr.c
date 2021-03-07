@@ -76,7 +76,7 @@ static void pic_write_eoi(uint8_t irq)
 
 static void call_handler(struct intr_ctx *ctx)
 {
-        int intn = ctx->int_n;
+        uint32_t intn = ctx->int_n;
 
         if (HANDLERS[intn]) {
                 HANDLERS[intn](ctx);
@@ -91,13 +91,14 @@ static void call_handler(struct intr_ctx *ctx)
 
 void irq_handler(struct intr_ctx ctx)
 {
-        pic_write_eoi(ctx.int_n);
         if (ctx.int_n < 0x8) {
                 ctx.int_n += IRQ_MASTER_OFFSET;
         } else {
                 ctx.int_n += IRQ_SLAVE_OFFSET;
         }
         call_handler(&ctx);
+
+        pic_write_eoi((uint8_t)ctx.int_n);
 }
 
 void isr_handler(struct intr_ctx ctx)

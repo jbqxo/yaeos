@@ -6,22 +6,20 @@
 #include "kernel/panic.h"
 
 #include "lib/cstd/inttypes.h"
+#include "lib/cstd/nonstd.h"
 #include "lib/cstd/stdio.h"
 #include "lib/utils.h"
 
-static char DESCRIPTION_BUFFER[64];
-static int DESCBUFFER_POS = 0;
+#include <limits.h>
 
-static size_t min(size_t x, size_t y)
-{
-        return (x < y ? x : y);
-}
+static char DESCRIPTION_BUFFER[64];
+static size_t DESCBUFFER_POS = 0;
 
 static int descbuffer_write(const char *msg, size_t len)
 {
         char *restrict buffer = DESCRIPTION_BUFFER;
-        size_t towrite = min(len, ARRAY_SIZE(DESCRIPTION_BUFFER) - DESCBUFFER_POS);
-        for (int i = 0; i < towrite; i++) {
+        size_t towrite = MIN(len, ARRAY_SIZE(DESCRIPTION_BUFFER) - DESCBUFFER_POS);
+        for (size_t i = 0; i < towrite; i++) {
                 buffer[DESCBUFFER_POS++] = msg[i];
         }
         kassert(towrite <= INT_MAX);

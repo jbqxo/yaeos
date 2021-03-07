@@ -27,7 +27,7 @@ size_t buddy_predict_req_space(size_t const pages)
         const size_t lvls_array = lvls * sizeof(*((struct buddy_manager *)NULL)->lvl_bitmaps);
 
         size_t bitmaps = 0;
-        for (int i = 0; i < lvls; i++) {
+        for (size_t i = 0; i < lvls; i++) {
                 const size_t max_ndx = max_index(pages, i);
                 bitmaps += bitmap_predict_size(max_ndx);
         }
@@ -45,7 +45,7 @@ uint32_t buddy_init(struct buddy_manager *bmgr, size_t const pages, struct linea
         bmgr->lvl_bitmaps =
                 linear_alloc_alloc(bmgr->alloc, bmgr->lvls * sizeof(*bmgr->lvl_bitmaps));
 
-        for (int lvl = 0; lvl < bmgr->lvls; lvl++) {
+        for (size_t lvl = 0; lvl < bmgr->lvls; lvl++) {
                 size_t max_ndx = max_index(pages, lvl);
                 void *space = linear_alloc_alloc(bmgr->alloc, bitmap_predict_size(max_ndx));
                 bitmap_init(&bmgr->lvl_bitmaps[lvl], space, max_ndx);
@@ -76,7 +76,7 @@ static void occupy_buddy(struct buddy_manager *bmgr, unsigned lvl, unsigned bit)
         occupy_buddys_descendants(bmgr, lvl, bit);
 
         /* Occupy buddy and it's ancestors. */
-        for (int i = 0; i < bmgr->lvls; i++) {
+        for (size_t i = 0; i < bmgr->lvls; i++) {
                 /* Guard against trailing 1 when length is odd. */
                 if (bit >> i < bmgr->lvl_bitmaps[i].length) {
                         bitmap_set_true(&bmgr->lvl_bitmaps[i], bit >> i);

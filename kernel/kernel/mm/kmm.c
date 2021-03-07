@@ -259,7 +259,7 @@ static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colo
                 /* Check that leftover space is less than a full stride. */
                 kassert(page_end - slab_elems_end < cache->stride);
         }
-        for (int i = 0; i < cache->slab_capacity; i++, cursor += cache->stride) {
+        for (size_t i = 0; i < cache->slab_capacity; i++, cursor += cache->stride) {
                 void *buffer = (void *)cursor;
                 struct bufctl_small *ctl = get_bufctl_small(buffer, cache);
                 kassert((uintptr_t)ctl < cursor + cache->stride);
@@ -300,7 +300,7 @@ static struct kmm_slab *slab_create_large(struct kmm_cache *cache, unsigned colo
         slist_init(&slab->slabs_list);
         slist_init(&slab->free_buffers);
 
-        for (int i = 0; i < cache->slab_capacity; i++, obj_addr += cache->stride) {
+        for (size_t i = 0; i < cache->slab_capacity; i++, obj_addr += cache->stride) {
                 struct bufctl_large *ctl = kmm_cache_alloc(&CACHES.large_bufctls);
                 slist_init(&ctl->slist);
                 slist_insert(&slab->free_buffers, &ctl->slist);

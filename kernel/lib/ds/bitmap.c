@@ -111,7 +111,7 @@ void bitmap_resize(struct bitmap *bitmap, size_t new_length_bits)
         bitmap->length = new_length_bits;
         bitmap->sets_count = div_ceil(new_length_bits, BITS_IN_SET);
 
-        int64_t sets_count_diff = bitmap->sets_count - old_sets_count;
+        size_t sets_count_diff = bitmap->sets_count - old_sets_count;
         if (sets_count_diff > 0) {
                 kmemset(bitmap->bitsets + old_sets_count, 0x00, sets_count_diff);
         }
