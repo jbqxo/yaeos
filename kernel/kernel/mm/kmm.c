@@ -435,7 +435,7 @@ void kmm_cache_init(struct kmm_cache *restrict cache, const char *name, size_t s
         slist_init(&cache->slabs_full);
 }
 
-void kmm_cache_register(struct kmm_cache *cache)
+static void kmm_cache_register(struct kmm_cache *cache)
 {
         slist_insert(&ALLOCATED_CACHES_HEAD, &cache->sys_caches);
 }

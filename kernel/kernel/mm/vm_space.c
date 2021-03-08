@@ -8,7 +8,7 @@
 
 #include <stddef.h>
 
-void *vm_space_find_gap(struct vm_space *space,
+void *vm_space_find_gap(struct vm_space *space, size_t *result_len,
                         bool (*predicate)(void *base, size_t len, void *data), void *pred_data)
 {
         kassert(space != NULL);
@@ -22,8 +22,12 @@ void *vm_space_find_gap(struct vm_space *space,
                 uintptr_t current_base = next_after_last_area_end;
                 size_t current_length = (uintptr_t)a->base - current_base;
 
+                kassert(check_align(current_base, PLATFORM_PAGE_SIZE));
+                kassert(check_align(current_length, PLATFORM_PAGE_SIZE));
+
                 bool hit = predicate((void *)current_base, current_length, pred_data);
                 if (hit) {
+                        *result_len = current_length;
                         return ((void *)current_base);
                 }
 
@@ -35,9 +39,11 @@ void *vm_space_find_gap(struct vm_space *space,
 
         bool hit = predicate((void *)next_after_last_area_end, length_til_space_end, pred_data);
         if (hit) {
+                *result_len = length_til_space_end;
                 return ((void *)next_after_last_area_end);
         }
 
+        *result_len = 0;
         return (NULL);
 }
 
@@ -55,6 +61,8 @@ void vm_space_init(struct vm_space *space, phys_addr_t root_pdir, uintptr_t offs
 void vm_space_append_area(struct vm_space *space, struct vm_area *area)
 {
         kassert(space != NULL);
+
+        kassert(space->offset <= (uintptr_t)area->base);
 
         struct rbtree_node *left_neigh_node =
                 rbtree_search_max(&space->rb_areas, area, vm_area_rbtcmpfn);

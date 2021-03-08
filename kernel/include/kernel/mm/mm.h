@@ -40,10 +40,6 @@ struct mm_zone {
 
 struct mm_zone *mm_zone_create(phys_addr_t start, size_t length, struct vm_space *kernel_vmspace);
 
-void mm_zone_register(struct mm_zone *);
-
-struct mm_zone *mm_zone_new(void);
-
 struct mm_page *mm_alloc_page_from(struct mm_zone *zone);
 
 struct mm_page *mm_alloc_page(void);

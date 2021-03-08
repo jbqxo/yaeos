@@ -10,7 +10,7 @@
 /**
  * @brief Return the nearest address that is bigger than the address and fit the alignment.
  */
-static inline uintptr_t align_roundup(uintptr_t from, uintptr_t alignment)
+static inline uintptr_t align_roundup(uintptr_t from, size_t alignment)
 {
         if (alignment == 0) {
                 return (from);
@@ -21,10 +21,12 @@ static inline uintptr_t align_roundup(uintptr_t from, uintptr_t alignment)
         return (from);
 }
 
+#define align_roundupptr(FROM, ALIGN) (void *)align_roundup((uintptr_t)(FROM), (ALIGN))
+
 /**
  * @brief Return the nearest address that is smaller than the address and fit the alignment.
  */
-static inline uintptr_t align_rounddown(uintptr_t from, uintptr_t alignment)
+static inline uintptr_t align_rounddown(uintptr_t from, size_t alignment)
 {
         if (alignment == 0) {
                 return (from);
@@ -33,6 +35,8 @@ static inline uintptr_t align_rounddown(uintptr_t from, uintptr_t alignment)
         from &= -alignment;
         return (from);
 }
+
+#define align_rounddownptr(FROM, ALIGN) (void *)align_rounddown((uintptr_t)(FROM), (ALIGN))
 
 static inline bool check_align(uintptr_t value, uintptr_t alignment)
 {

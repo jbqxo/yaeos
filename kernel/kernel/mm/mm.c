@@ -2,7 +2,6 @@
 
 #include "kernel/kernel.h"
 #include "kernel/klog.h"
-#include "kernel/mm/kmm.h"
 #include "kernel/platform_consts.h"
 
 #include "lib/align.h"
@@ -10,20 +9,17 @@
 #include "lib/cstd/string.h"
 #include "lib/mm/linear.h"
 
-static struct kmm_cache ZONES_CACHE;
-
 static struct slist_ref MM_ZONES;
 
 void mm_init(void)
 {
         slist_init(&MM_ZONES);
-        kmm_cache_init(&ZONES_CACHE, "mm_zones", sizeof(struct mm_zone), 0, 0, NULL, NULL);
-        kmm_cache_register(&ZONES_CACHE);
 }
 
-struct mm_zone *mm_zone_new(void)
+static void mm_zone_register(struct mm_zone *zone)
 {
-        return (kmm_cache_alloc(&ZONES_CACHE));
+        kassert(zone != NULL);
+        slist_insert(&MM_ZONES, &zone->sys_zones);
 }
 
 static struct linear_alloc *bootstrap_zone_alloc(void *virt_start, const size_t length)
@@ -82,8 +78,9 @@ struct mm_zone *mm_zone_create(void *phys_start, size_t length, struct vm_space 
         linear_forbid_further_alloc(zone->alloc);
 
         /* The area should cover only the information required for maintaining a zone. */
-        zone->info_area.length =
-                align_roundup(linear_alloc_occupied(zone->alloc), PLATFORM_PAGE_SIZE);
+        size_t zone_area_len = linear_alloc_occupied(zone->alloc);
+        zone_area_len = align_roundup(zone_area_len, PLATFORM_PAGE_SIZE);
+        zone->info_area.length = zone_area_len;
 
         for (size_t i = 0; i < free_pages; i++) {
                 kassert(i * PLATFORM_PAGE_SIZE <= zone->length);
@@ -101,6 +98,8 @@ struct mm_zone *mm_zone_create(void *phys_start, size_t length, struct vm_space 
         }
 
         zone->pages_count = free_pages - used_pages;
+        mm_zone_register(zone);
+
         return (zone);
 }
 
@@ -110,12 +109,6 @@ void mm_page_init_free(struct mm_page *p, void *phys_addr)
 
         p->paddr = phys_addr;
         p->state = PAGESTATE_FREE;
-}
-
-void mm_zone_register(struct mm_zone *zone)
-{
-        kassert(zone != NULL);
-        slist_insert(&MM_ZONES, &zone->sys_zones);
 }
 
 struct mm_page *mm_alloc_page_from(struct mm_zone *zone)

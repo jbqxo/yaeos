@@ -45,7 +45,6 @@ void kmm_cache_trim_all(void);
 
 void kmm_cache_init(struct kmm_cache *restrict cache, const char *name, size_t size, size_t align,
                     unsigned flags, void (*ctor)(void *), void (*dtor)(void *));
-void kmm_cache_register(struct kmm_cache *cache);
 void kmm_cache_trim(struct kmm_cache *cache);
 
 /**

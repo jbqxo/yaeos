@@ -44,7 +44,7 @@ static void init_kernel_vmspace(void)
                 kassert(check_align(len, PLATFORM_PAGE_SIZE));
 
                 vm_area_init(a, (void *)start, len, &CURRENT_KERNEL);
-                a->ops.handle_pg_fault = vm_pgfault_handle_default;
+                a->ops.handle_pg_fault = vm_pgfault_handle_panic;
                 vm_space_append_area(&CURRENT_KERNEL, a);
         }
 }
@@ -57,8 +57,7 @@ static void register_zone_for_mem(void *base, size_t len)
         chunk_end = align_rounddown(chunk_end, PLATFORM_PAGE_SIZE);
 
         const size_t chunk_len = chunk_end - chunk_base;
-        struct mm_zone *zone = mm_zone_create((void *)chunk_base, chunk_len, &CURRENT_KERNEL);
-        mm_zone_register(zone);
+        mm_zone_create((void *)chunk_base, chunk_len, &CURRENT_KERNEL);
 }
 
 static void register_mem_zones(struct resource *r)

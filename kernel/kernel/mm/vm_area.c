@@ -56,8 +56,7 @@ int vm_area_rbtcmpfn_area_to_addr(const void *area, const void *addr)
         return (-1);
 }
 
-void vm_area_init(struct vm_area *area, virt_addr_t base, size_t length,
-                  const struct vm_space *owner)
+void vm_area_init(struct vm_area *area, virt_addr_t base, size_t length, struct vm_space *owner)
 {
         kassert(area != NULL);
         kassert(check_align((uintptr_t)base, PLATFORM_PAGE_SIZE));

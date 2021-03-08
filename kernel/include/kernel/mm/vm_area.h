@@ -24,7 +24,7 @@ struct vm_area {
 
         struct slist_ref sorted_areas; /**< Sorted list of areas in an address space. */
         struct rbtree_node rb_areas;   /**< RBT of areas in an address space. */
-        const struct vm_space *owner;
+        struct vm_space *owner;
 
         struct vm_area_ops {
                 void (*handle_pg_fault)(struct vm_area *area, void *addr);
@@ -34,7 +34,7 @@ struct vm_area {
         void *data;
 };
 
-void vm_area_init(struct vm_area *area, virt_addr_t base, size_t length, const struct vm_space *owner);
+void vm_area_init(struct vm_area *area, virt_addr_t base, size_t length, struct vm_space *owner);
 
 /**
  * @brief Used as a comparison function to search addresses inside of Red-Black Tree.

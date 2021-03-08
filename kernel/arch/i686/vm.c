@@ -175,7 +175,7 @@ static struct i686_vm_pge *get_pge_for_vaddr(void const *vaddr)
         return (&dir->entries[pte_ndx]);
 }
 
-void *vm_arch_get_phys_page(void const *virt_page)
+void *vm_arch_resolve_phys_page(void const *virt_page)
 {
         struct i686_vm_pge *e = get_pge_for_vaddr(virt_page);
 
