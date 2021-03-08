@@ -38,10 +38,18 @@ struct mm_zone {
         struct slist_ref sys_zones;
 };
 
+/**
+ * @brief Creates a memory zone in the specified physicall space.
+ *
+ * It also populates the kernel vmspace with vmareas required for management.
+ */
 struct mm_zone *mm_zone_create(phys_addr_t start, size_t length, struct vm_space *kernel_vmspace);
 
 struct mm_page *mm_alloc_page_from(struct mm_zone *zone);
 
+/**
+ * @brief Allocate a page from any registered zone.
+ */
 struct mm_page *mm_alloc_page(void);
 
 struct mm_page *mm_get_page_by_paddr(phys_addr_t addr);

@@ -50,7 +50,7 @@ int vm_area_rbtcmpfn_area_to_addr(const void *area, const void *vaddr);
 int vm_area_rbtcmpfn(const void *area_x, const void *area_y);
 
 /**
- * @brief Registers a page within the area.
+ * @brief Registers the page within the area.
  * @page_base Desired page location. Could be NULL; in this case it'll be chosen automatically.
  * @return A pointer to the allocated page or NULL on fail.
  * */
