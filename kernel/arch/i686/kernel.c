@@ -5,13 +5,14 @@
 #include "arch_i686/exceptions.h"
 #include "arch_i686/intr.h"
 #include "arch_i686/kernel.h"
-#include "arch_i686/resources.h"
+#include "arch_i686/platform_resources.h"
 #include "arch_i686/vm.h"
 
 #include "kernel/kernel.h"
 #include "kernel/klog.h"
 #include "kernel/mm/addr.h"
 #include "kernel/platform_consts.h"
+#include "kernel/resources.h"
 
 #include "lib/cppdefs.h"
 
@@ -65,6 +66,7 @@ void i686_init(multiboot_info_t *info, uint32_t magic)
         I686_INFO.multiboot = addr_to_high(info);
         patch_multiboot_info(I686_INFO.multiboot);
 
+        resources_init();
         i686_register_resources();
 
         kernel_init();

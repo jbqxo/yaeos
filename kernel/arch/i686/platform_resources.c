@@ -1,12 +1,12 @@
-#include "arch_i686/resources.h"
+#include "kernel/resources.h"
 
 #include "arch_i686/kernel.h"
+#include "arch_i686/platform_resources.h"
 
 #include "kernel/kernel.h"
 #include "kernel/klog.h"
 #include "kernel/mm/addr.h"
 #include "kernel/platform_consts.h"
-#include "kernel/resources.h"
 
 #include "lib/align.h"
 #include "lib/cppdefs.h"
@@ -128,23 +128,22 @@ static void register_mem_region(uintptr_t start, uintptr_t end, uint32_t type __
                 return;
         }
 
-        struct resource r = {
-                .device_id = "platform",
-                .type = RESOURCE_TYPE_MEMORY,
-                .data.mem_reg.base = (void *)start,
-                /* ... if we can address some part of the chunk, cut remainders out. */
-                .data.mem_reg.len = MIN(length, MAX_ADDR - start),
-        };
-        resources_register_res(r);
+        union resource_data d = { .mem_reg = {
+                                          .base = (void *)start,
+                                          /* ... if we can address some part of the chunk,
+                                           * cut remainders out. */
+                                          .len = MIN(length, MAX_ADDR - start),
+                                  } };
+        resources_register("platform", "memory", RESOURCE_TYPE_MEMORY, d);
 }
 
 static void register_bios_vga(void)
 {
-        struct resource r = {
-                .device_id = "video",
-                .type = RESOURCE_TYPE_DEV_BUFFER,
-        };
-        resources_register_res(r);
+        union resource_data d = { .dev_buffer = {
+                                          .base = (void *)0xA0000,
+                                          .len = 128 * 1024,
+                                  } };
+        resources_register("platform", "video", RESOURCE_TYPE_DEV_BUFFER, d);
 }
 
 void i686_register_resources(void)

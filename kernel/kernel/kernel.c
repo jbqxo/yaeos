@@ -60,13 +60,16 @@ static void register_zone_for_mem(void *base, size_t len)
         mm_zone_create((void *)chunk_base, chunk_len, &CURRENT_KERNEL);
 }
 
-static void register_mem_zones(struct resource *r)
+static void register_mem_zones(void)
 {
-        if (r->type != RESOURCE_TYPE_MEMORY) {
-                return;
+        while (true) {
+                union resource_owner owner = { .state = RES_OWNER_KERNEL };
+                struct resource *r = resources_claim_by_id("platform", "memory", owner);
+                if (r == NULL) {
+                        break;
+                }
+                register_zone_for_mem(r->data.mem_reg.base, r->data.mem_reg.len);
         }
-
-        register_zone_for_mem(r->data.mem_reg.base, r->data.mem_reg.len);
 }
 
 static int conwrite(const char *msg, size_t len)
@@ -99,7 +102,7 @@ __noreturn void kernel_init(void)
 
         init_kernel_vmspace();
         mm_init();
-        resources_iter(register_mem_zones);
+        register_mem_zones();
         kheap_init(&CURRENT_KERNEL);
 
         kmm_init(kheap_alloc_page, kheap_free_page);
