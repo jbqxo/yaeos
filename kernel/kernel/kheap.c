@@ -138,6 +138,9 @@ static void chunk_unregister_page(struct vm_area *chunk, void *page_addr)
         data->free_space += PLATFORM_PAGE_SIZE;
 
         buddy_free(&data->buddy, page_ndx, 0);
+        /* Return the page to MM. */
+        void *phys_addr = vm_arch_resolve_phys_page(chunk->owner->root_dir, page_addr);
+        mm_free_page(phys_addr);
 }
 
 static struct vm_area_ops HEAP_OPS = {

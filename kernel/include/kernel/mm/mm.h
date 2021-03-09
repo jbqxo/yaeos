@@ -54,6 +54,8 @@ struct mm_page *mm_alloc_page(void);
 
 struct mm_page *mm_get_page_by_paddr(phys_addr_t addr);
 
+void mm_free_page(phys_addr_t addr);
+
 void mm_init(void);
 
 #endif /* _KERNEL_MM_H_ */

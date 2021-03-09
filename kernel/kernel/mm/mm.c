@@ -144,9 +144,9 @@ struct mm_page *mm_alloc_page(void)
         return (p);
 }
 
-struct mm_page *mm_get_page_by_paddr(void *phys_addr)
+static struct mm_zone *find_zone(phys_addr_t addr)
 {
-        uintptr_t paddr = (uintptr_t)phys_addr;
+        uintptr_t paddr = (uintptr_t)addr;
         struct mm_zone *zone = NULL;
         SLIST_FOREACH (it, slist_next(&MM_ZONES)) {
                 struct mm_zone *z = container_of(it, struct mm_zone, sys_zones);
@@ -159,22 +159,52 @@ struct mm_page *mm_get_page_by_paddr(void *phys_addr)
                 }
         }
 
+        return (zone);
+}
+
+static size_t get_page_ndx(struct mm_zone *zone, phys_addr_t addr)
+{
+        uintptr_t p = (uintptr_t)addr;
+
+        p &= align_rounddown(p, PLATFORM_PAGE_SIZE);
+        p -= (uintptr_t)zone->start;
+        p /= PLATFORM_PAGE_SIZE;
+
+        kassert(p < zone->pages_count);
+
+        return (p);
+}
+
+struct mm_page *mm_get_page_by_paddr(void *phys_addr)
+{
+        struct mm_zone *zone = find_zone(phys_addr);
+
         if (__unlikely(zone == NULL)) {
                 /* Passed a virtual address?
                  * What a silly person. */
                 return (NULL);
         }
 
-        paddr &= -PLATFORM_PAGE_SIZE;
-        paddr -= (uintptr_t)zone->start;
-        paddr /= PLATFORM_PAGE_SIZE;
-        size_t page_ndx = paddr;
+        size_t const page_ndx = get_page_ndx(zone, phys_addr);
 
-        kassert(page_ndx < zone->pages_count);
         kassert(({
                 struct mm_page *page = &zone->pages[page_ndx];
                 page->paddr == (void *)((uintptr_t)phys_addr & -PLATFORM_PAGE_SIZE);
         }));
 
         return (&zone->pages[page_ndx]);
+}
+
+void mm_free_page(phys_addr_t addr)
+{
+        struct mm_zone *zone = find_zone(addr);
+        kassert(zone != NULL);
+
+        size_t const page_ndx = get_page_ndx(zone, addr);
+
+        kassert(!buddy_is_free(zone->buddym, page_ndx));
+        kassert(zone->pages[page_ndx].state == PAGESTATE_OCCUPIED);
+
+        buddy_free(zone->buddym, page_ndx, 0);
+        zone->pages[page_ndx].state = PAGESTATE_FREE;
 }
