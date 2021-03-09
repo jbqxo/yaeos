@@ -95,7 +95,6 @@ __noinline void setup_boot_paging(void)
         struct i686_vm_pd *pt = TO_LOW(&boot_paging_pt);
 
         i686_vm_setup_recursive_mapping(pd, pd);
-        i686_vm_setup_recursive_mapping(pt, pt);
 
         /* Identity mapping. */
         struct i686_vm_pge *pde_low = i686_vm_get_pge(I686VM_PGLVL_DIR, pd, 0x0);

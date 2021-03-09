@@ -48,7 +48,7 @@ __const void *vm_arch_get_early_pgroot(void);
 /**
  * @brief Resolve the virtual address to it's physicall address *from it's vmspace*.
  */
-void *vm_arch_resolve_phys_page(void const *virt_page);
+void *vm_arch_resolve_phys_page(void *tree_root, void const *virt_page);
 
 /**
  * @brief Map the virtual address to the physical address for the given page tree.

@@ -14,7 +14,6 @@ enum vm_flags {
 };
 
 /**
- * Similar to the same entity in the Linux kernel.
  * Describes properties of those *virtual* pages that are located in the area's space.
  */
 struct vm_area {

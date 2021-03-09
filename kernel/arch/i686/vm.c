@@ -22,6 +22,8 @@
 
 #define PTE_MASK (1023U << 12)
 #define PDE_MASK (1023U << 22)
+#define EMERGENCY_DIR \
+        ((struct i686_vm_pd *)((I686VM_PD_RECURSIVE_NDX << 22) | (I686VM_PD_EMERGENCY_NDX << 12)))
 
 void vm_arch_iter_reserved_vaddresses(void (*fn)(void const *addr, size_t len, void *data),
                                       void *data)
@@ -29,17 +31,6 @@ void vm_arch_iter_reserved_vaddresses(void (*fn)(void const *addr, size_t len, v
         /* Reserved PD entries. */
         fn(I686VM_PD_RECURSIVE_ADDR, PLATFORM_PAGE_SIZE, data);
         fn(I686VM_PD_EMERGENCY_ADDR, PLATFORM_PAGE_SIZE, data);
-
-        /* Page Tables recursive mappings. */
-        size_t page_directories = PLATFORM_PAGEDIR_PAGES;
-        /* We've already reserved the whole Top Entry in the directory.
-         * Note, page tables don't have emergency entries, only recursive. */
-        page_directories -= 1;
-
-        for (size_t i = 0; i < page_directories; i++) {
-                uintptr_t start = (i << 22) | PTE_MASK;
-                fn((void *)start, PLATFORM_PAGE_SIZE, data);
-        }
 }
 
 bool vm_arch_is_range_valid(void const *base, size_t len)
@@ -50,15 +41,6 @@ bool vm_arch_is_range_valid(void const *base, size_t len)
         uintptr_t const pd_reserve_start = (I686VM_PD_LAST_VALID_PAGE + 1) << 22;
 
         if ((base_addr >= pd_reserve_start) || (end_addr >= pd_reserve_start)) {
-                return (false);
-        }
-
-        /* Check for overlaps with Page Table's recursive mappings. */
-        if (((base_addr & PTE_MASK) == PTE_MASK) || ((end_addr & PTE_MASK) == PTE_MASK)) {
-                return (false);
-        }
-
-        if (end_addr - base_addr >= PTE_MASK) {
                 return (false);
         }
 
@@ -165,22 +147,48 @@ void i686_vm_setup_recursive_mapping(struct i686_vm_pd *dir_actual, void *dir_pa
         e->dir.flags |= I686VM_DIR_FLAG_RW;
 }
 
-static struct i686_vm_pge *get_pge_for_vaddr(void const *vaddr)
+/* Access to the PGE will be performed through the emergency entry.
+ * As such, when you're done, you MUST call the free_emergency_entry() function.
+ * Also, create_new_dir() uses emergency entry too, so...
+ * TODO: Add locks to the emergency page directory entry. */
+static struct i686_vm_pge *get_pge_for_vaddr(void *tree_root, void const *vaddr)
 {
-        size_t const pte_ndx = get_pte_ndx(vaddr);
-        /* Use the recursive mapping at the end of the directory to get the address. */
-        struct i686_vm_pd *dir = (void *)(((uintptr_t)vaddr | 0x003FF000U) & 0xFFFFF000U);
-        kassert(properly_aligned(dir));
+        struct i686_vm_pd *root_dir = tree_root;
+        struct i686_vm_pge *emergency = &root_dir->emergency;
 
-        return (&dir->entries[pte_ndx]);
+        kassert(!emergency->any.is_present);
+
+        struct i686_vm_pge *pge_root = i686_vm_get_pge(I686VM_PGLVL_DIR, root_dir, vaddr);
+        i686_vm_pge_set_addr(emergency, i686_vm_pge_get_addr(pge_root));
+        emergency->any.is_present = true;
+        emergency->dir.flags |= I686VM_DIR_FLAG_RW;
+
+        barrier_compiler();
+        struct i686_vm_pge *pge_table = i686_vm_get_pge(I686VM_PGLVL_TABLE, EMERGENCY_DIR, vaddr);
+
+        return (pge_table);
 }
 
-void *vm_arch_resolve_phys_page(void const *virt_page)
+static void free_emergency_entry(void *tree_root)
 {
-        struct i686_vm_pge *e = get_pge_for_vaddr(virt_page);
+        struct i686_vm_pd *root_dir = tree_root;
+        struct i686_vm_pge *emergency = &root_dir->emergency;
 
-        kassert(e->any.is_present);
-        return (i686_vm_pge_get_addr(e));
+        kassert(emergency->any.is_present);
+
+        emergency->any.is_present = false;
+        i686_vm_tlb_invlpg(EMERGENCY_DIR);
+}
+
+void *vm_arch_resolve_phys_page(void *tree_root, void const *virt_page)
+{
+        struct i686_vm_pge *e = get_pge_for_vaddr(tree_root, virt_page);
+
+        void *phys_addr = i686_vm_pge_get_addr(e);
+
+        free_emergency_entry(tree_root);
+
+        return (phys_addr);
 }
 
 void i686_vm_pg_fault_handler(struct intr_ctx *ctx __unused)
@@ -215,20 +223,19 @@ static void *create_new_dir(struct i686_vm_pd *root_pd)
         struct mm_page *page = mm_alloc_page();
 
         struct i686_vm_pge *e = &root_pd->emergency;
+        kassert(!e->any.is_present);
+
         i686_vm_pge_set_addr(e, page->paddr);
         e->any.is_present = true;
         e->dir.flags |= I686VM_DIR_FLAG_RW;
 
-        void *const tmp_map_dir =
-                (void *)((I686VM_PD_RECURSIVE_NDX << 22) | (I686VM_PD_EMERGENCY_NDX << 12));
 
         barrier_compiler();
 
-        kmemset(tmp_map_dir, 0x0, PLATFORM_PAGE_SIZE);
-
-        i686_vm_setup_recursive_mapping(tmp_map_dir, page->paddr);
+        kmemset(EMERGENCY_DIR, 0x0, PLATFORM_PAGE_SIZE);
 
         e->any.is_present = false;
+        i686_vm_tlb_invlpg(EMERGENCY_DIR);
 
         return (page->paddr);
 }
@@ -246,10 +253,12 @@ void vm_arch_pt_map(void *tree_root, const void *phys_addr, const void *at_virt_
                 pde->dir.is_present = true;
         }
 
-        struct i686_vm_pge *pte = get_pge_for_vaddr(at_virt_addr);
+        struct i686_vm_pge *pte = get_pge_for_vaddr(tree_root, at_virt_addr);
         kassert(!pte->any.is_present);
 
+        i686_vm_pge_set_addr(pte, phys_addr);
         pte->table.flags = i686_vm_to_table_flags(flags);
         pte->any.is_present = true;
-        i686_vm_pge_set_addr(pte, phys_addr);
+
+        free_emergency_entry(tree_root);
 }
