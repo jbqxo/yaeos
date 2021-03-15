@@ -26,11 +26,6 @@ kernel: | build_dir
 	@$(MAKE) -C $(DIR_DEPS) extract-offsets
 	@$(MAKE) -C $(DIR_KERNEL)
 
-compile_commands:
-	$(call log, [build] make compile commands entries)
-	@$(MAKE) -C $(DIR_DEPS) extract-offsets
-	@$(MAKE) -C $(DIR_KERNEL) compile_commands
-
 # Add unity headers
 tests: | build_dir
 	$(call log, [build] make tests)

@@ -3,7 +3,7 @@ ROOT := $(realpath $(CWD)/..)
 include $(ROOT)/confmk/common.mk
 .SECONDEXPANSION:
 .SUFFIXES:
-.PHONY: all clean tests prefix_dirs install-headers compile_commands tests_dirs offsets
+.PHONY: all clean tests prefix_dirs install-headers tests_dirs offsets
 
 DIR_ARCH := arch/$(ARCH)
 
@@ -79,16 +79,6 @@ $(BUILDDIR_KERNEL)/%.c.o: $(CWD)/%.c | prefix_dirs
 $(BUILDDIR_KERNEL)/%.asm.o: $(CWD)/%.asm offsets | prefix_dirs
 	$(info [kernel] AS $@)
 	@$(AS) $(CFLAGS_COMPLETE) $(CPPFLAGS_COMPLETE) $< -o $@
-
-###### Compilation commands rules
-
-compile_commands: $(addprefix $(BUILDDIR_KERNEL)/, \
-    $(filter-out %.asm.json, \
-    $(FILES_OBJ:.o=.json) $(FILES_TESTS_OBJ:.o=.json)))
-
-$(BUILDDIR_KERNEL)/%.c.json: $(CWD)/%.c | prefix_dirs
-	$(info [kernel] MJ $@)
-	@$(CC) $(CFLAGS_COMPLETE) $(CPPFLAGS_COMPLETE) -MJ $@ -c $< -o /dev/null
 
 ###### Tests rules
 
