@@ -38,7 +38,7 @@ OFFSETS_HEADERS := $(addprefix $(BUILDDIR_KERNEL)/gen_include/offsets/, $(STRIPP
 # Generate options to ignore all architectures except for current TARGET
 FIND_IGNORE_ARCHS :=\
     $(patsubst %, -not \( -path % -prune \), \
-    $(shell $(FIND) * -type d -path 'arch/*' -prune | $(GREP) -v $(ARCH)))
+    $(shell $(FIND) * -type d \( -path 'arch/*' -or -path 'modules/*' \) -prune | $(GREP) -v $(ARCH)))
 FILES_OBJ :=\
     $(filter-out $(FILES_TESTS_OBJ) test_fakes/%.c.o, \
     $(addsuffix .o, \
@@ -70,7 +70,7 @@ prefix_dirs:
 $(BUILDDIR_KERNEL)/kernel.bin: LDFLAGS_COMPLETE += -nostdlib
 $(BUILDDIR_KERNEL)/kernel.bin: $$(FILES_OBJ) $(DIR_ARCH)/linker.ld
 	$(info [kernel] LD $@)
-	@$(LD) -T $(DIR_ARCH)/linker.ld $(FILES_OBJ) $(LDFLAGS_COMPLETE) -o $@
+	@$(LD) -T $(DIR_ARCH)/linker.ld $(FILES_OBJ) $(LDFLAGS_COMPLETE) $(CFLAGS_COMPLETE) -o $@
 
 $(BUILDDIR_KERNEL)/%.c.o: $(CWD)/%.c | prefix_dirs
 	$(info [kernel] CC $@)
