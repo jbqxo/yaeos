@@ -262,3 +262,14 @@ void vm_arch_pt_map(void *tree_root, const void *phys_addr, const void *at_virt_
 
         free_emergency_entry(tree_root);
 }
+
+void vm_arch_pt_unmap(void *tree_root, void *virt_addr)
+{
+        struct i686_vm_pge *pte = get_pge_for_vaddr(tree_root, virt_addr);
+        kassert(pte->any.is_present);
+
+        pte->any.is_present = false;
+        i686_vm_tlb_invlpg(virt_addr);
+
+        free_emergency_entry(tree_root);
+}

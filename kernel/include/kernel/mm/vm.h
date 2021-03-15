@@ -56,4 +56,9 @@ void *vm_arch_resolve_phys_page(void *tree_root, void const *virt_page);
 void vm_arch_pt_map(void *tree_root, const void *phys_addr, const void *at_virt_addr,
                     enum vm_flags flags);
 
+/**
+ * @brief Remove mapping for the virtul address.
+ */
+void vm_arch_pt_unmap(void *tree_root, void *virt_addr);
+
 #endif /* _KERNEL_MM_VM_H */
