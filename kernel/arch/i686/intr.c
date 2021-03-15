@@ -37,10 +37,8 @@ static intr_handler_fn DEFAULT_HANDLER = NULL;
 
 static void pic_remap(uint8_t master_offset, uint8_t slave_offset)
 {
-        uint8_t master_mask;
-        uint8_t slave_mask;
-        ioread(MASTER_DATA, master_mask);
-        ioread(SLAVE_DATA, slave_mask);
+        uint8_t master_mask = ioread(MASTER_DATA, typeof(master_mask));
+        uint8_t slave_mask = ioread(SLAVE_DATA, typeof(slave_mask));
 
         /* ICW1 */
         uint8_t icw1 = ICW1_INIT | ICW1_IC4;

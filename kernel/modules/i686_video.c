@@ -1,20 +1,25 @@
 #include "kernel/console.h"
 #include "kernel/kernel.h"
+#include "kernel/klog.h"
 #include "kernel/mm/addr.h"
+#include "kernel/mm/dev.h"
 #include "kernel/modules.h"
+#include "kernel/resources.h"
 
 #include "lib/cppdefs.h"
 #include "lib/cstd/ctype.h"
 #include "lib/cstd/string.h"
 #include "lib/utils.h"
+#include "lib/elflist.h"
 
 #include <stddef.h>
 #include <stdint.h>
 
-#define VIDEO_WIDTH  80
-#define VIDEO_HEIGHT 25
+#define VIDEO_WIDTH        (UINT8_C(80))
+#define VIDEO_HEIGHT       (UINT8_C(25))
+#define VGA3_BUFFER_OFFSET ((uintptr_t)0x18000)
 
-static struct {
+static struct i686_video_state {
         volatile uint16_t *buffer;
         uint_fast16_t row;
         uint_fast16_t col;
@@ -52,7 +57,7 @@ static inline video_char_color video_mix_color(enum video_color fg, enum video_c
 
 static inline uint16_t video_char(unsigned char uc, video_char_color color)
 {
-        return ((uint16_t)uc | (uint16_t)(color << 8));
+        return ((uint16_t)((color << 8) | uc));
 }
 
 static void write_char(uint8_t c, video_char_color color, uint_fast16_t x, uint_fast16_t y)
@@ -86,26 +91,29 @@ static void break_line(void)
         }
 }
 
-void video_clear(struct console *c __unused)
+static void video_clear(struct console *c)
 {
+        struct i686_video_state *s = c->data;
+
         for (uint_fast16_t y = 0; y < VIDEO_HEIGHT; y++) {
                 for (uint_fast16_t x = 0; x < VIDEO_WIDTH; x++) {
-                        write_char(' ', STATE.color, x, y);
+                        write_char(' ', s->color, x, y);
                 }
         }
 }
 
-void video_write(struct console *c __unused, const char *restrict str, size_t size)
+static void video_write(struct console *restrict c, const char *str, size_t size)
 {
+        struct i686_video_state *state = c->data;
         while (size > 0) {
                 const char *nl_pos = kstrchr(str, '\n');
-                size_t w = MIN(size, VIDEO_WIDTH - STATE.col);
+                size_t w = MIN(size, VIDEO_WIDTH - state->col);
                 if (nl_pos) {
-                        w = MIN(w, nl_pos - str);
+                        w = MIN(w, (uintptr_t)nl_pos - (uintptr_t)str);
                 }
                 for (size_t i = 0; i < w; i++, str++) {
-                        write_char(*str, STATE.color, STATE.col, STATE.row);
-                        STATE.col++;
+                        write_char(*str, state->color, state->col, state->row);
+                        state->col++;
                 }
                 size -= w;
                 if (size != 0) {
@@ -118,13 +126,11 @@ void video_write(struct console *c __unused, const char *restrict str, size_t si
         }
 }
 
-struct console video_console = (struct console)
-{
+static struct console video_console = (struct console){
         .name = "video_console",
-#if 0
-        .write = video_write,
-        .clear = video_clear,
-#endif
+        .ops.write = video_write,
+        .ops.clear = video_clear,
+        .data = &STATE,
 };
 
 static bool video_available(void)
@@ -138,24 +144,30 @@ static bool video_available(void)
 
 static void video_load(void)
 {
+        struct resource *vid = resources_kclaim_by_id("platform", "video");
+        if (__unlikely(NULL == vid)) {
+                LOGF_P("Couldn't find platform video buffer\n");
+        }
+
+        void *vid_mem = kdev_map_resource(vid);
+        if (__unlikely(NULL == vid_mem)) {
+                LOGF_P("Couldn't map video memory in the virtual address space\n");
+        }
+
         STATE.row = 0;
         STATE.col = 0;
         STATE.color = video_mix_color(VIDEO_DEFAULT_FG, VIDEO_DEFAULT_BG);
-#if 0
-        STATE.buffer = VIDEO_BUFFER_ADDR;
+        STATE.buffer = (void *)((uintptr_t)vid_mem + VGA3_BUFFER_OFFSET);
 
-        video_clear(c);
-#endif
+        console_register(&video_console);
 }
 
 static void video_unload(void)
 {
-#if 0
-        video_clear(c);
-#endif
+        kdev_unmap_resource((void *)((uintptr_t)STATE.buffer - VGA3_BUFFER_OFFSET));
 }
 
-struct module i686_video = (struct module){
+static struct module i686_video = (struct module){
         .name = "i686_video",
         .fns = {
                 .available = video_available,
@@ -163,3 +175,4 @@ struct module i686_video = (struct module){
                 .unload = video_unload,
         },
 };
+ELFLIST_NEWDATA(modules, i686_video);
