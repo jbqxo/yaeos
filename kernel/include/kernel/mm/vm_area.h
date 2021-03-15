@@ -11,6 +11,7 @@
 enum vm_flags {
         VM_WRITE = 0x1 << 0,
         VM_USER = 0x1 << 1,
+        VM_CACHE_OFF = 0x1 << 2,
 };
 
 /**

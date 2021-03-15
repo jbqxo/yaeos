@@ -4,6 +4,7 @@
 #include "kernel/console.h"
 #include "kernel/klog.h"
 #include "kernel/mm/addr.h"
+#include "kernel/mm/dev.h"
 #include "kernel/mm/kheap.h"
 #include "kernel/mm/kmalloc.h"
 #include "kernel/mm/kmm.h"
@@ -102,12 +103,15 @@ __noreturn void kernel_init(void)
 
         init_kernel_vmspace();
         mm_init();
+        vm_init();
         register_mem_zones();
         kheap_init(&CURRENT_KERNEL);
-
         kmm_init(kheap_alloc_page, kheap_free_page);
         kmalloc_init(CONF_MALLOC_MIN_POW, CONF_MALLOC_MAX_POW);
         LOGF_I("Kernel Memory Manager is... Up and running\n");
+
+        dev_init();
+        kdev_init(&CURRENT_KERNEL);
 
         modules_init();
         modules_load_available();
