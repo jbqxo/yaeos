@@ -38,8 +38,8 @@ static struct resource *resources_get_new(void)
         return (new);
 }
 
-struct resource *resources_claim_by_id(char const *device_id, char const *resource_id,
-                                       union resource_owner owner)
+static struct resource *claim_by_id(char const *device_id, char const *resource_id,
+                                    union resource_owner owner)
 {
         bool found = false;
         struct slist_ref *cursor = &RESOURCES.free_head;
@@ -72,7 +72,7 @@ struct resource *resources_claim_by_id(char const *device_id, char const *resour
         return (r);
 }
 
-struct resource *resources_claim_by_type(enum resource_type type, union resource_owner owner)
+static struct resource *claim_by_type(enum resource_type type, union resource_owner owner)
 {
         bool found = false;
         struct slist_ref *cursor = &RESOURCES.free_head;
@@ -101,6 +101,31 @@ struct resource *resources_claim_by_type(enum resource_type type, union resource
         r->owner = owner;
 
         return (r);
+}
+
+struct resource *resources_claim_by_id(char const *device_id, char const *resource_id,
+                                       struct module *owner)
+{
+        union resource_owner o = { .module = owner };
+        return (claim_by_id(device_id, resource_id, o));
+}
+
+struct resource *resources_claim_by_type(enum resource_type type, struct module *owner)
+{
+        union resource_owner o = { .module = owner };
+        return (claim_by_type(type, o));
+}
+
+struct resource *resources_kclaim_by_id(char const *device_id, char const *resource_id)
+{
+        union resource_owner o = { .state = RES_OWNER_KERNEL };
+        return (claim_by_id(device_id, resource_id, o));
+}
+
+struct resource *resources_kclaim_by_type(enum resource_type type)
+{
+        union resource_owner o = { .state = RES_OWNER_KERNEL };
+        return (claim_by_type(type, o));
 }
 
 void resources_register(char const *device_id, char const *resource_id, enum resource_type type,

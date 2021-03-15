@@ -64,8 +64,7 @@ static void register_zone_for_mem(void *base, size_t len)
 static void register_mem_zones(void)
 {
         while (true) {
-                union resource_owner owner = { .state = RES_OWNER_KERNEL };
-                struct resource *r = resources_claim_by_id("platform", "memory", owner);
+                struct resource *r = resources_kclaim_by_id("platform", "memory");
                 if (r == NULL) {
                         break;
                 }
