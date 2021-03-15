@@ -50,7 +50,7 @@ struct mm_zone *mm_zone_create(void *phys_start, size_t length, struct vm_space 
         kassert(check_align(area_start, PLATFORM_PAGE_SIZE));
 
         vm_area_init(&tmp_area, (void *)area_start, length, kernel_vmspace);
-        vm_space_append_area(kernel_vmspace, &tmp_area);
+        vm_space_insert_area(kernel_vmspace, &tmp_area);
 
         tmp_area.length = length;
         tmp_area.flags |= VM_WRITE;
@@ -65,7 +65,7 @@ struct mm_zone *mm_zone_create(void *phys_start, size_t length, struct vm_space 
         kmemcpy(&zone->info_area, &tmp_area, sizeof(zone->info_area));
         zone->info_area.rb_areas.data = &zone->info_area;
         vm_space_remove_area(kernel_vmspace, &tmp_area);
-        vm_space_append_area(kernel_vmspace, &zone->info_area);
+        vm_space_insert_area(kernel_vmspace, &zone->info_area);
 
         zone->start = phys_start;
         zone->length = length;

@@ -171,9 +171,9 @@ static void slab_destroy(struct kmm_slab *slab, struct kmm_cache *cache)
                 free_large_buffers(&slab->free_buffers, cache);
                 kmm_cache_free(&CACHES.slabs, slab);
         } else {
-                SLIST_FOREACH (it, slist_next(&slab->free_buffers)) {
-                        union bufctl *b = container_of(it, union bufctl, slist);
-                        if (cache->dtor) {
+                if (cache->dtor) {
+                        SLIST_FOREACH (it, slist_next(&slab->free_buffers)) {
+                                union bufctl *b = container_of(it, union bufctl, slist);
                                 void *mem = bufctl_small_get_mem(&b->small, cache);
                                 cache->dtor(mem);
                         }

@@ -4,6 +4,7 @@
 #include "kernel/mm/vm.h"
 
 #include "lib/ds/slist.h"
+#include "lib/cppdefs.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -74,7 +75,7 @@ void kmm_cache_destroy(struct kmm_cache *);
  *
  * @warning May take some time if there is no free objects.
  */
-void *kmm_cache_alloc(struct kmm_cache *);
+__malloc void *kmm_cache_alloc(struct kmm_cache *);
 
 /**
  * @brief Free given object.

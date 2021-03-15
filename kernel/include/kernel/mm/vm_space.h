@@ -28,7 +28,7 @@ struct vm_space {
  */
 void vm_space_init(struct vm_space *space, phys_addr_t root_pdir, uintptr_t offset);
 
-void vm_space_append_area(struct vm_space *space, struct vm_area *area);
+void vm_space_insert_area(struct vm_space *space, struct vm_area *area);
 
 void vm_space_remove_area(struct vm_space *space, struct vm_area *area);
 

@@ -145,8 +145,8 @@ static void chunk_unregister_page(struct vm_area *chunk, void *page_addr)
 
 static struct vm_area_ops HEAP_OPS = {
         .handle_pg_fault = chunk_pgfault_handler,
-        .register_page = chunk_register_page,
-        .unregister_page = chunk_unregister_page,
+        .register_map = chunk_register_page,
+        .unregister_map = chunk_unregister_page,
 };
 
 static void preregister_invalid_pages(void const *addr, size_t len, void *data)
@@ -210,14 +210,14 @@ static struct vm_area *init_first_chunk(struct vm_space *space)
         vm_space_find_gap(space, &ignore, find_largest, &fld);
 
         char *const start = fld.max_base;
-        const size_t len = fld.max_length - ((uintptr_t)start - (uintptr_t)fld.max_base);
+        const size_t len = MIN(fld.max_length, CONF_HEAP_MAX_CHUNK_SIZE);
         vm_area_init(chunk, start, len, space);
 
         chunk->ops = HEAP_OPS;
         chunk->flags |= HEAP_VM_FLAGS;
         chunk->data = data;
 
-        vm_space_append_area(space, chunk);
+        vm_space_insert_area(space, chunk);
 
         size_t const chunk_pages = len / PLATFORM_PAGE_SIZE;
         size_t const req_space = buddy_predict_req_space(chunk_pages);
@@ -361,7 +361,7 @@ void *kheap_alloc_page(void)
 
         kassert(chunk != NULL);
 
-        return (vm_area_register_page(chunk, NULL));
+        return (vm_area_register_map(chunk, NULL));
 }
 
 void kheap_free_page(void *page)
@@ -381,6 +381,6 @@ void kheap_free_page(void *page)
         }
 
         /* Ensure that the page is related to the chunk. */
-        kassert((uintptr_t)origin->base + origin->length > (uintptr_t)page);
-        vm_area_unregister_page(origin, page);
+        kassert((uintptr_t)origin->base + origin->length - 1 > (uintptr_t)page);
+        vm_area_unregister_map(origin, page);
 }

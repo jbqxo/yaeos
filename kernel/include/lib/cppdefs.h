@@ -17,7 +17,7 @@
 #define __naked               __attribute__((naked))
 #define __pure                __attribute__((pure))
 /* TODO: Add an option to specify an associated free method when GCC 11.0 is released. */
-#define __malloc              __attribute__((malloc))
+#define __malloc              __attribute__((malloc, warn_unused_result))
 #define __alias(target)       __attribute__((alias (target)))
 #define __alloc_align(argpos) __attribute__((alloc_align(argpos)))
 #define __section(target)     __attribute__((__section__(target)))

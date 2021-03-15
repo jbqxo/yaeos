@@ -46,7 +46,7 @@ static void init_kernel_vmspace(void)
 
                 vm_area_init(a, (void *)start, len, &CURRENT_KERNEL);
                 a->ops.handle_pg_fault = vm_pgfault_handle_panic;
-                vm_space_append_area(&CURRENT_KERNEL, a);
+                vm_space_insert_area(&CURRENT_KERNEL, a);
         }
 }
 

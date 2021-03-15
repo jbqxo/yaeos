@@ -27,10 +27,16 @@ void vm_init(void)
         kmm_cache_init(&AREAS_CACHE, "areas", sizeof(struct vm_area), 0, 0, NULL, NULL);
 }
 
-static bool find_atleast(void *base __unused, size_t len, void *data)
+struct find_data {
+        uintptr_t offset;
+        size_t len;
+};
+
+static bool find_with_len_and_offset(void *base, size_t len, void *data)
 {
-        size_t const min_len = (size_t)data;
-        return (len >= min_len);
+        struct find_data const * const d = data;
+
+        return ((uintptr_t)base >= d->offset && len >= d->len);
 }
 
 struct vm_area *vm_new_area_within_space(struct vm_space *space, size_t const min_size,
@@ -41,7 +47,8 @@ struct vm_area *vm_new_area_within_space(struct vm_space *space, size_t const mi
 
         kassert(sizeof(min_size) == sizeof(void *));
         size_t gap_len = 0;
-        virt_addr_t gap_base = vm_space_find_gap(space, &gap_len, find_atleast, (void *)min_size);
+        struct find_data fdata = {.offset = space->offset, .len = min_size};
+        virt_addr_t gap_base = vm_space_find_gap(space, &gap_len, find_with_len_and_offset, &fdata);
 
         size_t const occupy_len = MIN(max_size, gap_len);
 
@@ -51,7 +58,7 @@ struct vm_area *vm_new_area_within_space(struct vm_space *space, size_t const mi
         }
 
         vm_area_init(new_area, gap_base, occupy_len, space);
-        vm_space_append_area(space, new_area);
+        vm_space_insert_area(space, new_area);
 
         return (new_area);
 }

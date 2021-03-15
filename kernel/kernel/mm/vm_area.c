@@ -80,26 +80,22 @@ void vm_area_init(struct vm_area *area, virt_addr_t base, size_t length, struct 
         slist_init(&area->sorted_areas);
 }
 
-void *vm_area_register_page(struct vm_area *area, virt_addr_t *page_base)
+void *vm_area_register_map(struct vm_area *area, void *data)
 {
         kassert(area != NULL);
 
-        if (__unlikely(area->ops.register_page == NULL)) {
+        if (__unlikely(area->ops.register_map == NULL)) {
                 LOGF_P("Tried to register page but register function is undefined!\n");
-                /* Although, the kernel should panic at this point. */
-                return (NULL);
         }
-        return (area->ops.register_page(area, page_base));
+        return (area->ops.register_map(area, data));
 }
 
-void vm_area_unregister_page(struct vm_area *area, virt_addr_t *page_base)
+void vm_area_unregister_map(struct vm_area *area, void *data)
 {
         kassert(area != NULL);
-        kassert(area->ops.unregister_page != NULL);
 
-        if (__unlikely(area->ops.unregister_page == NULL)) {
+        if (__unlikely(area->ops.unregister_map == NULL)) {
                 LOGF_P("Tried to unregister page but register function is undefined!\n");
-                /* Although, the kernel should panic at this point. */
         }
-        return (area->ops.unregister_page(area, page_base));
+        return (area->ops.unregister_map(area, data));
 }

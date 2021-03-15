@@ -1,5 +1,6 @@
 #include "kernel/mm/vm_space.h"
 
+#include "kernel/config.h"
 #include "kernel/mm/vm.h"
 #include "kernel/platform_consts.h"
 
@@ -15,12 +16,12 @@ void *vm_space_find_gap(struct vm_space *space, size_t *result_len,
         kassert(space != NULL);
         kassert(predicate != NULL);
 
-        uintptr_t next_after_last_area_end = space->offset;
+        uintptr_t next_after_last_area = space->offset;
 
         SLIST_FOREACH (it, slist_next(&space->sorted_areas)) {
                 struct vm_area *a = container_of(it, struct vm_area, sorted_areas);
 
-                uintptr_t current_base = next_after_last_area_end;
+                uintptr_t current_base = next_after_last_area;
                 size_t current_length = (uintptr_t)a->base - current_base;
 
                 kassert(check_align(current_base, PLATFORM_PAGE_SIZE));
@@ -32,16 +33,16 @@ void *vm_space_find_gap(struct vm_space *space, size_t *result_len,
                         return ((void *)current_base);
                 }
 
-                next_after_last_area_end = (uintptr_t)a->base + a->length;
+                next_after_last_area = (uintptr_t)a->base + a->length;
         }
 
-        const uintptr_t LAST_AVAILABLE_ADDR = ~0UL;
-        const size_t length_til_space_end = LAST_AVAILABLE_ADDR - next_after_last_area_end + 1;
+        const uintptr_t LAST_AVAILABLE_ADDR = CONF_VM_AVAILABLE_PAGES * PLATFORM_PAGE_SIZE;
+        const size_t length_til_space_end = LAST_AVAILABLE_ADDR - next_after_last_area + 1;
 
-        bool hit = predicate((void *)next_after_last_area_end, length_til_space_end, pred_data);
+        bool hit = predicate((void *)next_after_last_area, length_til_space_end, pred_data);
         if (hit) {
                 *result_len = length_til_space_end;
-                return ((void *)next_after_last_area_end);
+                return ((void *)next_after_last_area);
         }
 
         *result_len = 0;
@@ -59,7 +60,7 @@ void vm_space_init(struct vm_space *space, phys_addr_t root_pdir, uintptr_t offs
         space->offset = offset;
 }
 
-void vm_space_append_area(struct vm_space *space, struct vm_area *area)
+void vm_space_insert_area(struct vm_space *space, struct vm_area *area)
 {
         kassert(space != NULL);
 

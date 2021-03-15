@@ -3,6 +3,7 @@
 
 #include "kernel/mm/addr.h"
 
+#include "lib/cppdefs.h"
 #include "lib/ds/rbtree.h"
 #include "lib/ds/slist.h"
 
@@ -28,8 +29,8 @@ struct vm_area {
 
         struct vm_area_ops {
                 void (*handle_pg_fault)(struct vm_area *area, void *addr);
-                void *(*register_page)(struct vm_area *area, void *page_addr);
-                void (*unregister_page)(struct vm_area *area, void *page_addr);
+                void *(*register_map)(struct vm_area *area, void *arg);
+                void (*unregister_map)(struct vm_area *area, void *arg);
         } ops;
         void *data;
 };
@@ -50,16 +51,14 @@ int vm_area_rbtcmpfn_area_to_addr(const void *area, const void *vaddr);
 int vm_area_rbtcmpfn(const void *area_x, const void *area_y);
 
 /**
- * @brief Registers the page within the area.
- * @page_base Desired page location. Could be NULL; in this case it'll be chosen automatically.
+ * @brief Registers a mapping within the area.
  * @return A pointer to the allocated page or NULL on fail.
  * */
-void *vm_area_register_page(struct vm_area *area, virt_addr_t *page_base);
+void *vm_area_register_map(struct vm_area *area, void *data);
 
 /**
- * @brief Unregisters the page within the area.
- * @page_base Page to free.
+ * @brief Unregisters a mapping within the area.
  * */
-void vm_area_unregister_page(struct vm_area *area, virt_addr_t *page_base);
+void vm_area_unregister_map(struct vm_area *area, void *data);
 
 #endif /* _KERNEL_VM_AREA_H */
