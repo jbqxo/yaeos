@@ -44,7 +44,6 @@ BUILDDIR_DEPS   ?= $(BUILDDIR_BUILD)/$(DIR_DEPS)
 CFLAGS_DEBUG     += -O0 -g
 CFLAGS_RELEASE   += -O3 -flto
 CFLAGS_COMMON    += -std=gnu18 \
-                    -mgeneral-regs-only \
                     -fshort-enums \
                     -funsafe-loop-optimizations \
                     -fstrict-aliasing \
@@ -102,7 +101,7 @@ TR     := tr
 
 SCRIPT_GEN_OFFSET := $(ROOT)/scripts/gen_offsets.py
 
-TARGET_GCC ?= $(CC)
+TARGET_GCC ?= gcc
 GCC_GEN_OFFSET_CMD := $(TARGET_GCC) -S -o /dev/null \
     -fplugin=$(BUILDDIR_DEPS)/extract-offsets/extract_offsets.so \
     -fplugin-arg-extract_offsets-capitalize="true" \

@@ -1,11 +1,20 @@
 # TODO: Tests coverage
-CPPFLAGS_COMMON += -D__i686__ -DUNITY_INCLUDE_PRINT_FORMATTED -Wno-macro-redefined
+CPPFLAGS_COMMON += -D__tests__ -DUNITY_INCLUDE_PRINT_FORMATTED
 
-TARGET_GCC := gcc
-
-CC := clang
+CC := gcc
 LD := $(CC)
 AS := $(CC) -xassembler-with-cpp -c
 AR := ar
 
-ARCH := i686
+CFLAGS_COMMON +=\
+	-fsanitize=address \
+	-fsanitize=pointer-compare \
+	-fsanitize=pointer-subtract \
+	-fsanitize=leak \
+	-fsanitize=undefined \
+	-fsanitize=shift \
+	-fsanitize=bounds \
+	-fsanitize-address-use-after-scope \
+	-fno-omit-frame-pointer
+
+ARCH := tests

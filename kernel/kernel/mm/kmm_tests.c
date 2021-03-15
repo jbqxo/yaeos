@@ -1,15 +1,10 @@
 // UNITY_TEST DEPENDS ON: kernel/kernel/mm/kmm.c
-// UNITY_TEST DEPENDS ON: kernel/lib/mm/pool.c
+// UNITY_TEST DEPENDS ON: kernel/lib/ds/slist.c
 // UNITY_TEST DEPENDS ON: kernel/test_fakes/panic.c
 
 #include "kernel/mm/kmm.h"
 
-#include "kernel/config.h"
-#include "kernel/kernel.h"
-#include "kernel/mm/vm.h"
-
 #include "lib/cppdefs.h"
-#include "lib/platform_consts.h"
 
 #include <assert.h>
 #include <stddef.h>
@@ -18,46 +13,35 @@
 #include <string.h>
 #include <unity.h>
 
-/* TODO Add actual memory assertions. */
-
 #define TESTVAL (0xAB)
 
 #define VMM_MEM_LIMIT (6 * PLATFORM_PAGE_SIZE)
 static size_t VMM_MEM_USAGE = 0;
-struct vmm_space kvm_space = (struct vmm_space){};
 
-struct vmm_mapping *vmm_alloc_pages(struct vmm_space *space, size_t count)
+size_t const PLATFORM_PAGE_SIZE = 4096;
+
+static void *alloc_page(void)
 {
-        size_t s = PLATFORM_PAGE_SIZE * count;
+        size_t const s = PLATFORM_PAGE_SIZE;
         if (VMM_MEM_USAGE + s > VMM_MEM_LIMIT) {
                 return (NULL);
         }
         VMM_MEM_USAGE += s;
 
-        struct vmm_mapping *m = calloc(1, sizeof(*m));
-        m->start = aligned_alloc(PLATFORM_PAGE_SIZE, PLATFORM_PAGE_SIZE * count);
-        return (m);
+        void *mem = aligned_alloc(PLATFORM_PAGE_SIZE, s);
+        return (mem);
 }
 
-void vmm_free_pages(struct vmm_space *space, void *address, size_t count)
+static void free_page(void *mem)
 {
-        TEST_ASSERT_NOT_NULL(address);
+        TEST_ASSERT_NOT_NULL(mem);
         VMM_MEM_USAGE -= PLATFORM_PAGE_SIZE;
-        free(address);
-}
-
-void *vm_mapping_addr(struct vmm_mapping *mapping)
-{
-        if (!mapping) {
-                return (NULL);
-        }
-        return (mapping->start);
+        free(mem);
 }
 
 void setUp(void)
 {
-        kmm_init();
-        VMM_MEM_USAGE = 0;
+        kmm_init(alloc_page, free_page);
 }
 
 void tearDown(void)
@@ -84,7 +68,7 @@ static void small_allocations(void)
         }
         TEST_ASSERT_MESSAGE(allocated > 0, "Couldn't allocate single small object");
 
-        for (int i = 0; i < allocated; i++) {
+        for (size_t i = 0; i < allocated; i++) {
                 small_t *m = (*ptrs)[i];
                 TEST_ASSERT_EQUAL_HEX8_ARRAY(&expected_value, m, sizeof(*m));
 
@@ -117,7 +101,7 @@ static void large_allocations(void)
         }
         TEST_ASSERT_MESSAGE(allocated > 0, "Couldn't allocate single large object");
 
-        for (int i = 0; i < allocated; i++) {
+        for (size_t i = 0; i < allocated; i++) {
                 big_t *m = (*ptrs)[i];
                 TEST_ASSERT_EQUAL_HEX8_ARRAY(&expected_value, m, sizeof(*m));
 
@@ -149,7 +133,7 @@ static void no_leaks(void)
         }
         TEST_ASSERT_MESSAGE(allocated > 0, "Couldn't allocate single small object");
 
-        for (int i = 0; i < allocated; i++) {
+        for (size_t i = 0; i < allocated; i++) {
                 elem_t *m = (*ptrs)[i];
                 TEST_ASSERT_EQUAL_HEX8_ARRAY(&expected_value, m, sizeof(*m));
 
@@ -167,7 +151,7 @@ static void no_leaks(void)
         TEST_ASSERT_EQUAL_INT_MESSAGE(allocated, repeated_alloc,
                                       "Missing elements on a second allocation");
 
-        for (int i = 0; i < repeated_alloc; i++) {
+        for (size_t i = 0; i < repeated_alloc; i++) {
                 elem_t *m = (*ptrs)[i];
                 TEST_ASSERT_EQUAL_HEX8_ARRAY(&expected_value, m, sizeof(*m));
 
@@ -182,19 +166,19 @@ static void memory_aligned(void)
 {
         typedef uint32_t elem_t;
         const size_t required_alignment = 32;
-        const size_t testset_len = 5;
+#define TESTSET_LEN 5
 
-        elem_t *ptrs[testset_len] = { 0 };
+        elem_t *ptrs[TESTSET_LEN] = { 0 };
 
         struct kmm_cache *cache =
                 kmm_cache_create("test_cache", sizeof(elem_t), required_alignment, 0, NULL, NULL);
         TEST_ASSERT(cache);
-        for (int i = 0; i < testset_len; i++) {
+        for (size_t i = 0; i < TESTSET_LEN; i++) {
                 ptrs[i] = kmm_cache_alloc(cache);
-                TEST_ASSERT_EQUAL_INT_MESSAGE(0, ptr2uiptr(ptrs[i]).num % required_alignment,
+                TEST_ASSERT_EQUAL_INT_MESSAGE(0, (uintptr_t)ptrs[i] % required_alignment,
                                               "Alignment request hasn't been honored");
         }
-        for (int i = 0; i < testset_len; i++) {
+        for (size_t i = 0; i < TESTSET_LEN; i++) {
                 kmm_cache_free(cache, ptrs[i]);
         }
         kmm_cache_destroy(cache);
@@ -290,7 +274,7 @@ static void reclaiming(void)
                 kmm_cache_alloc(second_cache) == NULL,
                 "Somehow we managed to allocate memory while it's supposed to be occupied");
 
-        for (int i = 0; i < allocated; i++) {
+        for (size_t i = 0; i < allocated; i++) {
                 elem_t *m = (*ptrs)[i];
                 kmm_cache_free(first_cache, m);
         }
@@ -306,7 +290,7 @@ static void reclaiming(void)
                 allocated, repeated_alloc,
                 "It seems we weren't able to reclaim memory from the first cache");
 
-        for (int i = 0; i < repeated_alloc; i++) {
+        for (size_t i = 0; i < repeated_alloc; i++) {
                 elem_t *m = (*ptrs)[i];
                 kmm_cache_free(second_cache, m);
         }
@@ -319,8 +303,8 @@ static void reclaiming(void)
 static void cache_coloring(void)
 {
         typedef char elem_t[37];
-        const size_t cacheline_len = 64;
-        int colour_hits[cacheline_len] = { 0 };
+#define CACHELINE_LEN 64
+        size_t colour_hits[CACHELINE_LEN] = { 0 };
 
         size_t allocated = 0;
         elem_t *(*ptrs)[VMM_MEM_LIMIT / sizeof(elem_t)] = malloc(sizeof(*ptrs));
@@ -330,7 +314,7 @@ static void cache_coloring(void)
         TEST_MESSAGE("Allocating all available memory...");
         elem_t *new;
         while ((new = kmm_cache_alloc(cache))) {
-                size_t cacheline_offset = ptr2uiptr(new).num % 64;
+                size_t cacheline_offset = (uintptr_t) new % 64;
                 colour_hits[cacheline_offset]++;
 
                 (*ptrs)[allocated] = new;
@@ -338,8 +322,8 @@ static void cache_coloring(void)
         }
 
         TEST_MESSAGE("Cache colour hits (colour, times): ");
-        int colours = 0;
-        for (int colour = 0; colour < cacheline_len; colour++) {
+        size_t colours = 0;
+        for (size_t colour = 0; colour < CACHELINE_LEN; colour++) {
                 size_t hits = colour_hits[colour];
                 if (hits > 0) {
                         TEST_PRINTF("(%d, %d) ", colour, hits);
@@ -349,7 +333,7 @@ static void cache_coloring(void)
         TEST_ASSERT_GREATER_THAN_INT_MESSAGE(
                 1, colours, "We have pretty monotonic cache. Though this test isn't very robust");
 
-        for (int i = 0; i < allocated; i++) {
+        for (size_t i = 0; i < allocated; i++) {
                 elem_t *m = (*ptrs)[i];
                 kmm_cache_free(cache, m);
         }
@@ -369,7 +353,7 @@ static void test_cache_static(void)
                 kmm_cache_create("first_cache", sizeof(elem_t), 0, 0, NULL, NULL);
         TEST_ASSERT(first_cache);
         struct kmm_cache *second_cache =
-                kmm_cache_create("second_cache", sizeof(elem_t), 0, KMM_CACHE_STATIC, NULL, NULL);
+                kmm_cache_create("second_cache", sizeof(elem_t), 0, 0, NULL, NULL);
         TEST_ASSERT(second_cache);
 
         TEST_MESSAGE("Allocating all available memory...");
@@ -383,7 +367,7 @@ static void test_cache_static(void)
         TEST_ASSERT_MESSAGE(obj, "Couldn't allocate memory from the second_cache");
 
         kmm_cache_free(second_cache, obj);
-        for (int i = 0; i < allocated; i++) {
+        for (size_t i = 0; i < allocated; i++) {
                 elem_t *m = (*ptrs)[i];
                 kmm_cache_free(first_cache, m);
         }
@@ -391,20 +375,6 @@ static void test_cache_static(void)
         kmm_cache_destroy(first_cache);
         kmm_cache_destroy(second_cache);
         free(ptrs);
-}
-
-static void kmalloc_various_sizes(void)
-{
-        kmm_init_kmalloc();
-
-        for (int i = CONF_MALLOC_MIN_POW; i < CONF_MALLOC_MAX_POW; i++) {
-                const size_t req_size = 1 << i;
-
-                void *mem = kmalloc(req_size);
-                TEST_ASSERT_NOT_NULL(mem);
-
-                kfree(mem);
-        }
 }
 
 int main(void)
@@ -418,7 +388,6 @@ int main(void)
         RUN_TEST(reclaiming);
         RUN_TEST(cache_coloring);
         RUN_TEST(test_cache_static);
-        RUN_TEST(kmalloc_various_sizes);
         UNITY_END();
         return (0);
 }

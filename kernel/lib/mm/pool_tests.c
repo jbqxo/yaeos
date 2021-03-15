@@ -1,5 +1,8 @@
-// UNITY_TEST DEPENDS ON: kernel/lib/mm/pool.c
-// UNITY_TEST DEPENDS ON: kernel/test_fakes/panic.c
+/*
+ * UNITY_TEST DEPENDS ON: kernel/lib/mm/pool.c
+ * UNITY_TEST DEPENDS ON: kernel/lib/ds/slist.c
+ * UNITY_TEST DEPENDS ON: kernel/test_fakes/panic.c
+ */
 
 #include "lib/mm/pool.h"
 

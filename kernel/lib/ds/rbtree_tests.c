@@ -1,10 +1,11 @@
-// UNITY_TEST DEPENDS ON: kernel/test_fakes/panic.c
+/* UNITY_TEST DEPENDS ON: kernel/test_fakes/panic.c */
 
-/* TODO: Is it good idea for unit testing? */
+/* Kinda ugly, but it's the easiest way to check if the tree is correct. */
 #include "rbtree.c"
 
 #include "lib/cppdefs.h"
 #include "lib/ds/rbtree.h"
+#include "lib/utils.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -25,11 +26,11 @@ void tearDown(void)
 {}
 
 #define GET_DATA(NODE) (*(int *)(NODE)->data)
-static int intcmp(void *_x, void *_y)
+static int intcmp(void const *_x, void const *_y)
 {
-        const int x = *(const int *)_x;
-        const int y = *(const int *)_y;
-        return (x - y);
+        int const *x = _x;
+        int const *y = _y;
+        return (*x - *y);
 }
 
 static int testset[] = {
@@ -63,12 +64,12 @@ static const size_t testset_len = ARRAY_SIZE(testset);
 static struct rbtree *create_tree_calling_back(void (*on_node_creation)(struct rbtree_node *root))
 {
         struct rbtree *rbt = malloc(sizeof(*rbt));
-        rbtree_init_tree(rbt, intcmp);
-        for (int i = 0; i < testset_len; i++) {
+        rbtree_init_tree(rbt);
+        for (size_t i = 0; i < testset_len; i++) {
                 struct rbtree_node *new_node = malloc(sizeof(*new_node));
                 new_node->data = &testset[i];
 
-                rbtree_insert(rbt, new_node);
+                rbtree_insert(rbt, new_node, intcmp);
                 if (on_node_creation) {
                         on_node_creation(rbt->root);
                 }
@@ -130,8 +131,8 @@ static void randomly_delete_tree_withcb(struct rbtree *rbt,
 static void delete_tree_withcb(struct rbtree *rbt,
                                void (*on_node_deletion)(struct rbtree_node *root))
 {
-        for (int i = 0; i < testset_len; i++) {
-                struct rbtree_node *n = rbtree_search(rbt, &testset[i]);
+        for (size_t i = 0; i < testset_len; i++) {
+                struct rbtree_node *n = rbtree_search(rbt, &testset[i], intcmp);
                 TEST_ASSERT_NOT_NULL(n);
                 rbtree_delete(rbt, n);
                 free(n);
@@ -160,7 +161,7 @@ static void correct_bst(void)
 {
         struct rbtree *rbt = create_tree_calling_back(correct_bst_cb);
         delete_tree_withcb(rbt, correct_bst_cb);
-        for (int i = 0; i < RANDOM_ITERS; i++) {
+        for (size_t i = 0; i < RANDOM_ITERS; i++) {
                 rbt = create_tree_calling_back(correct_bst_cb);
                 randomly_delete_tree_withcb(rbt, correct_bst_cb);
         }
@@ -187,7 +188,7 @@ static void every_node_red_black(void)
 {
         struct rbtree *rbt = create_tree_calling_back(every_node_red_black_cb);
         delete_tree_withcb(rbt, every_node_red_black_cb);
-        for (int i = 0; i < RANDOM_ITERS; i++) {
+        for (size_t i = 0; i < RANDOM_ITERS; i++) {
                 rbt = create_tree_calling_back(every_node_red_black_cb);
                 randomly_delete_tree_withcb(rbt, every_node_red_black_cb);
         }
@@ -202,7 +203,7 @@ static void root_black(void)
 {
         struct rbtree *rbt = create_tree_calling_back(root_black_cb);
         delete_tree_withcb(rbt, root_black_cb);
-        for (int i = 0; i < RANDOM_ITERS; i++) {
+        for (size_t i = 0; i < RANDOM_ITERS; i++) {
                 rbt = create_tree_calling_back(root_black_cb);
                 randomly_delete_tree_withcb(rbt, root_black_cb);
         }
@@ -227,7 +228,7 @@ static void red_node_has_black_children(void)
 {
         struct rbtree *rbt = create_tree_calling_back(red_node_has_black_children_cb);
         delete_tree_withcb(rbt, red_node_has_black_children_cb);
-        for (int i = 0; i < RANDOM_ITERS; i++) {
+        for (size_t i = 0; i < RANDOM_ITERS; i++) {
                 rbt = create_tree_calling_back(red_node_has_black_children_cb);
                 randomly_delete_tree_withcb(rbt, red_node_has_black_children_cb);
         }
@@ -255,7 +256,7 @@ static void same_black_height(void)
 {
         struct rbtree *rbt = create_tree_calling_back(same_black_height_cb);
         delete_tree_withcb(rbt, same_black_height_cb);
-        for (int i = 0; i < RANDOM_ITERS; i++) {
+        for (size_t i = 0; i < RANDOM_ITERS; i++) {
                 struct rbtree *rbt = create_tree_calling_back(same_black_height_cb);
                 randomly_delete_tree_withcb(rbt, same_black_height_cb);
         }
@@ -265,7 +266,7 @@ static const int can_iterate_low = 11;
 static const int can_iterate_high = 99;
 static const int can_iterate_markval = -1;
 
-static bool can_iterate_fn(void *elem, void *data)
+static bool can_iterate_fn(void *elem, void *data __unused)
 {
         int e = *(int *)elem;
         TEST_ASSERT_GREATER_OR_EQUAL_INT(can_iterate_low, e);
@@ -281,20 +282,21 @@ static void can_iterate(void)
         int testset[] = { 0, 10, 15, 16, 17, 18, 20, 21, 99, 101, 115 };
         const size_t testset_len = ARRAY_SIZE(testset);
         struct rbtree *rbt = malloc(sizeof(*rbt));
-        rbtree_init_tree(rbt, intcmp);
+        rbtree_init_tree(rbt);
 
-        for (int i = 0; i < testset_len; i++) {
+        for (size_t i = 0; i < testset_len; i++) {
                 struct rbtree_node *n = malloc(sizeof(*n));
                 rbtree_init_node(n);
                 n->data = (void *)&testset[i];
 
-                rbtree_insert(rbt, n);
+                rbtree_insert(rbt, n, intcmp);
         }
 
-        rbtree_iter_range(rbt, (void *)&can_iterate_low, (void *)&can_iterate_high, can_iterate_fn,
-                          NULL);
+        int low_edge = can_iterate_low;
+        int high_edge = can_iterate_high;
+        rbtree_iter_range(rbt, &low_edge, &high_edge, intcmp, can_iterate_fn, NULL);
 
-        for (int i = 0; i < testset_len; i++) {
+        for (size_t i = 0; i < testset_len; i++) {
                 if (testset[i] != -1) {
                         TEST_ASSERT(testset[i] < can_iterate_low || testset[i] > can_iterate_high);
                 }
@@ -306,18 +308,18 @@ static void search_min(void)
         int testset[] = { 0, 8, 10, 35, 40 };
         const size_t testset_len = ARRAY_SIZE(testset);
         struct rbtree *rbt = calloc(1, sizeof(*rbt));
-        rbtree_init_tree(rbt, intcmp);
+        rbtree_init_tree(rbt);
 
-        for (int i = 0; i < testset_len; i++) {
+        for (size_t i = 0; i < testset_len; i++) {
                 struct rbtree_node *n = malloc(sizeof(*n));
                 rbtree_init_node(n);
                 n->data = &testset[i];
 
-                rbtree_insert(rbt, n);
+                rbtree_insert(rbt, n, intcmp);
         }
 
         int minlimit = 9;
-        struct rbtree_node *result = rbtree_search_min(rbt, &minlimit);
+        struct rbtree_node *result = rbtree_search_min(rbt, &minlimit, intcmp);
 
         TEST_ASSERT_EQUAL_INT_MESSAGE(10, *(int *)result->data, "We've found a wrong node");
 }
@@ -327,18 +329,18 @@ static void search_max(void)
         int testset[] = { 0, 8, 10, 35, 40 };
         const size_t testset_len = ARRAY_SIZE(testset);
         struct rbtree *rbt = calloc(1, sizeof(*rbt));
-        rbtree_init_tree(rbt, intcmp);
+        rbtree_init_tree(rbt);
 
-        for (int i = 0; i < testset_len; i++) {
+        for (size_t i = 0; i < testset_len; i++) {
                 struct rbtree_node *n = malloc(sizeof(*n));
                 rbtree_init_node(n);
                 n->data = &testset[i];
 
-                rbtree_insert(rbt, n);
+                rbtree_insert(rbt, n, intcmp);
         }
 
         int maxlimit = 39;
-        struct rbtree_node *result = rbtree_search_max(rbt, &maxlimit);
+        struct rbtree_node *result = rbtree_search_max(rbt, &maxlimit, intcmp);
 
         TEST_ASSERT_EQUAL_INT_MESSAGE(35, *(int *)result->data, "We've found a wrong node");
 }

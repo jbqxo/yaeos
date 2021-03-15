@@ -1,8 +1,10 @@
+#include "kernel/panic.h"
+
 #include "kernel/kernel.h"
+#include "kernel/klog.h"
 #include "kernel/mm/vm.h"
 
 #include "lib/cppdefs.h"
-#include "lib/klog.h"
 
 #include <assert.h>
 #include <stdarg.h>
@@ -10,6 +12,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unity.h>
+
+static char lvl_to_char(enum LOG_LEVEL lvl)
+{
+        static char LOOKUP_TABLE[LOG_PANIC + 1] = {
+                [LOG_DEBUG] = 'D', [LOG_INFO] = 'I',  [LOG_WARN] = 'W',
+                [LOG_ERR] = 'E',   [LOG_PANIC] = 'P',
+        };
+        return (LOOKUP_TABLE[lvl]);
+}
 
 __weak void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, const char *restrict func,
                          const char *restrict line, const char *restrict format, ...)
@@ -42,4 +53,11 @@ __weak void kernel_panic(struct kernel_panic_info *info)
         TEST_MESSAGE(description_buffer);
         TEST_MESSAGE(location_buffer);
         TEST_FAIL();
+}
+
+__noreturn void assertion_fail(char const *failed_expression, char const *location)
+{
+        fprintf(stderr, "Assertion failed: %s\n", failed_expression);
+        fprintf(stderr, "At: %s\n", location);
+        exit(EXIT_FAILURE);
 }

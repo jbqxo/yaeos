@@ -1,3 +1,7 @@
+/* UNITY_TEST DEPENDS ON: kernel/lib/ds/bitmap.c
+ * UNITY_TEST DEPENDS ON: kernel/test_fakes/panic.c
+ * UNITY_TEST DEPENDS ON: kernel/lib/cstd/string/memset.c
+ */
 #include "lib/ds/bitmap.h"
 
 #include "lib/cppdefs.h"

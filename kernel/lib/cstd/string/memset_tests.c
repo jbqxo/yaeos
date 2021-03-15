@@ -1,4 +1,4 @@
-// UNITY_TEST DEPENDS ON: kernel/lib/string/memset.c
+/* UNITY_TEST DEPENDS ON: kernel/lib/cstd/string/memset.c */
 
 #include "lib/cstd/string.h"
 

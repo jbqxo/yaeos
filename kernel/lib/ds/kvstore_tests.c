@@ -1,32 +1,44 @@
+/* UNITY_TEST DEPENDS ON: kernel/lib/ds/kvstore.c
+ * UNITY_TEST DEPENDS ON: kernel/lib/mm/linear.c
+ * UNITY_TEST DEPENDS ON: kernel/test_fakes/panic.c
+ */
+
 #include "lib/ds/kvstore.h"
 
+#include <assert.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unity.h>
 
-static const int kvstore_len = 10;
-static KVSTATIC_DECLARE(char *, int, kvstore_len, strcmp) kvstore;
+#define KVSTORE_LEN 10
+static void *kvstore_mem;
+static struct kvstore *kvstore;
 
 void setUp(void)
 {
-        KVSTATIC_INIT(&kvstore, "", 0, strcmp);
+        size_t const req_mem = kvstore_predict_reqmem(KVSTORE_LEN);
+        kvstore_mem = malloc(req_mem);
+        assert(NULL != kvstore_mem);
+
+        kvstore = kvstore_create(kvstore_mem, KVSTORE_LEN, strcmp);
 }
 
 void tearDown(void)
-{}
+{
+        free(kvstore_mem);
+}
 
 static void store_retrieve_single(void)
 {
         static char *test_key = "test_key";
-        static const int test_val = 30;
+        static const uintptr_t test_val = 30;
 
-        KVSTATIC_ADD(&kvstore, test_key, test_val);
-        int len;
-        KVSTATIC_LEN(&kvstore, len);
-        TEST_ASSERT_EQUAL_INT(1, len);
+        kvstore_append(kvstore, test_key, (void*)test_val);
+        TEST_ASSERT_EQUAL_INT(1, kvstore_length(kvstore));
 
-        int val;
-        KVSTATIC_GET(&kvstore, test_key, val, -1);
+        uintptr_t val;
+        TEST_ASSERT_TRUE(kvstore_find(kvstore, test_key, (void **)&val));
         TEST_ASSERT_EQUAL_INT(test_val, val);
 }
 
@@ -34,79 +46,48 @@ static void store_retrieve_multiple(void)
 {
         static const struct {
                 char *key;
-                int val;
-        } testarr[kvstore_len] = { { "one", 10 },  { "two", 20 }, { "three", 30 }, { "four", 40 },
+                uintptr_t val;
+        } testarr[KVSTORE_LEN] = { { "one", 10 },  { "two", 20 }, { "three", 30 }, { "four", 40 },
                                    { "five", 50 }, { "six", 60 }, { "seven", 70 }, { "eight", 80 },
                                    { "nine", 90 }, { "ten", 100 } };
 
-        for (int i = 0; i < kvstore_len; i++) {
-                KVSTATIC_ADD(&kvstore, testarr[i].key, testarr[i].val);
+        for (size_t i = 0; i < KVSTORE_LEN; i++) {
+                kvstore_append(kvstore, testarr[i].key, (void*)testarr[i].val);
         }
 
-        int len;
-        KVSTATIC_LEN(&kvstore, len);
-        TEST_ASSERT_EQUAL_INT(kvstore_len, len);
+        TEST_ASSERT_EQUAL_INT(KVSTORE_LEN, kvstore_length(kvstore));
 
-        for (int i = kvstore_len - 1; i >= 0; i--) {
-                int val;
-                KVSTATIC_GET(&kvstore, testarr[i].key, val, -1);
+        for (size_t i = KVSTORE_LEN - 1; i >= 0; i--) {
+                uintptr_t val;
+                TEST_ASSERT_TRUE(kvstore_find(kvstore, testarr[i].key, (void**)&val));
                 TEST_ASSERT_EQUAL_INT(testarr[i].val, val);
         }
 }
 
-static void traverse(void)
+static void kvstore_iter_doesnt_contain(void *key __unused, void *value __unused, void *data)
 {
-        static const struct {
-                char *key;
-                int val;
-        } testarr[3] = { { "one", 1 }, { "four", 4 }, { "six", 6 } };
-
-        bool validatearr_expected[7] = { false, true, false, false, true, false, true };
-        bool validatearr[7] = { 0 };
-
-        for (int i = 0; i < 3; i++) {
-                KVSTATIC_ADD(&kvstore, testarr[i].key, testarr[i].val);
-        }
-
-        int i;
-        char *key;
-        int val;
-        KVSTATIC_FOREACH (&kvstore, i, key, val) {
-                validatearr[val] = true;
-        }
-
-        for (int i = 0; i < 7; i++) {
-                TEST_ASSERT(validatearr[i] == validatearr_expected[i]);
-        }
+        TEST_ASSERT(strcmp(key, data) != 0);
 }
 
 static void remove_pair(void)
 {
         static const struct {
                 char *key;
-                int val;
+                uintptr_t val;
         } testarr[3] = { { "one", 1 }, { "four", 4 }, { "six", 6 } };
 
-        for (int i = 0; i < 3; i++) {
-                KVSTATIC_ADD(&kvstore, testarr[i].key, testarr[i].val);
+        for (size_t i = 0; i < 3; i++) {
+                kvstore_append(kvstore, testarr[i].key, (void*)testarr[i].val);
         }
 
-        int len;
-        KVSTATIC_LEN(&kvstore, len);
-        TEST_ASSERT_EQUAL_INT(3, len);
+        TEST_ASSERT_EQUAL_INT(KVSTORE_LEN, kvstore_length(kvstore));
 
-        KVSTATIC_DEL(&kvstore, "four");
+        kvstore_remove(kvstore, "four");
 
-        int val;
-        KVSTATIC_GET(&kvstore, "four", val, -1);
-        TEST_ASSERT_EQUAL_INT(-1, val);
+        uintptr_t val;
+        TEST_ASSERT_FALSE(kvstore_find(kvstore, "four", (void**)&val));
 
-        int i;
-        char *key;
-        KVSTATIC_FOREACH (&kvstore, i, key, val) {
-                TEST_ASSERT(strcmp(key, "four") != 0);
-                TEST_ASSERT_NOT_EQUAL(4, val);
-        }
+        kvstore_iter(kvstore, kvstore_iter_doesnt_contain, "four");
 }
 
 static void dont_exceed(void)
@@ -114,36 +95,21 @@ static void dont_exceed(void)
         static const struct {
                 char *key;
                 int val;
-        } testarr[kvstore_len + 1] = { { "one", 10 },   { "two", 20 },    { "three", 30 },
+        } testarr[KVSTORE_LEN + 1] = { { "one", 10 },   { "two", 20 },    { "three", 30 },
                                        { "four", 40 },  { "five", 50 },   { "six", 60 },
                                        { "seven", 70 }, { "eight", 80 },  { "nine", 90 },
                                        { "ten", 100 },  { "eleven", 110 } };
 
-        for (int i = 0; i < kvstore_len + 1; i++) {
-                KVSTATIC_ADD(&kvstore, testarr[i].key, testarr[i].val);
+        for (size_t i = 0; i < KVSTORE_LEN + 1; i++) {
+                kvstore_append(kvstore, testarr[i].key, (void*)testarr[i].val);
         }
 
-        int len;
-        KVSTATIC_LEN(&kvstore, len);
-        TEST_ASSERT_EQUAL_INT(kvstore_len, len);
+        TEST_ASSERT_EQUAL_INT(KVSTORE_LEN, kvstore_length(kvstore));
 
-        int val;
-        KVSTATIC_GET(&kvstore, "eleven", val, -1);
-        TEST_ASSERT_EQUAL(-1, val);
+        uintptr_t val;
+        TEST_ASSERT_FALSE(kvstore_find(kvstore, "eleven", (void**)&val));
 
-        int i;
-        char *key;
-        KVSTATIC_FOREACH (&kvstore, i, key, val) {
-                TEST_ASSERT(strcmp(key, "eleven") != 0);
-                TEST_ASSERT_NOT_EQUAL(110, val);
-        }
-}
-
-static void get_failvalue_assert(void)
-{
-        int val;
-        KVSTATIC_GET(&kvstore, "any", val, 289);
-        TEST_ASSERT_EQUAL_INT(289, val);
+        kvstore_iter(kvstore, kvstore_iter_doesnt_contain, "eleven");
 }
 
 int main(void)
@@ -151,10 +117,8 @@ int main(void)
         UNITY_BEGIN();
         RUN_TEST(store_retrieve_single);
         RUN_TEST(store_retrieve_multiple);
-        RUN_TEST(traverse);
         RUN_TEST(remove_pair);
         RUN_TEST(dont_exceed);
-        RUN_TEST(get_failvalue_assert);
         UNITY_END();
         return (0);
 }

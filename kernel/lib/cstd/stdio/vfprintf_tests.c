@@ -1,9 +1,11 @@
-// UNITY_TEST DEPENDS ON: kernel/lib/stdio/vfprintf.c
-// UNITY_TEST DEPENDS ON: kernel/lib/string/strlen.c
-// UNITY_TEST DEPENDS ON: kernel/lib/string/strchr.c
+/* UNITY_TEST DEPENDS ON: kernel/lib/cstd/stdio/vfprintf.c
+ * UNITY_TEST DEPENDS ON: kernel/lib/cstd/string/strlen.c
+ * UNITY_TEST DEPENDS ON: kernel/lib/cstd/string/strchr.c
+ * UNITY_TEST DEPENDS ON: kernel/test_fakes/panic.c
+ */
 
-#include "lib/cppdefs.h"
 #include "lib/cstd/stdio.h"
+#include "lib/utils.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -16,7 +18,7 @@ static int pos;
 
 void console_write(const char *msg, size_t length)
 {
-        for (int i = 0; i < length; i++) {
+        for (size_t i = 0; i < length; i++) {
                 buffer[pos++] = msg[i];
         }
 }
@@ -37,7 +39,7 @@ void tearDown(void)
 
 #define KVFPRINTF(expected, format, ...)                                        \
         do {                                                                    \
-                int s = strlen(expected);                                       \
+                size_t s = strlen(expected);                                    \
                 int r = kfprintf(console_write, (format), ##__VA_ARGS__);       \
                 TEST_ASSERT_EQUAL_HEX8(GUARDVAL, buffer[s]);                    \
                 buffer[s] = '\0';                                               \

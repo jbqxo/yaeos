@@ -1,8 +1,8 @@
-// UNITY_TEST DEPENDS ON: kernel/lib/string/memset.c
+/* UNITY_TEST DEPENDS ON: kernel/lib/cstd/string/memset.c */
 
 #include "lib/ds/cbuffer.h"
 
-#include "lib/cppdefs.h"
+#include "lib/utils.h"
 
 #include <stdbool.h>
 #include <unity.h>
@@ -33,12 +33,12 @@ static void can_store_multiple_elements(void)
 
         CBUFFER_DECLARE(typeof(testarr[0]), testarr_sz) buffer;
         CBUFFER_INIT(&buffer);
-        for (int i = 0; i < testarr_sz; i++) {
+        for (size_t i = 0; i < testarr_sz; i++) {
                 bool success = CBUFFER_PUSH(&buffer, testarr[i]);
                 TEST_ASSERT(success);
         }
 
-        for (int i = 0; i < testarr_sz; i++) {
+        for (size_t i = 0; i < testarr_sz; i++) {
                 int retval;
                 CBUFFER_POP(&buffer, retval, 0);
                 TEST_ASSERT_EQUAL_INT(testarr[i], retval);
@@ -52,25 +52,25 @@ static void can_handle_multiple_read_writes(void)
 
         CBUFFER_DECLARE(typeof(testarr[0]), testarr_sz) buffer;
         CBUFFER_INIT(&buffer);
-        for (int i = 0; i < testarr_sz; i++) {
+        for (size_t i = 0; i < testarr_sz; i++) {
                 bool success = CBUFFER_PUSH(&buffer, testarr[i]);
                 TEST_ASSERT(success);
         }
 
-        for (int i = 0; i < 2; i++) {
+        for (size_t i = 0; i < 2; i++) {
                 int retval;
                 CBUFFER_POP(&buffer, retval, 0);
                 TEST_ASSERT_EQUAL_INT(testarr[i], retval);
         }
 
         static int newelems[] = { 788, 799 };
-        for (int i = 0; i < 2; i++) {
+        for (size_t i = 0; i < 2; i++) {
                 bool success = CBUFFER_PUSH(&buffer, newelems[i]);
                 TEST_ASSERT(success);
         }
 
         static int newexpect[] = { 92, 4112, 1245, 2315, 54336, -1, -2000, 788, 799 };
-        for (int i = 0; i < testarr_sz; i++) {
+        for (size_t i = 0; i < testarr_sz; i++) {
                 int retval;
                 CBUFFER_POP(&buffer, retval, 0);
                 TEST_ASSERT_EQUAL_INT(newexpect[i], retval);
@@ -84,7 +84,7 @@ static void cant_overflow(void)
 
         CBUFFER_DECLARE(typeof(testarr[0]), testarr_sz - 2) buffer;
         CBUFFER_INIT(&buffer);
-        for (int i = 0; i < testarr_sz - 2; i++) {
+        for (size_t i = 0; i < testarr_sz - 2; i++) {
                 bool success = CBUFFER_PUSH(&buffer, testarr[i]);
                 TEST_ASSERT(success);
         }
@@ -94,7 +94,7 @@ static void cant_overflow(void)
         success = CBUFFER_PUSH(&buffer, testarr[testarr_sz - 1]);
         TEST_ASSERT(!success);
 
-        for (int i = 0; i < testarr_sz - 2; i++) {
+        for (size_t i = 0; i < testarr_sz - 2; i++) {
                 int retval;
                 CBUFFER_POP(&buffer, retval, 0);
                 TEST_ASSERT_EQUAL_INT(testarr[i], retval);

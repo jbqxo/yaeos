@@ -8,7 +8,7 @@ OBJCOPY := i686-elf-objcopy
 
 
 CPPFLAGS_COMMON += -D__i686__
-CFLAGS_COMMON += -m32 -ffreestanding
+CFLAGS_COMMON += -m32 -ffreestanding -mgeneral-regs-only
 LDFLAGS_COMMON += 
 
 ARCH := i686

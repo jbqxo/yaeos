@@ -98,10 +98,11 @@ tests_dirs:
 
 tests: $$(patsubst %.c.o,%, $$(FILES_TESTS_OBJ)) | tests_dirs
 
-$(BUILDDIR_KERNEL)/%_tests: $(BUILDDIR_KERNEL)/%_tests.c.o\
-    $(BUILDDIR_DEPS)/unity/unity.o $$(call get_test_dependencies, $(CWD)/%_tests.c) | tests_dirs
+$(BUILDDIR_KERNEL)/%_tests: $(BUILDDIR_KERNEL)/%_tests.c.o \
+		$(BUILDDIR_DEPS)/unity/unity.o \
+		$$(call get_test_dependencies, $(CWD)/%_tests.c) | tests_dirs
 	$(info [kernel.tests] LD $@)
-	@$(LD) $(CPPFLAGS_COMPLETE) $^ $(LDFLAGS_COMPLETE) -o $@
+	@$(LD) $(CPPFLAGS_COMPLETE) $^ $(LDFLAGS_COMPLETE) $(CFLAGS_COMPLETE) -o $@
 
 ###### Rules to make offset-headers
 
