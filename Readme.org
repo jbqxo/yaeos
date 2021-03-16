@@ -34,16 +34,10 @@ Location: .../yaeos/kernel/kernel/kheap.c:91
 
 At the moment, the plan is:
 
-- [ ] Devices.
-  + [ ] Make decent modules management.
-  + [ ] Make APIs for device interactions (interrupts, register directories, memory buffers).
-  + [ ] Move i686 devices from architecture dependent code into the modules.
+- [ ] Implement Device Manager.
+- [ ] Make decent modules management.
+- [ ] Move i686 devices from architecture dependent code into the modules.
 - [ ] Make this thing work with AArch64.
-- [ ] Write PL011 (UART) driver to get serial console.
-- [ ] Unit-tests.
-  + [ ] Adapt Unity framework for the kernel-space.
-  + [ ] Fix tests.
-  + [ ] Run unit tests in the kernel-space.
 - [ ] Benchmarks.
   + [ ] Implement API for ARMv8 Performance Monitor Extension.
   + [ ] Implement benchmarking.
