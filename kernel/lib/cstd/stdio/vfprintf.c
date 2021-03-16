@@ -269,8 +269,8 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args)
         case CS_UOCTAL:
         case CS_UDEC: {
                 switch (s.length) {
-                case CL_CHAR: arg.val.ud = va_arg(*args, unsigned int); break;
-                case CL_SHORT: arg.val.ud = va_arg(*args, unsigned int); break;
+                case CL_CHAR: arg.val.ud = (unsigned char)va_arg(*args, unsigned int); break;
+                case CL_SHORT: arg.val.ud = (unsigned short)va_arg(*args, unsigned int); break;
                 case CL_LONG: arg.val.ud = va_arg(*args, unsigned long); break;
                 case CL_LLONG: arg.val.ud = va_arg(*args, unsigned long long); break;
                 case CL_INTMAX: arg.val.ud = va_arg(*args, uintmax_t); break;
