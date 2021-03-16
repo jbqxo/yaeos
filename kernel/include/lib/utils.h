@@ -26,30 +26,33 @@
                 __result;                                                                  \
         })
 
-static inline uint8_t log2_floor(uint32_t x)
-{
-        kassert(x != 0);
-        return (8 * sizeof(x) - 1 - (uint8_t)__builtin_clzl(x));
-}
+/* TODO: Implement branch-less log2. */
+#define log2_floor(X)                                                                 \
+        ({                                                                            \
+                __typeof(X) __l2fl_xvar = (X);                                        \
+                kassert(0 != __l2fl_xvar);                                            \
+                (8 * sizeof(__l2fl_xvar) - 1 - (uint8_t)__builtin_clzl(__l2fl_xvar)); \
+        })
 
-static inline uint8_t log2_ceil(uint32_t x)
-{
-        /* TODO: Implement branch-less log2. */
-        if (x <= 1) {
-                return (0);
-        }
-        return (log2_floor(x - 1) + 1);
-}
+#define log2_ceil(X)                                                          \
+        ({                                                                    \
+                __typeof(X) __l2cl_xvar = (X);                                \
+                (__l2cl_xvar <= 1) ? (0) : (log2_floor(__l2cl_xvar - 1) + 1); \
+        })
 
-__const static inline uint32_t div_ceil(uint32_t x, uint32_t y)
-{
-        return ((x + y - 1) / y);
-}
+#define div_ceil(X, Y)                                         \
+        ({                                                     \
+                __typeof(X) __divc_xvar = (X);                 \
+                __typeof(Y) __divc_yvar = (Y);                 \
+                (__divc_xvar + __divc_yvar - 1) / __divc_yvar; \
+        })
 
-__const static inline uint32_t div_near(uint32_t x, uint32_t y)
-{
-        return ((x + y / 2) / y);
-}
+#define div_near(X, Y)                                         \
+        ({                                                     \
+                __typeof(X) __divn_xvar = (X);                 \
+                __typeof(Y) __divn_yvar = (Y);                 \
+                (__divn_xvar + __divn_yvar / 2) / __divn_yvar; \
+        })
 
 /* Find First One bit */
 __const static inline unsigned find_first_one(unsigned x)

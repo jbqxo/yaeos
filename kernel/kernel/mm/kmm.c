@@ -1,7 +1,6 @@
 #include "kernel/mm/kmm.h"
 
 #include "kernel/klog.h"
-#include "kernel/mm/vm.h"
 #include "kernel/platform_consts.h"
 
 #include "lib/align.h"
@@ -97,7 +96,7 @@ struct kmm_slab {
         struct slist_ref free_buffers;
 
         struct page *page;
-        unsigned objects_inuse;
+        size_t objects_inuse;
 };
 
 static struct {
@@ -163,7 +162,7 @@ static void slab_destroy(struct kmm_slab *slab, struct kmm_cache *cache)
         kassert(cache);
 
         if (slab->objects_inuse > 0) {
-                LOGF_W("Freeing the slab %p while there are %d objects in use...\n", slab,
+                LOGF_W("Freeing the slab %p while there are %zu objects in use...\n", slab,
                        slab->objects_inuse);
         }
 
@@ -243,7 +242,7 @@ static struct kmm_slab *slab_get_by_addr(void *addr)
         return (page_get_by_addr(addr)->owner);
 }
 
-static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colour)
+static struct kmm_slab *slab_create_small(struct kmm_cache *cache, size_t const colour)
 {
         kassert(cache);
 
@@ -291,7 +290,7 @@ static struct kmm_slab *slab_create_small(struct kmm_cache *cache, unsigned colo
         return (slab);
 }
 
-static struct kmm_slab *slab_create_large(struct kmm_cache *cache, unsigned colour)
+static struct kmm_slab *slab_create_large(struct kmm_cache *cache, size_t const colour)
 {
         kassert(cache);
 

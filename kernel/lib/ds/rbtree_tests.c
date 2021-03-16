@@ -18,8 +18,9 @@ static const unsigned RANDOM_ITERS = 50;
 void setUp(void)
 {
         intmax_t used_seed = time(NULL);
-        TEST_PRINTF("Used seed: %d", used_seed);
-        srand(used_seed);
+        TEST_PRINTF("Used seed: %jd", used_seed);
+        /* It's fine to truncate the seed. */
+        srand((unsigned int)used_seed);
 }
 
 void tearDown(void)
@@ -90,7 +91,7 @@ static void delete_random_elem(struct rbtree *rbt, struct rbtree_node *subroot)
                  * 1 - delete
                  * 2 - step right
                  */
-                unsigned action = rand() % 3;
+                unsigned action = (unsigned int)rand() % 3;
                 switch (action) {
                 case 0: {
                         if (subroot->left) {
@@ -257,7 +258,7 @@ static void same_black_height(void)
         struct rbtree *rbt = create_tree_calling_back(same_black_height_cb);
         delete_tree_withcb(rbt, same_black_height_cb);
         for (size_t i = 0; i < RANDOM_ITERS; i++) {
-                struct rbtree *rbt = create_tree_calling_back(same_black_height_cb);
+                rbt = create_tree_calling_back(same_black_height_cb);
                 randomly_delete_tree_withcb(rbt, same_black_height_cb);
         }
 }
@@ -279,15 +280,15 @@ static bool can_iterate_fn(void *elem, void *data __unused)
 
 static void can_iterate(void)
 {
-        int testset[] = { 0, 10, 15, 16, 17, 18, 20, 21, 99, 101, 115 };
-        const size_t testset_len = ARRAY_SIZE(testset);
+        int local_testset[] = { 0, 10, 15, 16, 17, 18, 20, 21, 99, 101, 115 };
+        const size_t local_testset_len = ARRAY_SIZE(local_testset);
         struct rbtree *rbt = malloc(sizeof(*rbt));
         rbtree_init_tree(rbt);
 
-        for (size_t i = 0; i < testset_len; i++) {
+        for (size_t i = 0; i < local_testset_len; i++) {
                 struct rbtree_node *n = malloc(sizeof(*n));
                 rbtree_init_node(n);
-                n->data = (void *)&testset[i];
+                n->data = (void *)&local_testset[i];
 
                 rbtree_insert(rbt, n, intcmp);
         }
@@ -296,24 +297,25 @@ static void can_iterate(void)
         int high_edge = can_iterate_high;
         rbtree_iter_range(rbt, &low_edge, &high_edge, intcmp, can_iterate_fn, NULL);
 
-        for (size_t i = 0; i < testset_len; i++) {
-                if (testset[i] != -1) {
-                        TEST_ASSERT(testset[i] < can_iterate_low || testset[i] > can_iterate_high);
+        for (size_t i = 0; i < local_testset_len; i++) {
+                if (local_testset[i] != -1) {
+                        TEST_ASSERT(local_testset[i] < can_iterate_low ||
+                                    local_testset[i] > can_iterate_high);
                 }
         }
 }
 
 static void search_min(void)
 {
-        int testset[] = { 0, 8, 10, 35, 40 };
-        const size_t testset_len = ARRAY_SIZE(testset);
+        int local_testset[] = { 0, 8, 10, 35, 40 };
+        const size_t local_testset_len = ARRAY_SIZE(local_testset);
         struct rbtree *rbt = calloc(1, sizeof(*rbt));
         rbtree_init_tree(rbt);
 
-        for (size_t i = 0; i < testset_len; i++) {
+        for (size_t i = 0; i < local_testset_len; i++) {
                 struct rbtree_node *n = malloc(sizeof(*n));
                 rbtree_init_node(n);
-                n->data = &testset[i];
+                n->data = &local_testset[i];
 
                 rbtree_insert(rbt, n, intcmp);
         }
@@ -326,15 +328,15 @@ static void search_min(void)
 
 static void search_max(void)
 {
-        int testset[] = { 0, 8, 10, 35, 40 };
-        const size_t testset_len = ARRAY_SIZE(testset);
+        int local_testset[] = { 0, 8, 10, 35, 40 };
+        const size_t local_testset_len = ARRAY_SIZE(local_testset);
         struct rbtree *rbt = calloc(1, sizeof(*rbt));
         rbtree_init_tree(rbt);
 
-        for (size_t i = 0; i < testset_len; i++) {
+        for (size_t i = 0; i < local_testset_len; i++) {
                 struct rbtree_node *n = malloc(sizeof(*n));
                 rbtree_init_node(n);
-                n->data = &testset[i];
+                n->data = &local_testset[i];
 
                 rbtree_insert(rbt, n, intcmp);
         }

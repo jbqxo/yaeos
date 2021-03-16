@@ -16,11 +16,13 @@
 static char buffer[256];
 static int pos;
 
-void console_write(const char *msg, size_t length)
+static int console_write(const char *msg, size_t length)
 {
         for (size_t i = 0; i < length; i++) {
                 buffer[pos++] = msg[i];
         }
+
+        return ((int)length);
 }
 
 static void reset(void)
@@ -51,10 +53,10 @@ void tearDown(void)
                 reset();                                                        \
         } while (0)
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wformat"
-#pragma clang diagnostic ignored "-Wint-conversion"
-#pragma clang diagnostic ignored "-Wincompatible-pointer-types"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat"
+#pragma GCC diagnostic ignored "-Wint-conversion"
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
 
 static void simple(void)
 {
@@ -213,4 +215,4 @@ int main(void)
         UNITY_END();
         return (0);
 }
-#pragma clang diagnostic pop
+#pragma GCC diagnostic pop

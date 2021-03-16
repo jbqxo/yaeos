@@ -22,8 +22,9 @@ static char lvl_to_char(enum LOG_LEVEL lvl)
         return (LOOKUP_TABLE[lvl]);
 }
 
-__weak void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path, const char *restrict func,
-                         const char *restrict line, const char *restrict format, ...)
+__weak void klog_logf_at(enum LOG_LEVEL lvl, const char *restrict path __unused,
+                         const char *restrict func, const char *restrict line,
+                         const char *restrict format, ...)
 {
         char *message = malloc(4096 * sizeof(*message));
         char *buffer = malloc(2048 * sizeof(*buffer));

@@ -11,17 +11,17 @@
 #define BITS_IN_SET (sizeof((((struct bitmap *)NULL)->bitsets[0])) * 8)
 
 static inline void assert_bounds(struct bitmap *bitmap __maybe_unused,
-                                 uint32_t bitset_ndx __maybe_unused, uint32_t bitndx __maybe_unused)
+                                 size_t bitset_ndx __maybe_unused, size_t bitndx __maybe_unused)
 {
         /* Check that we're not using a bit past bitmap->length. */
         kassert(bitset_ndx * BITS_IN_SET + bitndx < bitmap->length);
 }
 
-bool bitmap_search_false(struct bitmap *bitmap, uint32_t *result)
+bool bitmap_search_false(struct bitmap *bitmap, size_t *result)
 {
         bool found = false;
-        uint32_t word_ndx = 0;
-        for (uint32_t i = 0; i < bitmap->sets_count; i++) {
+        size_t word_ndx = 0;
+        for (size_t i = 0; i < bitmap->sets_count; i++) {
                 if (bitmap->bitsets[i] != ~((BITMAP_WORD_TYPE)0)) {
                         found = true;
                         word_ndx = i;
@@ -32,8 +32,8 @@ bool bitmap_search_false(struct bitmap *bitmap, uint32_t *result)
         if (!found) {
                 return (false);
         }
-        uint32_t bit_rel_ndx = find_first_zero(bitmap->bitsets[word_ndx]);
-        uint32_t bit_abs_ndx = word_ndx * BITS_IN_SET + bit_rel_ndx;
+        size_t bit_rel_ndx = find_first_zero(bitmap->bitsets[word_ndx]);
+        size_t bit_abs_ndx = word_ndx * BITS_IN_SET + bit_rel_ndx;
         if (bit_abs_ndx < bitmap->length) {
                 *result = bit_abs_ndx;
                 return (true);
@@ -41,16 +41,16 @@ bool bitmap_search_false(struct bitmap *bitmap, uint32_t *result)
         return (false);
 }
 
-static void get_indices(uint32_t index, uint32_t *set_ndx, uint32_t *bit_ndx)
+static void get_indices(size_t index, size_t *set_ndx, size_t *bit_ndx)
 {
         *set_ndx = index / BITS_IN_SET;
         *bit_ndx = index % BITS_IN_SET;
 }
 
-bool bitmap_get(struct bitmap *bitmap, uint32_t index)
+bool bitmap_get(struct bitmap *bitmap, size_t index)
 {
-        uint32_t bitset_ndx = 0;
-        uint32_t bitndx = 0;
+        size_t bitset_ndx = 0;
+        size_t bitndx = 0;
         get_indices(index, &bitset_ndx, &bitndx);
 
         assert_bounds(bitmap, bitset_ndx, bitndx);
@@ -58,10 +58,10 @@ bool bitmap_get(struct bitmap *bitmap, uint32_t index)
         return (bitmap->bitsets[bitset_ndx] & (1U << bitndx));
 }
 
-void bitmap_set_true(struct bitmap *bitmap, uint32_t index)
+void bitmap_set_true(struct bitmap *bitmap, size_t index)
 {
-        uint32_t bitset_ndx = 0;
-        uint32_t bitndx = 0;
+        size_t bitset_ndx = 0;
+        size_t bitndx = 0;
         get_indices(index, &bitset_ndx, &bitndx);
 
         assert_bounds(bitmap, bitset_ndx, bitndx);
@@ -69,10 +69,10 @@ void bitmap_set_true(struct bitmap *bitmap, uint32_t index)
         bitmap->bitsets[bitset_ndx] |= (1U << bitndx);
 }
 
-void bitmap_set_false(struct bitmap *bitmap, uint32_t index)
+void bitmap_set_false(struct bitmap *bitmap, size_t index)
 {
-        uint32_t bitset_ndx = 0;
-        uint32_t bitndx = 0;
+        size_t bitset_ndx = 0;
+        size_t bitndx = 0;
         get_indices(index, &bitset_ndx, &bitndx);
 
         assert_bounds(bitmap, bitset_ndx, bitndx);
@@ -80,7 +80,7 @@ void bitmap_set_false(struct bitmap *bitmap, uint32_t index)
         bitmap->bitsets[bitset_ndx] &= ~(1U << bitndx);
 }
 
-size_t bitmap_predict_size(uint32_t length_bits)
+size_t bitmap_predict_size(size_t length_bits)
 {
         kassert(length_bits > 0);
         return (align_roundup(length_bits, BITS_IN_SET) / 8);

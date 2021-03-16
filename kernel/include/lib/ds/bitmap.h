@@ -17,16 +17,16 @@ struct bitmap {
 
 void bitmap_init(struct bitmap *bitmap, void *space, size_t length_bits);
 
-bool bitmap_get(struct bitmap *bitmap, uint32_t index);
+bool bitmap_get(struct bitmap *bitmap, size_t index);
 
-void bitmap_set_false(struct bitmap *bitmap, uint32_t index);
+void bitmap_set_false(struct bitmap *bitmap, size_t index);
 
-void bitmap_set_true(struct bitmap *bitmap, uint32_t index);
+void bitmap_set_true(struct bitmap *bitmap, size_t index);
 
-bool bitmap_search_false(struct bitmap *bitmap, uint32_t *result);
+bool bitmap_search_false(struct bitmap *bitmap, size_t *result);
 
 void bitmap_resize(struct bitmap *bitmap, size_t new_length_bits);
 
-__const size_t bitmap_predict_size(uint32_t length_bits);
+__const size_t bitmap_predict_size(size_t length_bits);
 
 #endif /* _LIB_DS_BITMAP_H */

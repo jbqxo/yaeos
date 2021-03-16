@@ -8,9 +8,9 @@
 #define CBUFFER_DECLARE(valuetype, length) \
         struct {                           \
                 valuetype array[(length)]; \
-                unsigned r_idx;            \
-                unsigned w_idx;            \
-                unsigned count;            \
+                size_t r_idx;            \
+                size_t w_idx;            \
+                size_t count;            \
         }
 
 #define CBUFFER_INIT(cbuffer)                                            \
@@ -25,16 +25,18 @@
 #define CBUFFER_NEXT_WIDX(cbuffer) (((cbuffer)->w_idx + 1) % CBUFFER_LENGTH(cbuffer))
 #define CBUFFER_NEXT_RIDX(cbuffer) (((cbuffer)->r_idx + 1) % CBUFFER_LENGTH(cbuffer))
 
-#define CBUFFER_PUSH(cbuffer, value)                               \
-        ((cbuffer)->count < CBUFFER_LENGTH(cbuffer));              \
-        do {                                                       \
-                if ((cbuffer)->count == CBUFFER_LENGTH(cbuffer)) { \
-                        break;                                     \
-                }                                                  \
-                (cbuffer)->array[(cbuffer)->w_idx] = (value);      \
-                (cbuffer)->w_idx = CBUFFER_NEXT_WIDX(cbuffer);     \
-                (cbuffer)->count++;                                \
-        } while (0)
+#define CBUFFER_PUSH(cbuffer, value)                                       \
+        ({                                                                 \
+                do {                                                       \
+                        if ((cbuffer)->count == CBUFFER_LENGTH(cbuffer)) { \
+                                break;                                     \
+                        }                                                  \
+                        (cbuffer)->array[(cbuffer)->w_idx] = (value);      \
+                        (cbuffer)->w_idx = CBUFFER_NEXT_WIDX(cbuffer);     \
+                        (cbuffer)->count++;                                \
+                } while (0);                                               \
+                ((cbuffer)->count < CBUFFER_LENGTH(cbuffer));              \
+        })
 
 #define CBUFFER_POP(cbuffer, dest, defaultval)                 \
         do {                                                   \

@@ -269,20 +269,20 @@ static struct argument fetch_arg(struct conv_spec s, va_list *args)
         case CS_UOCTAL:
         case CS_UDEC: {
                 switch (s.length) {
-                case CL_CHAR: arg.val.d = va_arg(*args, int); break;
-                case CL_SHORT: arg.val.d = va_arg(*args, int); break;
-                case CL_LONG: arg.val.d = va_arg(*args, long); break;
-                case CL_LLONG: arg.val.d = va_arg(*args, long long); break;
-                case CL_INTMAX: arg.val.d = va_arg(*args, intmax_t); break;
-                case CL_SIZET: arg.val.d = va_arg(*args, size_t); break;
-                case CL_NONE: arg.val.d = va_arg(*args, int); break;
-                case CL_PTRDIFF: arg.val.d = va_arg(*args, ptrdiff_t); break;
+                case CL_CHAR: arg.val.ud = va_arg(*args, unsigned int); break;
+                case CL_SHORT: arg.val.ud = va_arg(*args, unsigned int); break;
+                case CL_LONG: arg.val.ud = va_arg(*args, unsigned long); break;
+                case CL_LLONG: arg.val.ud = va_arg(*args, unsigned long long); break;
+                case CL_INTMAX: arg.val.ud = va_arg(*args, uintmax_t); break;
+                case CL_SIZET: arg.val.ud = va_arg(*args, size_t); break;
+                case CL_NONE: arg.val.ud = va_arg(*args, unsigned int); break;
+                case CL_PTRDIFF: arg.val.ud = va_arg(*args, uintptr_t); break;
                 default: kassert(false);
                 }
         } break;
-        case CS_PTR: arg.val.d = va_arg(*args, uintptr_t); break;
+        case CS_PTR: arg.val.ud = va_arg(*args, uintptr_t); break;
         case CS_STR: arg.val.str = va_arg(*args, char *); break;
-        case CS_UCHAR: arg.val.d = va_arg(*args, int); break;
+        case CS_UCHAR: arg.val.ud = va_arg(*args, unsigned int); break;
         default: kassert(false);
         }
         return (arg);
@@ -298,7 +298,7 @@ struct conv_spec_funcs {
         const char *(*prefix)(struct conv_spec *s, struct argument *a, size_t *length);
 };
 
-__const static size_t length_for_intnumbase(uintmax_t num, unsigned base, unsigned max_num_digits)
+__const static unsigned int length_for_intnumbase(uintmax_t num, unsigned base, unsigned max_num_digits)
 {
         kassert(max_num_digits <= INT_MAX);
         for (int i = (int)max_num_digits - 1; i >= 0; i--) {
@@ -308,7 +308,7 @@ __const static size_t length_for_intnumbase(uintmax_t num, unsigned base, unsign
                 }
                 if (num >= power) {
                         /* i can't be negative, so the cast is fine. */
-                        return ((size_t)i + 1);
+                        return ((unsigned int)i + 1);
                 }
         }
         return (1);
@@ -322,7 +322,7 @@ static size_t oct_length(struct conv_spec *s, struct argument *a)
                 return (0);
         }
 
-        unsigned const length = length_for_intnumbase(a->val.ud, 8, 22);
+        unsigned int const length = length_for_intnumbase(a->val.ud, 8, 22);
 
         if (s->precision.special != PREC_EMPTY) {
                 if (s->precision.precision >= length) {
@@ -382,7 +382,7 @@ static size_t dec_length(struct conv_spec *s, struct argument *a)
                 return (0);
         }
 
-        size_t const length = length_for_intnumbase(a->val.ud, 10, 20);
+        unsigned int const length = length_for_intnumbase(a->val.ud, 10, 20);
 
         if (s->precision.special != PREC_EMPTY) {
                 if (s->precision.precision >= length) {

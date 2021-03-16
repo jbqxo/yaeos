@@ -23,7 +23,7 @@ void tearDown(void)
 
 static void inited_to_zero(void)
 {
-        for (int i = 0; i < BITS_NUM; i++) {
+        for (size_t i = 0; i < BITS_NUM; i++) {
                 TEST_ASSERT_FALSE(bitmap_get(&bitmap, i));
         }
 }
@@ -49,12 +49,12 @@ static void couldnt_get_past_boundaries(void)
 
 static void search_false(void)
 {
-        int expected = BITS_NUM / 4;
-        for (int i = 0; i < expected; i++) {
+        size_t expected = BITS_NUM / 4;
+        for (size_t i = 0; i < expected; i++) {
                 bitmap_set_true(&bitmap, i);
         }
 
-        uint32_t result = 0;
+        size_t result = 0;
         if (!bitmap_search_false(&bitmap, &result)) {
                 TEST_FAIL();
         }

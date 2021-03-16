@@ -15,10 +15,7 @@
  * @brief Calculate the maximum bit index on the level for the given chunk.
  *
  */
-static unsigned max_index(size_t pages, unsigned lvl)
-{
-        return (pages) >> lvl;
-}
+#define max_index(PAGES, LVL) ((PAGES) >> (LVL))
 
 size_t buddy_predict_req_space(size_t const pages)
 {
@@ -35,7 +32,7 @@ size_t buddy_predict_req_space(size_t const pages)
         return (bitmaps + lvls_array);
 }
 
-uint32_t buddy_init(struct buddy_manager *bmgr, size_t const pages, struct linear_alloc *alloc)
+size_t buddy_init(struct buddy_manager *bmgr, size_t const pages, struct linear_alloc *alloc)
 {
         const size_t alloc_space_before __maybe_unused = linear_alloc_occupied(alloc);
 
@@ -57,7 +54,7 @@ uint32_t buddy_init(struct buddy_manager *bmgr, size_t const pages, struct linea
         return (max_index(pages, 0));
 }
 
-static void occupy_buddys_descendants(struct buddy_manager *bmgr, unsigned lvl, unsigned bit)
+static void occupy_buddys_descendants(struct buddy_manager *bmgr, size_t lvl, size_t bit)
 {
         if (lvl == 0) {
                 return;
@@ -71,7 +68,7 @@ static void occupy_buddys_descendants(struct buddy_manager *bmgr, unsigned lvl, 
         occupy_buddys_descendants(bmgr, lvl, bit + 1);
 }
 
-static void occupy_buddy(struct buddy_manager *bmgr, unsigned lvl, unsigned bit)
+static void occupy_buddy(struct buddy_manager *bmgr, size_t lvl, size_t bit)
 {
         occupy_buddys_descendants(bmgr, lvl, bit);
 
@@ -84,7 +81,7 @@ static void occupy_buddy(struct buddy_manager *bmgr, unsigned lvl, unsigned bit)
         }
 }
 
-static void free_buddys_ancestors(struct buddy_manager *bmgr, unsigned lvl, unsigned bit)
+static void free_buddys_ancestors(struct buddy_manager *bmgr, size_t lvl, size_t bit)
 {
         while (lvl <= bmgr->lvls) {
                 lvl++;
@@ -100,7 +97,7 @@ static void free_buddys_ancestors(struct buddy_manager *bmgr, unsigned lvl, unsi
         }
 }
 
-static void free_buddys_children(struct buddy_manager *bmgr, unsigned lvl, unsigned bit)
+static void free_buddys_children(struct buddy_manager *bmgr, size_t lvl, size_t bit)
 {
         if (lvl == 0) {
                 return;
@@ -114,14 +111,14 @@ static void free_buddys_children(struct buddy_manager *bmgr, unsigned lvl, unsig
         free_buddys_children(bmgr, lvl, bit + 1);
 }
 
-static void free_buddy(struct buddy_manager *bmgr, unsigned lvl, unsigned bit)
+static void free_buddy(struct buddy_manager *bmgr, size_t lvl, size_t bit)
 {
         bitmap_set_false(&bmgr->lvl_bitmaps[lvl], bit);
         free_buddys_children(bmgr, lvl, bit);
         free_buddys_ancestors(bmgr, lvl, bit);
 }
 
-bool buddy_try_alloc(struct buddy_manager *bmgr, unsigned order, uint32_t page_ndx)
+bool buddy_try_alloc(struct buddy_manager *bmgr, size_t order, size_t page_ndx)
 {
         kassert(bmgr != NULL);
 
@@ -132,13 +129,13 @@ bool buddy_try_alloc(struct buddy_manager *bmgr, unsigned order, uint32_t page_n
         return (true);
 }
 
-bool buddy_alloc(struct buddy_manager *bmgr, unsigned order, uint32_t *result)
+bool buddy_alloc(struct buddy_manager *bmgr, size_t order, size_t *result)
 {
         if (order > bmgr->lvls) {
                 return (false);
         }
 
-        uint32_t ndx = 0;
+        size_t ndx = 0;
         if (!bitmap_search_false(&bmgr->lvl_bitmaps[order], &ndx)) {
                 return (false);
         }
@@ -148,12 +145,12 @@ bool buddy_alloc(struct buddy_manager *bmgr, unsigned order, uint32_t *result)
         return (true);
 }
 
-void buddy_free(struct buddy_manager *bmgr, uint32_t page_ndx, unsigned order)
+void buddy_free(struct buddy_manager *bmgr, size_t page_ndx, size_t order)
 {
         free_buddy(bmgr, order, page_ndx);
 }
 
-bool buddy_is_free(struct buddy_manager *bmgr, uint32_t page_ndx)
+bool buddy_is_free(struct buddy_manager *bmgr, size_t page_ndx)
 {
         kassert(bmgr != NULL);
 

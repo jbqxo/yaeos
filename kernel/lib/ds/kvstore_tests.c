@@ -21,7 +21,8 @@ void setUp(void)
         kvstore_mem = malloc(req_mem);
         assert(NULL != kvstore_mem);
 
-        kvstore = kvstore_create(kvstore_mem, KVSTORE_LEN, strcmp);
+        /* NOTE: The cast _should_ be fine.  */
+        kvstore = kvstore_create(kvstore_mem, KVSTORE_LEN, (kvstore_fn_cmpkeys_t)strcmp);
 }
 
 void tearDown(void)
@@ -57,10 +58,11 @@ static void store_retrieve_multiple(void)
 
         TEST_ASSERT_EQUAL_INT(KVSTORE_LEN, kvstore_length(kvstore));
 
-        for (size_t i = KVSTORE_LEN - 1; i >= 0; i--) {
+        for (signed long long i = KVSTORE_LEN - 1; i >= 0; i--) {
+                size_t const u = (size_t)i;
                 uintptr_t val;
-                TEST_ASSERT_TRUE(kvstore_find(kvstore, testarr[i].key, (void**)&val));
-                TEST_ASSERT_EQUAL_INT(testarr[i].val, val);
+                TEST_ASSERT_TRUE(kvstore_find(kvstore, testarr[u].key, (void**)&val));
+                TEST_ASSERT_EQUAL_INT(testarr[u].val, val);
         }
 }
 
@@ -94,7 +96,7 @@ static void dont_exceed(void)
 {
         static const struct {
                 char *key;
-                int val;
+                uintptr_t val;
         } testarr[KVSTORE_LEN + 1] = { { "one", 10 },   { "two", 20 },    { "three", 30 },
                                        { "four", 40 },  { "five", 50 },   { "six", 60 },
                                        { "seven", 70 }, { "eight", 80 },  { "nine", 90 },

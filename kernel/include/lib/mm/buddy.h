@@ -22,7 +22,7 @@ struct buddy_manager {
  * @param alloc Allocator to use for internal data.
  * @return Number of free pages.
  */
-uint32_t buddy_init(struct buddy_manager *bmgr, size_t pages, struct linear_alloc *alloc);
+size_t buddy_init(struct buddy_manager *bmgr, size_t pages, struct linear_alloc *alloc);
 
 /**
  * @brief Allocate specified number of pages.
@@ -30,22 +30,22 @@ uint32_t buddy_init(struct buddy_manager *bmgr, size_t pages, struct linear_allo
  * @param result An index of the allocated page/pages.
  * @return Indicates success of the operation.
  */
-bool buddy_alloc(struct buddy_manager *bmgr, unsigned order, uint32_t *result);
+bool buddy_alloc(struct buddy_manager *bmgr, size_t order, size_t *result);
 
 /**
  * @brief Try to allocate specified page.
  * @param page_ndx Index of the page to allocate.
  * @return Indicates success of the operation. */
-bool buddy_try_alloc(struct buddy_manager *bmgr, unsigned order, uint32_t page_ndx);
+bool buddy_try_alloc(struct buddy_manager *bmgr, size_t order, size_t page_ndx);
 
 /**
  * @brief Free specified memory space.
  * @param page_ndx Index of the allocated page to free.
  * @param order 2^(order) of pages that was requested.
  */
-void buddy_free(struct buddy_manager *bmgr, uint32_t page_ndx, unsigned order);
+void buddy_free(struct buddy_manager *bmgr, size_t page_ndx, size_t order);
 
-bool buddy_is_free(struct buddy_manager *bmgr, uint32_t page_ndx);
+bool buddy_is_free(struct buddy_manager *bmgr, size_t page_ndx);
 
 /**
  * @brief Predict space required by a buddy manager for a specified number of pages.

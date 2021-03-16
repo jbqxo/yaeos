@@ -20,9 +20,9 @@ struct kmm_cache {
         size_t stride;        /**< Actual space wasted on each object. */
 
         /* Slab coloring. */
-        unsigned colour_max;
-        unsigned colour_off;
-        unsigned colour_next;
+        size_t colour_max;
+        size_t colour_off;
+        size_t colour_next;
 
 #define KMM_CACHE_LARGE (0x1 << 0)
         unsigned flags;

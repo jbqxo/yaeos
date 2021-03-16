@@ -57,7 +57,7 @@ void kmalloc_init(uint8_t lowest_pow2_size, uint8_t max_pow2_size)
 __malloc void *kmalloc(size_t size)
 {
         size_t const req_space = size + sizeof(struct kmalloc_ident_info);
-        uint8_t pow = log2_ceil(req_space);
+        uint8_t pow = (uint8_t)log2_ceil(req_space);
         pow = MAX(pow, LOW_POW);
 
         uint8_t const cache_index = pow - LOW_POW;
