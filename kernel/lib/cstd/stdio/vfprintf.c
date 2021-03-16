@@ -568,13 +568,13 @@ static int put_flags(fprintf_fn f, struct conv_spec s, struct argument arg)
                 }
                 printed += rc;
         } else if (s.flags & CF_PLUS) {
-                int rc = f("-", 1);
+                int rc = f(arg.negative ? "-" : "+", 1);
                 if (__unlikely(rc < 0)) {
                         return (rc);
                 }
                 printed += rc;
         } else if (s.flags & CF_SPACE) {
-                int rc = f("-", 1);
+                int rc = f(arg.negative ? "-" : " ", 1);
                 if (__unlikely(rc < 0)) {
                         return (rc);
                 }
