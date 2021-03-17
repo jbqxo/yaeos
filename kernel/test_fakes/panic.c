@@ -5,6 +5,7 @@
 #include "kernel/mm/vm.h"
 
 #include "lib/cppdefs.h"
+#include "lib/tests/assert_failed.h"
 
 #include <assert.h>
 #include <stdarg.h>
@@ -12,6 +13,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unity.h>
+
+jmp_buf UNIT_TEST_KASSERT_JMPBUF;
+bool UNIT_TEST_KASSERT_SET = false;
 
 static char lvl_to_char(enum LOG_LEVEL lvl)
 {
@@ -58,6 +62,9 @@ __weak void kernel_panic(struct kernel_panic_info *info)
 
 __noreturn void assertion_fail(char const *failed_expression, char const *location)
 {
+        if (failed_kassert_expecting()) {
+                failed_kassert_kasserted();
+        }
         fprintf(stderr, "Assertion failed: %s\n", failed_expression);
         fprintf(stderr, "At: %s\n", location);
         exit(EXIT_FAILURE);
