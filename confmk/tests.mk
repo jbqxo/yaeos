@@ -6,6 +6,8 @@ LD := $(CC)
 AS := $(CC) -xassembler-with-cpp -c
 AR := ar
 
+# Useful if we need to use valgrind, for example.
+ifneq ($(findstring 1,$(NOSAN)),1)
 CFLAGS_COMMON +=\
 	-fsanitize=address \
 	-fsanitize=pointer-compare \
@@ -16,5 +18,6 @@ CFLAGS_COMMON +=\
 	-fsanitize=bounds \
 	-fsanitize-address-use-after-scope \
 	-fno-omit-frame-pointer
+endif
 
 ARCH := tests
