@@ -22,7 +22,7 @@ void *linear_alloc_alloc(struct linear_alloc *a, size_t len)
 
         uintptr_t const pos = a->position;
 
-        if (__unlikely(pos + len >= a->limit)) {
+        if (__unlikely(pos + len > a->limit)) {
                 return (NULL);
         }
 

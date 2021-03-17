@@ -5,13 +5,14 @@
 #include "lib/ds/slist.h"
 
 #include <stddef.h>
+#include <stdint.h>
 
 struct mem_pool {
         struct slist_ref nodes;
 
 #ifndef NDEBUG
-        void *mem_start;
-        void *mem_end;
+        uintptr_t mem_start;
+        uintptr_t mem_end;
 #endif
 };
 

@@ -22,13 +22,13 @@ void mem_pool_init(struct mem_pool *pool, void *mem, size_t mem_size, size_t ele
 
         elem_size = MAX(elem_size, sizeof(union node));
         uintptr_t mblock = align_roundup((uintptr_t)mem, elem_align);
-        size_t stride = align_roundup(elem_size, elem_align);
-        size_t limit = (uintptr_t)mem + mem_size;
+        size_t const stride = align_roundup(elem_size, elem_align);
+        uintptr_t const limit = (uintptr_t)mem + mem_size;
 
         slist_init(&pool->nodes);
 #ifndef NDEBUG
-        pool->mem_start = pool;
-        pool->mem_end = (void *)limit;
+        pool->mem_start = (uintptr_t)mem;
+        pool->mem_end = limit;
 #endif
 
         kassert(mblock + elem_size <= limit);
@@ -68,7 +68,7 @@ void mem_pool_free(struct mem_pool *pool, void *mem)
         kassert(mem);
 
 #ifndef NDEBUG
-        kassert(mem > pool->mem_start && mem < pool->mem_end);
+        kassert((uintptr_t)mem >= pool->mem_start && (uintptr_t)mem < pool->mem_end);
 #endif
 
         union node *node = mem;

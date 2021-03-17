@@ -67,7 +67,7 @@ bool kvstore_find(struct kvstore const *kv, void const *key, void **result_val)
         kassert(key != NULL);
 
         for (size_t i = 0; i < kv->cap; i++) {
-                if (kv->cmpfn(kv->keys[i], key) == 0) {
+                if (NULL != kv->keys[i] && 0 == kv->cmpfn(kv->keys[i], key)) {
                         *result_val = kv->values[i];
                         return (true);
                 }

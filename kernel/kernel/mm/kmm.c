@@ -150,7 +150,7 @@ static void free_large_buffers(struct slist_ref *list_head, struct kmm_cache *ca
                         void *mem = bufctl_large_get_mem(&b->large);
                         cache->dtor(mem);
                 }
-                kmm_cache_free(cache, b);
+                kmm_cache_free(&CACHES.large_bufctls, b);
 
                 current = next;
         }
