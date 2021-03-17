@@ -5,6 +5,7 @@
 #include "lib/ds/bitmap.h"
 
 #include "lib/cppdefs.h"
+#include "lib/tests/assert_failed.h"
 
 #include <unity.h>
 
@@ -44,7 +45,9 @@ static void manipulate_bits(void)
 
 static void couldnt_get_past_boundaries(void)
 {
-        bitmap_get(&bitmap, BITS_NUM + 1);
+        if(!failed_kassert(bitmap_get(&bitmap, BITS_NUM + 1))) {
+                TEST_FAIL();
+        }
 }
 
 static void search_false(void)

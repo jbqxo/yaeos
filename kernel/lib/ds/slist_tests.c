@@ -64,14 +64,15 @@ static void single_element_removal_head(void)
         };
         size_t testobjs_len = ARRAY_SIZE(testobjs);
 
-        slist_insert(&HEAD, &testobjs[0].list);
-        for (size_t i = 1; i < testobjs_len; i++) {
-                slist_insert(&testobjs[i - 1].list, &testobjs[i].list);
+        struct slist_ref *last = &HEAD;
+        for (size_t i = 0; i < testobjs_len; i++) {
+                slist_insert(last, &testobjs[i].list);
+                last = &testobjs[i].list;
         }
 
         slist_remove(&HEAD, &testobjs[0].list);
         size_t i = 1;
-        SLIST_FOREACH (it, &HEAD) {
+        SLIST_FOREACH (it, slist_next(&HEAD)) {
                 struct node *n = node_of(it);
                 TEST_ASSERT(testobjs[i].val == n->val);
                 TEST_ASSERT(&testobjs[i] == n);
@@ -88,9 +89,10 @@ static void single_element_removal_middle(void)
         };
         size_t testobjs_len = ARRAY_SIZE(testobjs);
 
-        slist_insert(&HEAD, &testobjs[0].list);
-        for (size_t i = 1; i < testobjs_len; i++) {
-                slist_insert(&testobjs[i - 1].list, &testobjs[i].list);
+        struct slist_ref *last = &HEAD;
+        for (size_t i = 0; i < testobjs_len; i++) {
+                slist_insert(last, &testobjs[i].list);
+                last = &testobjs[i].list;
         }
 
         slist_remove(&HEAD, &testobjs[1].list);
@@ -114,14 +116,15 @@ static void single_element_removal(void)
         };
         size_t testobjs_len = ARRAY_SIZE(testobjs);
 
-        slist_insert(&HEAD, &testobjs[0].list);
-        for (size_t i = 1; i < testobjs_len; i++) {
-                slist_insert(&testobjs[i - 1].list, &testobjs[i].list);
+        struct slist_ref *last = &HEAD;
+        for (size_t i = 0; i < testobjs_len; i++) {
+                slist_insert(last, &testobjs[i].list);
+                last = &testobjs[i].list;
         }
 
         slist_remove(&HEAD, &testobjs[2].list);
         size_t i = 0;
-        SLIST_FOREACH (it, &HEAD) {
+        SLIST_FOREACH (it, slist_next(&HEAD)) {
                 struct node *n = node_of(it);
 
                 TEST_ASSERT(i < 2);
@@ -133,7 +136,7 @@ static void single_element_removal(void)
 
 static void survive_empty_list_traversal(void)
 {
-        SLIST_FOREACH (it, &HEAD) {
+        SLIST_FOREACH (it, slist_next(&HEAD)) {
                 TEST_FAIL();
         }
 }

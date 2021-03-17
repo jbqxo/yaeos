@@ -5,42 +5,47 @@
 
 #include "lib/ds/kvstore.h"
 
+#include "lib/tests/assert_failed.h"
+#include "lib/utils.h"
+
 #include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unity.h>
 
-#define KVSTORE_LEN 10
-static void *kvstore_mem;
-static struct kvstore *kvstore;
-
 void setUp(void)
-{
-        size_t const req_mem = kvstore_predict_reqmem(KVSTORE_LEN);
-        kvstore_mem = malloc(req_mem);
-        assert(NULL != kvstore_mem);
-
-        /* NOTE: The cast _should_ be fine.  */
-        kvstore = kvstore_create(kvstore_mem, KVSTORE_LEN, (kvstore_fn_cmpkeys_t)strcmp);
-}
+{}
 
 void tearDown(void)
+{}
+
+static struct kvstore *create_kvstore_with_len(size_t const len, void **allocated_mem)
 {
-        free(kvstore_mem);
+        size_t const req_mem = kvstore_predict_reqmem(len);
+        *allocated_mem = malloc(req_mem);
+        assert(NULL != *allocated_mem);
+
+        /* NOTE: The cast _should_ be fine.  */
+        return (kvstore_create(*allocated_mem, len, (kvstore_fn_cmpkeys_t)strcmp));
 }
 
 static void store_retrieve_single(void)
 {
+        void *mem;
+        struct kvstore *kvstore = create_kvstore_with_len(1, &mem);
+
         static char *test_key = "test_key";
         static const uintptr_t test_val = 30;
 
-        kvstore_append(kvstore, test_key, (void*)test_val);
+        kvstore_append(kvstore, test_key, (void *)test_val);
         TEST_ASSERT_EQUAL_INT(1, kvstore_length(kvstore));
 
         uintptr_t val;
         TEST_ASSERT_TRUE(kvstore_find(kvstore, test_key, (void **)&val));
         TEST_ASSERT_EQUAL_INT(test_val, val);
+
+        free(mem);
 }
 
 static void store_retrieve_multiple(void)
@@ -48,22 +53,28 @@ static void store_retrieve_multiple(void)
         static const struct {
                 char *key;
                 uintptr_t val;
-        } testarr[KVSTORE_LEN] = { { "one", 10 },  { "two", 20 }, { "three", 30 }, { "four", 40 },
-                                   { "five", 50 }, { "six", 60 }, { "seven", 70 }, { "eight", 80 },
-                                   { "nine", 90 }, { "ten", 100 } };
+        } testarr[] = { { "one", 10 },  { "two", 20 }, { "three", 30 }, { "four", 40 },
+                        { "five", 50 }, { "six", 60 }, { "seven", 70 }, { "eight", 80 },
+                        { "nine", 90 }, { "ten", 100 } };
+        size_t const testarr_len = ARRAY_SIZE(testarr);
 
-        for (size_t i = 0; i < KVSTORE_LEN; i++) {
-                kvstore_append(kvstore, testarr[i].key, (void*)testarr[i].val);
+        void *mem;
+        struct kvstore *kvstore = create_kvstore_with_len(testarr_len, &mem);
+
+        for (size_t i = 0; i < testarr_len; i++) {
+                kvstore_append(kvstore, testarr[i].key, (void *)testarr[i].val);
         }
 
-        TEST_ASSERT_EQUAL_INT(KVSTORE_LEN, kvstore_length(kvstore));
+        TEST_ASSERT_EQUAL_INT(testarr_len, kvstore_length(kvstore));
 
-        for (signed long long i = KVSTORE_LEN - 1; i >= 0; i--) {
+        for (signed long long i = (signed long long)testarr_len - 1; i >= 0; i--) {
                 size_t const u = (size_t)i;
                 uintptr_t val;
-                TEST_ASSERT_TRUE(kvstore_find(kvstore, testarr[u].key, (void**)&val));
+                TEST_ASSERT_TRUE(kvstore_find(kvstore, testarr[u].key, (void **)&val));
                 TEST_ASSERT_EQUAL_INT(testarr[u].val, val);
         }
+
+        free(mem);
 }
 
 static void kvstore_iter_doesnt_contain(void *key __unused, void *value __unused, void *data)
@@ -77,19 +88,25 @@ static void remove_pair(void)
                 char *key;
                 uintptr_t val;
         } testarr[3] = { { "one", 1 }, { "four", 4 }, { "six", 6 } };
+        size_t const testarr_len = ARRAY_SIZE(testarr);
+
+        void *mem;
+        struct kvstore *kvstore = create_kvstore_with_len(testarr_len, &mem);
 
         for (size_t i = 0; i < 3; i++) {
-                kvstore_append(kvstore, testarr[i].key, (void*)testarr[i].val);
+                kvstore_append(kvstore, testarr[i].key, (void *)testarr[i].val);
         }
 
-        TEST_ASSERT_EQUAL_INT(KVSTORE_LEN, kvstore_length(kvstore));
+        TEST_ASSERT_EQUAL_INT(testarr_len, kvstore_length(kvstore));
 
         kvstore_remove(kvstore, "four");
 
         uintptr_t val;
-        TEST_ASSERT_FALSE(kvstore_find(kvstore, "four", (void**)&val));
+        TEST_ASSERT_FALSE(kvstore_find(kvstore, "four", (void **)&val));
 
         kvstore_iter(kvstore, kvstore_iter_doesnt_contain, "four");
+
+        free(mem);
 }
 
 static void dont_exceed(void)
@@ -97,21 +114,24 @@ static void dont_exceed(void)
         static const struct {
                 char *key;
                 uintptr_t val;
-        } testarr[KVSTORE_LEN + 1] = { { "one", 10 },   { "two", 20 },    { "three", 30 },
-                                       { "four", 40 },  { "five", 50 },   { "six", 60 },
-                                       { "seven", 70 }, { "eight", 80 },  { "nine", 90 },
-                                       { "ten", 100 },  { "eleven", 110 } };
+        } testarr[] = { { "one", 10 },  { "two", 20 },  { "three", 30 },  { "four", 40 },
+                        { "five", 50 }, { "six", 60 },  { "seven", 70 },  { "eight", 80 },
+                        { "nine", 90 }, { "ten", 100 }, { "eleven", 110 } };
+        size_t const testarr_len = ARRAY_SIZE(testarr) - 1;
 
-        for (size_t i = 0; i < KVSTORE_LEN + 1; i++) {
-                kvstore_append(kvstore, testarr[i].key, (void*)testarr[i].val);
+        void *mem;
+        struct kvstore *kvstore = create_kvstore_with_len(testarr_len, &mem);
+
+        for (size_t i = 0; i < testarr_len; i++) {
+                kvstore_append(kvstore, testarr[i].key, (void *)testarr[i].val);
         }
 
-        TEST_ASSERT_EQUAL_INT(KVSTORE_LEN, kvstore_length(kvstore));
+        if (!failed_kassert(kvstore_append(kvstore, testarr[testarr_len].key,
+                                           (void *)testarr[testarr_len].val))) {
+                TEST_FAIL();
+        }
 
-        uintptr_t val;
-        TEST_ASSERT_FALSE(kvstore_find(kvstore, "eleven", (void**)&val));
-
-        kvstore_iter(kvstore, kvstore_iter_doesnt_contain, "eleven");
+        free(mem);
 }
 
 int main(void)

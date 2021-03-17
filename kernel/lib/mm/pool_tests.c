@@ -12,19 +12,16 @@
 #include <unity.h>
 
 #define SET_SIZE 1000
+static int64_t SET[SET_SIZE];
 static struct mem_pool POOL;
-static void *MEMORY;
 
 void setUp()
 {
-        MEMORY = calloc(SET_SIZE, sizeof(int64_t));
-        assert(MEMORY);
-        mem_pool_init(&POOL, MEMORY, sizeof(int64_t) * SET_SIZE, sizeof(int64_t), sizeof(int64_t));
+        mem_pool_init(&POOL, SET, sizeof(int64_t) * SET_SIZE, sizeof(int64_t), sizeof(int64_t));
 }
 
 void tearDown()
 {
-        free(MEMORY);
 }
 
 static void can_allocate_and_free_single_element(void)

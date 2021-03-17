@@ -117,6 +117,24 @@ static void delete_random_elem(struct rbtree *rbt, struct rbtree_node *subroot)
         }
 }
 
+static void free_subrbtree(struct rbtree_node *node)
+{
+        if (NULL == node) {
+                return;
+        }
+
+        free_subrbtree(node->left);
+        free_subrbtree(node->right);
+
+        free(node);
+}
+
+static void free_rbtree(struct rbtree *rbt)
+{
+        free_subrbtree(rbt->root);
+        free(rbt);
+}
+
 static void randomly_delete_tree_withcb(struct rbtree *rbt,
                                         void (*on_node_deletion)(struct rbtree_node *root))
 {
@@ -303,6 +321,8 @@ static void can_iterate(void)
                                     local_testset[i] > can_iterate_high);
                 }
         }
+
+        free_rbtree(rbt);
 }
 
 static void search_min(void)
@@ -324,6 +344,8 @@ static void search_min(void)
         struct rbtree_node *result = rbtree_search_min(rbt, &minlimit, intcmp);
 
         TEST_ASSERT_EQUAL_INT_MESSAGE(10, *(int *)result->data, "We've found a wrong node");
+
+        free_rbtree(rbt);
 }
 
 static void search_max(void)
@@ -345,6 +367,8 @@ static void search_max(void)
         struct rbtree_node *result = rbtree_search_max(rbt, &maxlimit, intcmp);
 
         TEST_ASSERT_EQUAL_INT_MESSAGE(35, *(int *)result->data, "We've found a wrong node");
+
+        free_rbtree(rbt);
 }
 
 int main(void)

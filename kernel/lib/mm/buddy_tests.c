@@ -25,9 +25,9 @@ static size_t const number_of_pages = (16 * 1024 * 1024) / PLATFORM_PAGE_SIZE;
 
 void setUp(void)
 {
+        size_t const mem_space = buddy_predict_req_space(number_of_pages);
         /* Allocate slightly more in case that the function returned the wrong value. */
-        size_t const mem_space = buddy_predict_req_space(number_of_pages) + 0x100;
-        mem = malloc(mem_space);
+        mem = malloc(mem_space + 0x100);
         assert(NULL != mem);
 
         linear_alloc_init(&lin_alloc, mem, mem_space);
