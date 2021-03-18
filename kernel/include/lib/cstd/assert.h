@@ -28,4 +28,29 @@ void assertion_init(fprintf_fn);
 
 #define kstatic_assert(exp, str) _Static_assert(exp, str)
 
+/* TODO: Should throw a meaningfull interrupt instead. */
+__noreturn static inline void __busystall(void)
+{
+        while (1) {
+                asm volatile("");
+        }
+}
+
+#ifdef NDEBUG
+/**
+ * @brief Runtime kassert.
+ *
+ * The difference between it and kassert is that it's still present in NDEBUG builds.
+ * And, possibly, doesn't terminate the whole kernel.
+ */
+#define rkassert(exp)                     \
+        do {                              \
+                if (__unlikely(!(exp))) { \
+                        __busystall();    \
+                }                         \
+        } while (0)
+#else
+#define rkassert(exp) kassert(exp)
+#endif
+
 #endif /* _LIB_ASSERT_H */
