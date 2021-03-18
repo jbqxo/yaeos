@@ -1,5 +1,8 @@
 #include "lib/ds/rbtree.h"
+
 #include "lib/cppdefs.h"
+
+#define NDEBUG_COLOR_MASK ((uintptr_t)0x1U)
 
 union nodeptr {
         struct rbtree_node *ptr;
@@ -15,15 +18,15 @@ static void rbt_set_colour(struct rbtree_node *n, enum rbtree_colour c)
 #else
         union nodeptr p = (union nodeptr){ .ptr = n->parent };
         if (c == RBTREE_RED) {
-                p.num |= 0x1U;
+                p.num |= NDEBUG_COLOR_MASK;
         } else {
-                p.num &= ~(0x1U);
+                p.num &= ~NDEBUG_COLOR_MASK;
         }
         n->parent = p.ptr;
 #endif
 }
 
-__const static enum rbtree_colour rbt_get_colour(struct rbtree_node *n)
+__pure static enum rbtree_colour rbt_get_colour(struct rbtree_node *n)
 {
         if (!n) {
                 return (RBTREE_BLACK);
@@ -32,7 +35,7 @@ __const static enum rbtree_colour rbt_get_colour(struct rbtree_node *n)
         return (n->colour);
 #else
         union nodeptr p = (union nodeptr){ .ptr = n->parent };
-        enum rbtree_colour c = p.num & 0x1U;
+        enum rbtree_colour c = p.num & NDEBUG_COLOR_MASK;
         return (c);
 #endif
 }
@@ -45,13 +48,13 @@ static void rbt_set_parent(struct rbtree_node *node, struct rbtree_node *parent)
         node->parent = parent;
 #else
         union nodeptr p = (union nodeptr){ .ptr = node->parent };
-        p.num &= 0x1U;
+        p.num &= NDEBUG_COLOR_MASK;
         p.num |= (uintptr_t)parent;
         node->parent = p.ptr;
 #endif
 }
 
-__const static struct rbtree_node *rbt_get_parent(struct rbtree_node *node)
+__pure static struct rbtree_node *rbt_get_parent(struct rbtree_node *node)
 {
         kassert(node);
 
@@ -59,13 +62,13 @@ __const static struct rbtree_node *rbt_get_parent(struct rbtree_node *node)
         return (node->parent);
 #else
         union nodeptr p = (union nodeptr){ .ptr = node->parent };
-        p.num &= ~(0x1U);
+        p.num &= ~NDEBUG_COLOR_MASK;
         kassert(properly_aligned(p.ptr));
         return (p.ptr);
 #endif
 }
 
-__const static struct rbtree_node *rbt_get_grandparent(struct rbtree_node *node)
+__pure static struct rbtree_node *rbt_get_grandparent(struct rbtree_node *node)
 {
         kassert(node);
 
@@ -78,7 +81,7 @@ __const static struct rbtree_node *rbt_get_grandparent(struct rbtree_node *node)
         return (grandparent);
 }
 
-__const static struct rbtree_node *rbt_get_sibling(struct rbtree_node *node)
+__pure static struct rbtree_node *rbt_get_sibling(struct rbtree_node *node)
 {
         kassert(node);
 
@@ -92,7 +95,7 @@ __const static struct rbtree_node *rbt_get_sibling(struct rbtree_node *node)
         }
 }
 
-static struct rbtree_node *rbt_get_uncle(struct rbtree_node *node)
+__pure static struct rbtree_node *rbt_get_uncle(struct rbtree_node *node)
 {
         kassert(node);
 
