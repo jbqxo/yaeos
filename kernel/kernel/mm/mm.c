@@ -198,7 +198,7 @@ struct mm_page *mm_get_page_by_paddr(void *phys_addr)
 void mm_free_page(phys_addr_t addr)
 {
         struct mm_zone *zone = find_zone(addr);
-        kassert(zone != NULL);
+        rkassert(zone != NULL);
 
         size_t const page_ndx = get_page_ndx(zone, addr);
 

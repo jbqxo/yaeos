@@ -132,7 +132,7 @@ void resources_register(char const *device_id, char const *resource_id, enum res
                         union resource_data data)
 {
         struct resource *new = resources_get_new();
-        kassert(new != NULL);
+        rkassert(new != NULL);
 
         slist_init(&new->list);
         new->device_id = device_id;

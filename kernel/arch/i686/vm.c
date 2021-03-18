@@ -221,6 +221,9 @@ void i686_vm_pg_fault_handler(struct intr_ctx *ctx __unused)
 static void *create_new_dir(struct i686_vm_pd *root_pd)
 {
         struct mm_page *page = mm_alloc_page();
+        if (__unlikely(NULL == page)) {
+                LOGF_P("Couldn't allocate new frame for PD.\n");
+        }
 
         struct i686_vm_pge *e = &root_pd->emergency;
         kassert(!e->any.is_present);

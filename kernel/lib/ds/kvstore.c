@@ -25,10 +25,22 @@ struct kvstore *kvstore_create(void *const mem, size_t const cap, kvstore_fn_cmp
         linear_alloc_init(&alloc, mem, kvstore_predict_reqmem(cap));
 
         struct kvstore *kv = linear_alloc_alloc(&alloc, sizeof(*kv));
-        kv->keys = linear_alloc_alloc(&alloc, cap * sizeof(*kv->keys));
+        if (__unlikely(NULL == kv)) {
+                return (NULL);
+        }
+
         kv->cap = cap;
-        kv->values = linear_alloc_alloc(&alloc, cap * sizeof(*kv->values));
         kv->cmpfn = cmpfn;
+        kv->keys = linear_alloc_alloc(&alloc, cap * sizeof(*kv->keys));
+        if (__unlikely(NULL == kv->keys)) {
+                return (NULL);
+        }
+
+        kv->values = linear_alloc_alloc(&alloc, cap * sizeof(*kv->values));
+        if (__unlikely(NULL == kv->values)) {
+                return (NULL);
+        }
+
 
         for (size_t i = 0; i < cap; i++) {
                 kv->keys[i] = NULL;
